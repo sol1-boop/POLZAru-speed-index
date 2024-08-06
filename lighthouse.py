@@ -3,7 +3,7 @@ import json
 import asyncio
 import logging
 from telegram import Update
-from telegram.ext import Application, CommandHandler, ContextTypes, JobQueue
+from telegram.ext import Application, CommandHandler, ContextTypes
 from config import TELEGRAM_TOKEN, CHANNEL_ID
 
 logging.basicConfig(level=logging.INFO)
@@ -14,7 +14,7 @@ tracking_tasks = {}
 async def get_lighthouse_metrics(url: str, mobile: bool = False) -> str:
     try:
         # Использование абсолютного пути к lighthouse
-        lighthouse_path = 'C:/Users/sol/AppData/Roaming/npm/lighthouse.cmd'
+        lighthouse_path = '/usr/bin/lighthouse'
 
         # Общие флаги для Chrome
         chrome_flags = '--no-sandbox --disable-dev-shm-usage --headless'
@@ -107,7 +107,7 @@ async def get_lighthouse_metrics(url: str, mobile: bool = False) -> str:
         return str(e)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text('Привет! Отправьте /start_track <url> для начала отслеживания мобильной версии сайта каждые 3 минуты, /stop_track для остановки отслеживания, /audit_mobile <url> для проведения аудита вручную.', parse_mode='HTML')
+    await update.message.reply_text('Привет! Отправьте /start_track <url> для начала отслеживания мобильной версии сайта каждые 2 часа, /stop_track для остановки отслеживания, /audit_mobile <url> для проведения аудита вручную.', parse_mode='HTML')
 
 async def track_metrics(context: ContextTypes.DEFAULT_TYPE) -> None:
     job = context.job
@@ -127,7 +127,7 @@ async def start_track(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         await update.message.reply_text('Отслеживание уже запущено. Для остановки введите /stop_track.', parse_mode='HTML')
         return
 
-    job = context.job_queue.run_repeating(track_metrics, interval=180, first=0, data=url, name=str(chat_id))
+    job = context.job_queue.run_repeating(track_metrics, interval=7200, first=0, data=url, name=str(chat_id))  # 7200 секунд = 2 часа
     tracking_tasks[chat_id] = job
 
     await update.message.reply_text(f'Запущено отслеживание мобильной версии сайта: {url}.', parse_mode='HTML')
