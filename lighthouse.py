@@ -18,6 +18,7 @@ async def get_lighthouse_metrics(url: str, mobile: bool = False) -> str:
 
         # Общие флаги для Chrome
         chrome_flags = '--no-sandbox --disable-dev-shm-usage --headless'
+        max_wait_for_load = '--max-wait-for-load=450000'  # Увеличение тайм-аута до 450000 мс (7.5 минут)
         if mobile:
             chrome_flags += ' --window-size=412,823'
             lighthouse_flags = [
@@ -26,7 +27,8 @@ async def get_lighthouse_metrics(url: str, mobile: bool = False) -> str:
                 '--output=json',
                 '--quiet',
                 '--emulated-form-factor=mobile',
-                '--chrome-flags=' + chrome_flags
+                '--chrome-flags=' + chrome_flags,
+                max_wait_for_load
             ]
         else:
             chrome_flags += ' --window-size=1920,1080'
@@ -36,7 +38,8 @@ async def get_lighthouse_metrics(url: str, mobile: bool = False) -> str:
                 '--output=json',
                 '--quiet',
                 '--preset=desktop',
-                '--chrome-flags=' + chrome_flags
+                '--chrome-flags=' + chrome_flags,
+                max_wait_for_load
             ]
 
         result = await asyncio.to_thread(subprocess.run, lighthouse_flags, capture_output=True, text=True)
