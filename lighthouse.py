@@ -1,12 +1,17 @@
 import subprocess
 import json
+import asyncio
+import logging
 from telegram import Update
-from telegram.ext import Application, CommandHandler, ContextTypes
-from config import TELEGRAM_TOKEN, CHANNEL_ID  # Импортируем токен и идентификатор канала из config.py
+from telegram.ext import Application, CommandHandler, ContextTypes, JobQueue
+from config import TELEGRAM_TOKEN, CHANNEL_ID
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# Функция для выполнения команды Lighthouse и получения метрик
-def get_lighthouse_metrics(url: str, mobile: bool = False) -> str:
+tracking_tasks = {}
+
+async def get_lighthouse_metrics(url: str, mobile: bool = False) -> str:
     try:
         # Использование абсолютного пути к lighthouse
         lighthouse_path = 'C:/Users/sol/AppData/Roaming/npm/lighthouse.cmd'
@@ -34,7 +39,7 @@ def get_lighthouse_metrics(url: str, mobile: bool = False) -> str:
                 '--chrome-flags=' + chrome_flags
             ]
 
-        result = subprocess.run(lighthouse_flags, capture_output=True, text=True)
+        result = await asyncio.to_thread(subprocess.run, lighthouse_flags, capture_output=True, text=True)
 
         # Проверка на ошибки выполнения команды
         if result.returncode != 0:
@@ -92,10 +97,8 @@ def get_lighthouse_metrics(url: str, mobile: bool = False) -> str:
                 formatted_secondary_metrics[key] = value
 
         # Создание финального сообщения с метриками
-        final_message = "<b>Первичные метрики:</b>\n" + json.dumps(formatted_primary_metrics, indent=2,
-                                                                   ensure_ascii=False)
-        final_message += "\n\n<b>Вторичные метрики:</b>\n" + json.dumps(formatted_secondary_metrics, indent=2,
-                                                                        ensure_ascii=False)
+        final_message = "<b>Первичные метрики:</b>\n" + json.dumps(formatted_primary_metrics, indent=2, ensure_ascii=False)
+        final_message += "\n\n<b>Вторичные метрики:</b>\n" + json.dumps(formatted_secondary_metrics, indent=2, ensure_ascii=False)
 
         return final_message
     except subprocess.CalledProcessError as e:
@@ -103,62 +106,67 @@ def get_lighthouse_metrics(url: str, mobile: bool = False) -> str:
     except Exception as e:
         return str(e)
 
-
-# Обработчик команды /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text(
-        'Привет! Отправьте /audit_desktop <url> для аудита десктопной версии или /audit_mobile <url> для аудита мобильной версии сайта.',
-        parse_mode='HTML')
+    await update.message.reply_text('Привет! Отправьте /start_track <url> для начала отслеживания мобильной версии сайта каждые 3 минуты, /stop_track для остановки отслеживания, /audit_mobile <url> для проведения аудита вручную.', parse_mode='HTML')
 
+async def track_metrics(context: ContextTypes.DEFAULT_TYPE) -> None:
+    job = context.job
+    url = job.data
+    metrics = await get_lighthouse_metrics(url, mobile=True)
+    await context.bot.send_message(chat_id=CHANNEL_ID, text=f'Метрики для мобильной версии {url}:\n{metrics}', parse_mode='HTML')
 
-# Обработчик команды /audit_desktop
-async def audit_desktop(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def start_track(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if len(context.args) == 0:
-        await update.message.reply_text('Пожалуйста, укажите URL. Например: /audit_desktop https://example.com',
-                                        parse_mode='HTML')
+        await update.message.reply_text('Пожалуйста, укажите URL. Например: /start_track https://example.com', parse_mode='HTML')
         return
 
     url = context.args[0]
-    await update.message.reply_text(f'Проводится аудит десктопной версии сайта: {url}. Пожалуйста, подождите...',
-                                    parse_mode='HTML')
+    chat_id = update.message.chat_id
 
-    # Получение метрик Lighthouse для десктопной версии
-    metrics = get_lighthouse_metrics(url, mobile=False)
+    if chat_id in tracking_tasks:
+        await update.message.reply_text('Отслеживание уже запущено. Для остановки введите /stop_track.', parse_mode='HTML')
+        return
 
-    # Отправка метрик пользователю
-    await context.bot.send_message(chat_id=CHANNEL_ID, text=f'Метрики для десктопной версии {url}:\n{metrics}',
-                                   parse_mode='HTML')
+    job = context.job_queue.run_repeating(track_metrics, interval=180, first=0, data=url, name=str(chat_id))
+    tracking_tasks[chat_id] = job
 
+    await update.message.reply_text(f'Запущено отслеживание мобильной версии сайта: {url}.', parse_mode='HTML')
 
-# Обработчик команды /audit_mobile
+async def stop_track(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    chat_id = update.message.chat_id
+
+    if chat_id not in tracking_tasks:
+        await update.message.reply_text('Отслеживание не запущено.', parse_mode='HTML')
+        return
+
+    job = tracking_tasks.pop(chat_id)
+    job.schedule_removal()
+
+    await update.message.reply_text('Отслеживание остановлено.', parse_mode='HTML')
+
 async def audit_mobile(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if len(context.args) == 0:
-        await update.message.reply_text('Пожалуйста, укажите URL. Например: /audit_mobile https://example.com',
-                                        parse_mode='HTML')
+        await update.message.reply_text('Пожалуйста, укажите URL. Например: /audit_mobile https://example.com', parse_mode='HTML')
         return
 
     url = context.args[0]
-    await update.message.reply_text(f'Проводится аудит мобильной версии сайта: {url}. Пожалуйста, подождите...',
-                                    parse_mode='HTML')
+    await update.message.reply_text(f'Проводится аудит мобильной версии сайта: {url}. Пожалуйста, подождите...', parse_mode='HTML')
 
-    # Получение метрик Lighthouse для мобильной версии
-    metrics = get_lighthouse_metrics(url, mobile=True)
-
-    # Отправка метрик пользователю
-    await context.bot.send_message(chat_id=CHANNEL_ID, text=f'Метрики для мобильной версии {url}:\n{metrics}',
-                                   parse_mode='HTML')
-
+    metrics = await get_lighthouse_metrics(url, mobile=True)
+    await context.bot.send_message(chat_id=CHANNEL_ID, text=f'Метрики для мобильной версии {url}:\n{metrics}', parse_mode='HTML')
 
 def main() -> None:
-    # Создание приложения с увеличением времени ожидания
     application = Application.builder().token(TELEGRAM_TOKEN).read_timeout(60).connect_timeout(60).build()
 
+    # Добавляем JobQueue в приложение
+    job_queue = application.job_queue
+
     application.add_handler(CommandHandler("start", start))
-    application.add_handler(CommandHandler("audit_desktop", audit_desktop))
+    application.add_handler(CommandHandler("start_track", start_track))
+    application.add_handler(CommandHandler("stop_track", stop_track))
     application.add_handler(CommandHandler("audit_mobile", audit_mobile))
 
     application.run_polling()
-
 
 if __name__ == '__main__':
     main()
