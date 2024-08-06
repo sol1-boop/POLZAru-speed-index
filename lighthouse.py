@@ -2,6 +2,8 @@ import subprocess
 import json
 import asyncio
 import logging
+import requests
+import time
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 from config import TELEGRAM_TOKEN, CHANNEL_ID
@@ -11,10 +13,17 @@ logger = logging.getLogger(__name__)
 
 tracking_tasks = {}
 
+def measure_backend_response_time(url: str) -> float:
+    start_time = time.time()
+    response = requests.get(url)
+    end_time = time.time()
+    response_time = end_time - start_time
+    return response_time
+
 async def get_lighthouse_metrics(url: str, mobile: bool = False) -> str:
     try:
-        # Использование абсолютного пути к lighthouse
-        lighthouse_path = '/usr/bin/lighthouse'
+        # Использование абсолютного пути к lighthouse для Windows
+        lighthouse_path = '/usr/bin/lighthouse'  # Убедитесь, что путь верный
 
         # Общие флаги для Chrome
         chrome_flags = '--no-sandbox --disable-dev-shm-usage --headless'
@@ -42,6 +51,10 @@ async def get_lighthouse_metrics(url: str, mobile: bool = False) -> str:
                 max_wait_for_load
             ]
 
+        # Измерение времени ответа от бэкенда
+        backend_response_time = measure_backend_response_time(url)
+
+        # Запуск Lighthouse и получение результатов
         result = await asyncio.to_thread(subprocess.run, lighthouse_flags, capture_output=True, text=True)
 
         # Проверка на ошибки выполнения команды
@@ -52,23 +65,16 @@ async def get_lighthouse_metrics(url: str, mobile: bool = False) -> str:
 
         # Извлечение необходимых метрик
         fcp = report['audits'].get('first-contentful-paint', {}).get('numericValue', 'N/A')
-        fid = report['audits'].get('first-input-delay', {}).get('numericValue', 'N/A')
         tti = report['audits'].get('interactive', {}).get('numericValue', 'N/A')
         lcp = report['audits'].get('largest-contentful-paint', {}).get('numericValue', 'N/A')
         ttfb = report['audits'].get('server-response-time', {}).get('numericValue', 'N/A')
         tbt = report['audits'].get('total-blocking-time', {}).get('numericValue', 'N/A')
 
-        # Рассчет TTIF
-        if fcp != 'N/A' and fid != 'N/A':
-            ttif = fcp + fid
-        else:
-            ttif = 'N/A'
-
         # Преобразование значений метрик в удобочитаемый формат
         primary_metrics = {
             'FCP (First Contentful Paint)': fcp / 1000 if isinstance(fcp, (int, float)) else fcp,
             'TTI (Time to Interactive)': tti / 1000 if isinstance(tti, (int, float)) else tti,
-            'TTIF (Time to First Interaction)': ttif / 1000 if isinstance(ttif, (int, float)) else ttif,
+            'Backend Response Time': f'{backend_response_time:.2f} s',  # Добавление времени ответа от бэкенда
         }
 
         secondary_metrics = {
