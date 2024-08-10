@@ -7,9 +7,11 @@ import time
 from datetime import datetime, timedelta
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
-from config import TELEGRAM_TOKEN, CHANNEL_ID
+from config import TELEGRAM_TOKEN, CHANNEL_ID  # Импортируем CHANNEL_ID из config.py
 from collections import deque
 import os
+import matplotlib.pyplot as plt
+import tempfile  # Новый импорт
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -43,7 +45,7 @@ async def get_lighthouse_metrics(url: str, mobile: bool = False) -> dict:
         lighthouse_path = 'C:/Users/sol/AppData/Roaming/npm/lighthouse.cmd'  # Убедитесь, что путь верный
 
         chrome_flags = '--no-sandbox --disable-dev-shm-usage --headless'
-        max_wait_for_load = '--max-wait-for-load=450000'
+        max_wait_for_load = '--max-wait-for-load=450000'  # Изменено на 45 секунд
         if mobile:
             chrome_flags += ' --window-size=412,823'
             lighthouse_flags = [
@@ -99,7 +101,7 @@ async def get_lighthouse_metrics(url: str, mobile: bool = False) -> dict:
         return {"error": str(e)}
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text('Привет! Отправьте /start_track <url> для начала отслеживания мобильной версии сайта каждые 2 часа, /stop_track для остановки отслеживания, /audit_mobile <url> для проведения аудита вручную, /stats для получения статистики последних 30 дней.', parse_mode='HTML')
+    await update.message.reply_text('Привет! Отправьте /start_track <url> для начала отслеживания мобильной версии сайта каждые 3 минуты, /stop_track для остановки отслеживания, /audit_mobile <url> для проведения аудита вручную, /stats для получения статистики последних 30 дней.', parse_mode='HTML')
 
 async def track_metrics(context: ContextTypes.DEFAULT_TYPE) -> None:
     job = context.job
@@ -155,7 +157,7 @@ async def start_track(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         await update.message.reply_text('Отслеживание уже запущено. Для остановки введите /stop_track.', parse_mode='HTML')
         return
 
-    job = context.job_queue.run_repeating(track_metrics, interval=7200, first=0, data=url, name=str(chat_id))
+    job = context.job_queue.run_repeating(track_metrics, interval=7200, first=0, data=url, name=str(chat_id))  # Изменено на 3 минуты
     tracking_tasks[chat_id] = job
 
     await update.message.reply_text(f'Запущено отслеживание мобильной версии сайта: {url}.', parse_mode='HTML')
@@ -184,6 +186,9 @@ async def audit_mobile(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     if 'error' in metrics:
         await context.bot.send_message(chat_id=CHANNEL_ID, text=metrics['error'], parse_mode='HTML')
     else:
+        measurement_history.append(metrics)
+        save_measurement_history()
+
         primary_metrics = {
             'FCP (First Contentful Paint)': metrics['FCP'],
             'TTI (Time to Interactive)': metrics['TTI'],
@@ -230,6 +235,32 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text('Нет данных за последние 30 дней.', parse_mode='HTML')
         return
 
+    metrics_to_plot = ['FCP', 'TTI', 'Backend Response Time', 'LCP', 'TTFB', 'TBT']
+
+    for metric in metrics_to_plot:
+        dates = [datetime.fromisoformat(m['timestamp']) for m in recent_measurements]
+        values = [m[metric] for m in recent_measurements]
+
+        # Построение графика
+        plt.figure(figsize=(10, 5))
+        plt.plot(dates, values, marker='o', linestyle='-', label=metric)
+        plt.xlabel('Дата')
+        plt.ylabel(f'{metric} (s)')
+        plt.title(f'{metric} за последние 30 дней')
+        plt.grid(True)
+        plt.legend()
+
+        # Использование временной директории для хранения графиков
+        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmpfile:
+            plt.savefig(tmpfile.name)
+            tmpfile.close()
+            # Отправка изображения пользователю
+            await context.bot.send_photo(chat_id=update.message.chat_id, photo=open(tmpfile.name, 'rb'))
+
+        # Удаление временного файла
+        os.remove(tmpfile.name)
+
+    # Вычисление средних, минимальных и максимальных значений
     average_metrics = {
         'FCP': sum(m['FCP'] for m in recent_measurements) / len(recent_measurements),
         'TTI': sum(m['TTI'] for m in recent_measurements) / len(recent_measurements),
@@ -239,14 +270,46 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         'TBT': sum(m['TBT'] for m in recent_measurements) / len(recent_measurements),
     }
 
+    min_metrics = {
+        'FCP': min(m['FCP'] for m in recent_measurements),
+        'TTI': min(m['TTI'] for m in recent_measurements),
+        'Backend Response Time': min(m['Backend Response Time'] for m in recent_measurements),
+        'LCP': min(m['LCP'] for m in recent_measurements),
+        'TTFB': min(m['TTFB'] for m in recent_measurements),
+        'TBT': min(m['TBT'] for m in recent_measurements),
+    }
+
+    max_metrics = {
+        'FCP': max(m['FCP'] for m in recent_measurements),
+        'TTI': max(m['TTI'] for m in recent_measurements),
+        'Backend Response Time': max(m['Backend Response Time'] for m in recent_measurements),
+        'LCP': max(m['LCP'] for m in recent_measurements),
+        'TTFB': max(m['TTFB'] for m in recent_measurements),
+        'TBT': max(m['TBT'] for m in recent_measurements),
+    }
+
     formatted_average_metrics = {}
+    formatted_min_metrics = {}
+    formatted_max_metrics = {}
+
     for key, value in average_metrics.items():
         if isinstance(value, (int, float)):
             formatted_average_metrics[key] = f'{value:.2f} s'
+            formatted_min_metrics[key] = f'{min_metrics[key]:.2f} s'
+            formatted_max_metrics[key] = f'{max_metrics[key]:.2f} s'
         else:
             formatted_average_metrics[key] = value
+            formatted_min_metrics[key] = min_metrics[key]
+            formatted_max_metrics[key] = max_metrics[key]
 
-    final_message = "<b>Средние метрики за последние 30 дней:</b>\n" + json.dumps(formatted_average_metrics, indent=2, ensure_ascii=False)
+    final_message = (
+        "<b>Средние метрики за последние 30 дней:</b>\n" +
+        json.dumps(formatted_average_metrics, indent=2, ensure_ascii=False) +
+        "\n\n<b>Минимальные метрики за последние 30 дней:</b>\n" +
+        json.dumps(formatted_min_metrics, indent=2, ensure_ascii=False) +
+        "\n\n<b>Максимальные метрики за последние 30 дней:</b>\n" +
+        json.dumps(formatted_max_metrics, indent=2, ensure_ascii=False)
+    )
 
     await update.message.reply_text(final_message, parse_mode='HTML')
 
