@@ -1,16 +1,16 @@
-import subprocess
-import json
 import asyncio
 import logging
+import subprocess
+import json
 import requests
 import time
 from datetime import datetime, timedelta
-from telegram import Update
+from telegram import Update, InputFile
 from telegram.ext import Application, CommandHandler, ContextTypes
-from config import TELEGRAM_TOKEN, CHANNEL_ID  # Импортируем CHANNEL_ID из config.py
+from config import TELEGRAM_TOKEN  # Убедитесь, что у вас есть этот файл с токеном
 import os
-import matplotlib.pyplot as plt
-import tempfile  # Новый импорт
+import shutil
+import re  # Импортируем модуль re
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -33,8 +33,24 @@ def measure_backend_response_time(url: str) -> float:
     return response_time
 
 async def get_lighthouse_metrics(url: str, mobile: bool = False) -> dict:
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, sync_get_lighthouse_metrics, url, mobile)
+
+def sync_get_lighthouse_metrics(url: str, mobile: bool = False) -> dict:
     try:
-        lighthouse_path = 'C:/Users/sol/AppData/Roaming/npm/lighthouse.cmd'  # Убедитесь, что путь верный
+        # Определяем имя исполняемого файла в зависимости от ОС
+        if os.name == 'nt':  # Если Windows
+            default_lighthouse_path = 'lighthouse.cmd'
+        else:
+            default_lighthouse_path = 'lighthouse'
+
+        # Получаем путь к Lighthouse из переменной окружения или используем значение по умолчанию
+        lighthouse_path = os.getenv('LIGHTHOUSE_PATH', default_lighthouse_path)
+
+        # Проверяем, доступен ли исполняемый файл
+        if not shutil.which(lighthouse_path):
+            logger.error(f"Lighthouse не найден по пути: {lighthouse_path}")
+            return {}
 
         chrome_flags = '--no-sandbox --disable-dev-shm-usage --headless'
         max_wait_for_load = '--max-wait-for-load=450000'  # Изменено на 45 секунд
@@ -46,7 +62,7 @@ async def get_lighthouse_metrics(url: str, mobile: bool = False) -> dict:
                 '--output=json',
                 '--quiet',
                 '--emulated-form-factor=mobile',
-                f'--chrome-flags="{chrome_flags}"',
+                f'--chrome-flags={chrome_flags}',
                 max_wait_for_load
             ]
         else:
@@ -55,24 +71,64 @@ async def get_lighthouse_metrics(url: str, mobile: bool = False) -> dict:
                 url,
                 '--output=json',
                 '--quiet',
-                f'--chrome-flags="{chrome_flags}"',
+                f'--chrome-flags={chrome_flags}',
                 max_wait_for_load
             ]
 
         result = subprocess.run(lighthouse_flags, capture_output=True, text=True, encoding='utf-8')
+        if result.returncode != 0:
+            logger.error(f"Lighthouse вернул код ошибки {result.returncode} для {url}")
+            logger.error(f"Сообщение об ошибке: {result.stderr}")
+            return {}
+
         if result.stdout:
             result_json = json.loads(result.stdout)
             return result_json
         else:
-            logger.error(f"No output from Lighthouse for {url}")
+            logger.error(f"Нет вывода от Lighthouse для {url}")
             return {}
     except json.JSONDecodeError as json_err:
-        logger.error(f"JSON decode error for {url}: {json_err}")
+        logger.error(f"Ошибка декодирования JSON для {url}: {json_err}")
         return {}
     except Exception as e:
-        logger.error(f"Error running Lighthouse for {url}: {e}")
+        logger.exception(f"Ошибка при запуске Lighthouse для {url}: {e}")
         return {}
 
+def parse_metric(value, unit='s'):
+    if value:
+        try:
+            # Заменяем неразрывные пробелы на обычные пробелы
+            value = value.replace('\u00A0', ' ')
+            # Удаляем все символы, кроме цифр, точек, запятых и пробелов
+            cleaned_value = ''.join(c for c in value if c.isdigit() or c in ['.', ',', ' '])
+            # Удаляем пробелы
+            cleaned_value = cleaned_value.replace(' ', '')
+            # Заменяем запятые на точки
+            cleaned_value = cleaned_value.replace(',', '.')
+            number = float(cleaned_value)
+            if unit == 'ms':
+                if 'ms' in value or 'миллисек' in value.lower():
+                    return number
+                elif 's' in value or 'сек' in value.lower():
+                    return number * 1000  # Преобразуем секунды в миллисекунды
+            elif unit == 's':
+                if 's' in value or 'сек' in value.lower():
+                    return number
+                elif 'ms' in value or 'миллисек' in value.lower():
+                    return number / 1000  # Преобразуем миллисекунды в секунды
+            else:
+                return number  # Если единица измерения не указана, возвращаем число как есть
+        except ValueError:
+            logger.error(f"Невозможно преобразовать метрику: {value}")
+    else:
+        logger.error(f"Пустое значение метрики: {value}")
+    return None
+
+# Функция обработчик команды /start
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await update.message.reply_text("Добро пожаловать! Используйте команду /start_track для начала отслеживания доменов или /audit_mobile для разового аудита.")
+
+# Функция обработчик команды /audit_mobile
 async def audit_mobile(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     domains = load_domains()
     if not domains:
@@ -103,12 +159,12 @@ async def audit_mobile(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         history_data = []
 
         if os.path.exists(history_filename):
-            with open(history_filename, 'r', encoding='utf-8') as file:
-                try:
+            try:
+                with open(history_filename, 'r', encoding='utf-8') as file:
                     history_data = json.load(file)
-                except json.JSONDecodeError:
-                    logger.error(f"Ошибка чтения JSON из файла {history_filename}. Создание нового файла.")
-                    history_data = []
+            except json.JSONDecodeError:
+                logger.error(f"Ошибка чтения JSON из файла {history_filename}. Создание нового файла.")
+                history_data = []
         else:
             # Создаем файл, если он не существует
             with open(history_filename, 'w', encoding='utf-8') as file:
@@ -128,6 +184,7 @@ async def audit_mobile(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         with open(history_filename, 'w', encoding='utf-8') as file:
             json.dump(history_data, file, ensure_ascii=False, indent=2)
 
+# Функция обработчик команды /start_track
 async def start_track(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     domains = load_domains()
     if not domains:
@@ -139,22 +196,27 @@ async def start_track(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             await update.message.reply_text(f"{url} уже отслеживается.")
             continue
 
-        tracking_tasks[url] = context.job_queue.run_repeating(track_metrics, interval=timedelta(minutes=30), first=0, context=url)
+        tracking_tasks[url] = context.job_queue.run_repeating(track_metrics, interval=timedelta(minutes=30), first=0, name=url, data=url)
         await update.message.reply_text(f"Запущено отслеживание для: {url}")
 
+# Функция для периодического сбора метрик
 async def track_metrics(context: ContextTypes.DEFAULT_TYPE) -> None:
-    url = context.job.context
+    url = context.job.data
     metrics = await get_lighthouse_metrics(url, mobile=True)
+    if not metrics:
+        logger.error(f"Не удалось получить метрики для {url}")
+        return
+
     history_filename = f"history_{url.replace('http://', '').replace('https://', '').replace('/', '_')}.json"
     history_data = []
 
     if os.path.exists(history_filename):
-        with open(history_filename, 'r', encoding='utf-8') as file:
-            try:
+        try:
+            with open(history_filename, 'r', encoding='utf-8') as file:
                 history_data = json.load(file)
-            except json.JSONDecodeError:
-                logger.error(f"Ошибка чтения JSON из файла {history_filename}. Создание нового файла.")
-                history_data = []
+        except json.JSONDecodeError:
+            logger.error(f"Ошибка чтения JSON из файла {history_filename}. Создание нового файла.")
+            history_data = []
     else:
         # Создаем файл, если он не существует
         with open(history_filename, 'w', encoding='utf-8') as file:
@@ -176,9 +238,7 @@ async def track_metrics(context: ContextTypes.DEFAULT_TYPE) -> None:
     with open(history_filename, 'w', encoding='utf-8') as file:
         json.dump(history_data, file, ensure_ascii=False, indent=2)
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text("Добро пожаловать! Используйте команду /start_track для начала отслеживания доменов или /audit_mobile для разового аудита.")
-
+# Функция обработчик команды /stop_track
 async def stop_track(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     domains = load_domains()
     if not domains:
@@ -193,30 +253,67 @@ async def stop_track(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         else:
             await update.message.reply_text(f"{url} не отслеживается.")
 
+# Функция обработчик команды /stats
 async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     domains = load_domains()
     if not domains:
         await update.message.reply_text("Список доменов пуст или файл не найден.")
         return
 
-    stats_message = "История замеров (последние 5 записей):\n"
     for url in domains:
         history_filename = f"history_{url.replace('http://', '').replace('https://', '').replace('/', '_')}.json"
         if os.path.exists(history_filename):
-            with open(history_filename, 'r', encoding='utf-8') as file:
-                try:
+            try:
+                with open(history_filename, 'r', encoding='utf-8') as file:
                     history_data = json.load(file)
-                    for entry in history_data[-5:]:
-                        stats_message += f"{entry['timestamp']} - {entry['url']}: {json.dumps(entry['metrics'], indent=2, ensure_ascii=False)}\n\n"
-                except json.JSONDecodeError:
-                    logger.error(f"Ошибка чтения JSON из файла {history_filename}. Пропуск файла.")
+                if history_data:
+                    # Получение значений метрик для анализа
+                    fcp_values = []
+                    lcp_values = []
+                    ttfb_values = []
+                    tbt_values = []
 
-    await update.message.reply_text(stats_message)
+                    for entry in history_data:
+                        metrics = entry['metrics']
+
+                        fcp = parse_metric(metrics.get('FCP'))
+                        if fcp is not None:
+                            fcp_values.append(fcp)
+
+                        lcp = parse_metric(metrics.get('LCP'))
+                        if lcp is not None:
+                            lcp_values.append(lcp)
+
+                        ttfb = parse_metric(metrics.get('TTFB'), unit='ms')
+                        if ttfb is not None:
+                            ttfb_values.append(ttfb / 1000)  # Преобразуем в секунды
+
+                        tbt = parse_metric(metrics.get('TBT'), unit='ms')
+                        if tbt is not None:
+                            tbt_values.append(tbt / 1000)  # Преобразуем в секунды
+
+                    # Вычисление минимального, среднего и максимального значений
+                    stats_message = f"Статистика для {url}:\n"
+                    if fcp_values:
+                        stats_message += f"FCP: min={min(fcp_values):.2f}s, avg={sum(fcp_values) / len(fcp_values):.2f}s, max={max(fcp_values):.2f}s\n"
+                    if lcp_values:
+                        stats_message += f"LCP: min={min(lcp_values):.2f}s, avg={sum(lcp_values) / len(lcp_values):.2f}s, max={max(lcp_values):.2f}s\n"
+                    if ttfb_values:
+                        stats_message += f"TTFB: min={min(ttfb_values):.2f}s, avg={sum(ttfb_values) / len(ttfb_values):.2f}s, max={max(ttfb_values):.2f}s\n"
+                    if tbt_values:
+                        stats_message += f"TBT: min={min(tbt_values):.2f}s, avg={sum(tbt_values) / len(tbt_values):.2f}s, max={max(tbt_values):.2f}s\n"
+
+                    await update.message.reply_text(stats_message)
+
+                # Отправка полного файла с историей замеров
+                await update.message.reply_document(InputFile(history_filename))
+            except json.JSONDecodeError:
+                logger.error(f"Ошибка чтения JSON из файла {history_filename}. Пропуск файла.")
+        else:
+            await update.message.reply_text(f"История для {url} не найдена.")
 
 def main() -> None:
     application = Application.builder().token(TELEGRAM_TOKEN).read_timeout(60).connect_timeout(60).build()
-
-    job_queue = application.job_queue
 
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("start_track", start_track))

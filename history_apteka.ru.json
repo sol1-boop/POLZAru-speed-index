@@ -1,12 +1,32 @@
 [
   {
     "url": "https://apteka.ru",
-    "timestamp": "2024-10-12T03:22:45.968854",
+    "timestamp": "2024-10-12T03:57:23.628100",
+    "metrics": {
+      "FCP": "2.6 s",
+      "LCP": "13.9 s",
+      "TTFB": "Root document took 910 ms",
+      "TBT": "700 ms"
+    }
+  },
+  {
+    "url": "https://apteka.ru",
+    "timestamp": "2024-10-12T03:59:17.537018",
+    "metrics": {
+      "FCP": "2.9 s",
+      "LCP": "6.9 s",
+      "TTFB": "Root document took 310 ms",
+      "TBT": "770 ms"
+    }
+  },
+  {
+    "url": "https://apteka.ru",
+    "timestamp": "2024-10-12T04:07:17.785214",
     "metrics": {
       "FCP": "2.9 s",
       "LCP": "6.3 s",
-      "TTFB": "Root document took 370 ms",
-      "TBT": "1,880 ms"
+      "TTFB": "Root document took 300 ms",
+      "TBT": "850 ms"
     }
   }
 ]

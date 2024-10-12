@@ -1,12 +1,32 @@
 [
   {
     "url": "https://uteka.ru",
-    "timestamp": "2024-10-12T03:23:02.439928",
+    "timestamp": "2024-10-12T03:57:39.526565",
+    "metrics": {
+      "FCP": "5.1 s",
+      "LCP": "7.2 s",
+      "TTFB": "Root document took 610 ms",
+      "TBT": "340 ms"
+    }
+  },
+  {
+    "url": "https://uteka.ru",
+    "timestamp": "2024-10-12T03:59:33.531795",
     "metrics": {
       "FCP": "5.1 s",
       "LCP": "7.4 s",
-      "TTFB": "Root document took 830 ms",
-      "TBT": "360 ms"
+      "TTFB": "Root document took 630 ms",
+      "TBT": "350 ms"
+    }
+  },
+  {
+    "url": "https://uteka.ru",
+    "timestamp": "2024-10-12T04:07:33.389272",
+    "metrics": {
+      "FCP": "5.1 s",
+      "LCP": "7.4 s",
+      "TTFB": "Root document took 670 ms",
+      "TBT": "340 ms"
     }
   }
 ]
