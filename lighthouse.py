@@ -7,10 +7,10 @@ import time
 from datetime import datetime, timedelta
 from telegram import Update, InputFile
 from telegram.ext import Application, CommandHandler, ContextTypes
-from config import TELEGRAM_TOKEN  # Убедитесь, что у вас есть этот файл с токеном
+from config import TELEGRAM_TOKEN
 import os
 import shutil
-import re  # Импортируем модуль re
+import re
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -38,22 +38,19 @@ async def get_lighthouse_metrics(url: str, mobile: bool = False) -> dict:
 
 def sync_get_lighthouse_metrics(url: str, mobile: bool = False) -> dict:
     try:
-        # Определяем имя исполняемого файла в зависимости от ОС
-        if os.name == 'nt':  # Если Windows
+        if os.name == 'nt':
             default_lighthouse_path = 'lighthouse.cmd'
         else:
             default_lighthouse_path = 'lighthouse'
 
-        # Получаем путь к Lighthouse из переменной окружения или используем значение по умолчанию
         lighthouse_path = os.getenv('LIGHTHOUSE_PATH', default_lighthouse_path)
 
-        # Проверяем, доступен ли исполняемый файл
         if not shutil.which(lighthouse_path):
             logger.error(f"Lighthouse не найден по пути: {lighthouse_path}")
             return {}
 
         chrome_flags = '--no-sandbox --disable-dev-shm-usage --headless'
-        max_wait_for_load = '--max-wait-for-load=450000'  # Изменено на 45 секунд
+        max_wait_for_load = '--max-wait-for-load=450000'
         if mobile:
             chrome_flags += ' --window-size=412,823'
             lighthouse_flags = [
@@ -97,27 +94,23 @@ def sync_get_lighthouse_metrics(url: str, mobile: bool = False) -> dict:
 def parse_metric(value, unit='s'):
     if value:
         try:
-            # Заменяем неразрывные пробелы на обычные пробелы
             value = value.replace('\u00A0', ' ')
-            # Удаляем все символы, кроме цифр, точек, запятых и пробелов
             cleaned_value = ''.join(c for c in value if c.isdigit() or c in ['.', ',', ' '])
-            # Удаляем пробелы
             cleaned_value = cleaned_value.replace(' ', '')
-            # Заменяем запятые на точки
             cleaned_value = cleaned_value.replace(',', '.')
             number = float(cleaned_value)
             if unit == 'ms':
                 if 'ms' in value or 'миллисек' in value.lower():
                     return number
                 elif 's' in value or 'сек' in value.lower():
-                    return number * 1000  # Преобразуем секунды в миллисекунды
+                    return number * 1000
             elif unit == 's':
                 if 's' in value or 'сек' in value.lower():
                     return number
                 elif 'ms' in value or 'миллисек' in value.lower():
-                    return number / 1000  # Преобразуем миллисекунды в секунды
+                    return number / 1000
             else:
-                return number  # Если единица измерения не указана, возвращаем число как есть
+                return number
         except ValueError:
             logger.error(f"Невозможно преобразовать метрику: {value}")
     else:
@@ -126,7 +119,10 @@ def parse_metric(value, unit='s'):
 
 # Функция обработчик команды /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    await update.message.reply_text("Добро пожаловать! Используйте команду /start_track для начала отслеживания доменов или /audit_mobile для разового аудита.")
+    await update.message.reply_text(
+        "Добро пожаловать! Используйте команду /start_track для начала отслеживания доменов, "
+        "/audit_mobile для разового аудита или /stats для получения статистики."
+    )
 
 # Функция обработчик команды /audit_mobile
 async def audit_mobile(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -196,7 +192,13 @@ async def start_track(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             await update.message.reply_text(f"{url} уже отслеживается.")
             continue
 
-        tracking_tasks[url] = context.job_queue.run_repeating(track_metrics, interval=timedelta(minutes=30), first=0, name=url, data=url)
+        tracking_tasks[url] = context.job_queue.run_repeating(
+            track_metrics,
+            interval=timedelta(minutes=30),
+            first=0,
+            name=url,
+            data=url
+        )
         await update.message.reply_text(f"Запущено отслеживание для: {url}")
 
 # Функция для периодического сбора метрик
@@ -253,7 +255,7 @@ async def stop_track(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         else:
             await update.message.reply_text(f"{url} не отслеживается.")
 
-# Функция обработчик команды /stats
+# Обновлённая функция обработчик команды /stats
 async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     domains = load_domains()
     if not domains:
@@ -262,19 +264,34 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     for url in domains:
         history_filename = f"history_{url.replace('http://', '').replace('https://', '').replace('/', '_')}.json"
+        domain_stats = {
+            'url': url,
+            'stats': {},
+            'history': []
+        }
+
         if os.path.exists(history_filename):
             try:
                 with open(history_filename, 'r', encoding='utf-8') as file:
                     history_data = json.load(file)
+
                 if history_data:
                     # Получение значений метрик для анализа
                     fcp_values = []
                     lcp_values = []
                     ttfb_values = []
                     tbt_values = []
+                    measurements_list = []
 
                     for entry in history_data:
                         metrics = entry['metrics']
+                        timestamp = entry['timestamp']
+                        # Форматируем строку для записи в файл
+                        metrics_str = ', '.join(f"{k}: {v}" for k, v in metrics.items())
+                        measurement_str = f"Timestamp: {timestamp}, Metrics: {metrics_str}\n"
+
+                        # Сохраняем измерения для файла
+                        measurements_list.append(measurement_str)
 
                         fcp = parse_metric(metrics.get('FCP'))
                         if fcp is not None:
@@ -293,22 +310,60 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                             tbt_values.append(tbt / 1000)  # Преобразуем в секунды
 
                     # Вычисление минимального, среднего и максимального значений
+                    domain_stats['stats'] = {
+                        'FCP': {
+                            'min': min(fcp_values) if fcp_values else None,
+                            'avg': sum(fcp_values) / len(fcp_values) if fcp_values else None,
+                            'max': max(fcp_values) if fcp_values else None
+                        },
+                        'LCP': {
+                            'min': min(lcp_values) if lcp_values else None,
+                            'avg': sum(lcp_values) / len(lcp_values) if lcp_values else None,
+                            'max': max(lcp_values) if lcp_values else None
+                        },
+                        'TTFB': {
+                            'min': min(ttfb_values) if ttfb_values else None,
+                            'avg': sum(ttfb_values) / len(ttfb_values) if ttfb_values else None,
+                            'max': max(ttfb_values) if ttfb_values else None
+                        },
+                        'TBT': {
+                            'min': min(tbt_values) if tbt_values else None,
+                            'avg': sum(tbt_values) / len(tbt_values) if tbt_values else None,
+                            'max': max(tbt_values) if tbt_values else None
+                        }
+                    }
+
+                    # Формирование сообщения с метриками
                     stats_message = f"Статистика для {url}:\n"
-                    if fcp_values:
-                        stats_message += f"FCP: min={min(fcp_values):.2f}s, avg={sum(fcp_values) / len(fcp_values):.2f}s, max={max(fcp_values):.2f}s\n"
-                    if lcp_values:
-                        stats_message += f"LCP: min={min(lcp_values):.2f}s, avg={sum(lcp_values) / len(lcp_values):.2f}s, max={max(lcp_values):.2f}s\n"
-                    if ttfb_values:
-                        stats_message += f"TTFB: min={min(ttfb_values):.2f}s, avg={sum(ttfb_values) / len(ttfb_values):.2f}s, max={max(ttfb_values):.2f}s\n"
-                    if tbt_values:
-                        stats_message += f"TBT: min={min(tbt_values):.2f}s, avg={sum(tbt_values) / len(tbt_values):.2f}s, max={max(tbt_values):.2f}s\n"
+                    for metric_name in ['FCP', 'LCP', 'TTFB', 'TBT']:
+                        metric_values = domain_stats['stats'][metric_name]
+                        if metric_values['min'] is not None:
+                            stats_message += (
+                                f"{metric_name}: "
+                                f"min={metric_values['min']:.2f}s, "
+                                f"avg={metric_values['avg']:.2f}s, "
+                                f"max={metric_values['max']:.2f}s\n"
+                            )
+                        else:
+                            stats_message += f"{metric_name}: нет данных\n"
 
                     await update.message.reply_text(stats_message)
 
-                # Отправка полного файла с историей замеров
-                await update.message.reply_document(InputFile(history_filename))
+                    # Сохраняем измерения в отдельный .txt файл для домена
+                    measurements_filename = f"measurements_{url.replace('http://', '').replace('https://', '').replace('/', '_')}.txt"
+                    with open(measurements_filename, 'w', encoding='utf-8') as file:
+                        for measurement in measurements_list:
+                            file.write(measurement)
+
+                    # Отправляем файл с измерениями
+                    await update.message.reply_document(InputFile(measurements_filename))
+                    os.remove(measurements_filename)  # Удаляем файл после отправки
+
+                else:
+                    await update.message.reply_text(f"История для {url} пуста.")
             except json.JSONDecodeError:
                 logger.error(f"Ошибка чтения JSON из файла {history_filename}. Пропуск файла.")
+                continue
         else:
             await update.message.reply_text(f"История для {url} не найдена.")
 
