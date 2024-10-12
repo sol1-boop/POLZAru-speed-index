@@ -111,5 +111,95 @@
       "TTFB": "Root document took 430 ms",
       "TBT": "1,610 ms"
     }
+  },
+  {
+    "url": "https://polza.ru",
+    "timestamp": "2024-10-12T05:02:46.388365",
+    "metrics": {
+      "FCP": "2.3 s",
+      "LCP": "23.1 s",
+      "TTFB": "Root document took 460 ms",
+      "TBT": "2,370 ms"
+    }
+  },
+  {
+    "url": "https://polza.ru",
+    "timestamp": "2024-10-12T05:04:59.158440",
+    "metrics": {
+      "FCP": "2.3 s",
+      "LCP": "23.9 s",
+      "TTFB": "Root document took 470 ms",
+      "TBT": "1,250 ms"
+    }
+  },
+  {
+    "url": "https://polza.ru",
+    "timestamp": "2024-10-12T05:06:18.955322",
+    "metrics": {
+      "FCP": "2.3 s",
+      "LCP": "23.2 s",
+      "TTFB": "Root document took 480 ms",
+      "TBT": "2,360 ms"
+    }
+  },
+  {
+    "url": "https://polza.ru",
+    "timestamp": "2024-10-12T05:08:20.814041",
+    "metrics": {
+      "FCP": "8.1 s",
+      "LCP": "23.9 s",
+      "TTFB": "Root document took 1,410 ms",
+      "TBT": "1,810 ms"
+    }
+  },
+  {
+    "url": "https://polza.ru",
+    "timestamp": "2024-10-12T05:10:32.310772",
+    "metrics": {
+      "FCP": "2.3 s",
+      "LCP": "22.7 s",
+      "TTFB": "Root document took 1,450 ms",
+      "TBT": "1,710 ms"
+    }
+  },
+  {
+    "url": "https://polza.ru",
+    "timestamp": "2024-10-12T05:25:10.176834",
+    "metrics": {
+      "FCP": "2.3 s",
+      "LCP": "22.8 s",
+      "TTFB": "Root document took 3,320 ms",
+      "TBT": "980 ms"
+    }
+  },
+  {
+    "url": "https://polza.ru",
+    "timestamp": "2024-10-12T05:33:02.939068",
+    "metrics": {
+      "FCP": "2.3 s",
+      "LCP": "24.1 s",
+      "TTFB": "Root document took 2,040 ms",
+      "TBT": "1,640 ms"
+    }
+  },
+  {
+    "url": "https://polza.ru",
+    "timestamp": "2024-10-12T05:37:02.524639",
+    "metrics": {
+      "FCP": "2.3 s",
+      "LCP": "22.8 s",
+      "TTFB": "Root document took 750 ms",
+      "TBT": "1,000 ms"
+    }
+  },
+  {
+    "url": "https://polza.ru",
+    "timestamp": "2024-10-12T05:52:57.000641",
+    "metrics": {
+      "FCP": "2.3 s",
+      "LCP": "22.5 s",
+      "TTFB": "Root document took 2,600 ms",
+      "TBT": "980 ms"
+    }
   }
 ]

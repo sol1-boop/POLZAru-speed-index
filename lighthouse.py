@@ -9,6 +9,7 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 from config import TELEGRAM_TOKEN, CHANNEL_ID  # Импортируем CHANNEL_ID
 import os
+import signal  # Добавлен импорт signal
 import shutil
 
 logging.basicConfig(level=logging.INFO)
@@ -37,6 +38,8 @@ async def get_lighthouse_metrics(url: str, mobile: bool = False) -> dict:
 
 def sync_get_lighthouse_metrics(url: str, mobile: bool = False) -> dict:
     try:
+        import psutil  # Импортируем psutil внутри функции
+
         if os.name == 'nt':
             default_lighthouse_path = 'lighthouse.cmd'
         else:
@@ -73,18 +76,50 @@ def sync_get_lighthouse_metrics(url: str, mobile: bool = False) -> dict:
                 max_wait_for_load
             ]
 
-        result = subprocess.run(lighthouse_flags, capture_output=True, text=True, encoding='utf-8')
-        if result.returncode != 0:
-            logger.error(f"Lighthouse вернул код ошибки {result.returncode} для {url}")
-            logger.error(f"Сообщение об ошибке: {result.stderr}")
+        # Запускаем Lighthouse в новой группе процессов
+        if os.name != 'nt':
+            process = subprocess.Popen(
+                lighthouse_flags,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                encoding='utf-8',
+                preexec_fn=os.setsid
+            )
+        else:
+            process = subprocess.Popen(
+                lighthouse_flags,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                encoding='utf-8',
+                creationflags=subprocess.CREATE_NEW_PROCESS_GROUP
+            )
+
+        try:
+            stdout, stderr = process.communicate(timeout=300)  # Таймаут в секундах
+        except subprocess.TimeoutExpired:
+            logger.error(f"Превышено время ожидания (5 минут) при аудите {url}. Прерывание процесса.")
+            # Завершаем процесс и его дочерние процессы
+            if os.name != 'nt':
+                os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+            else:
+                process.send_signal(signal.CTRL_BREAK_EVENT)
+            stdout, stderr = process.communicate()
             return {}
 
-        if result.stdout:
-            result_json = json.loads(result.stdout)
+        if process.returncode != 0:
+            logger.error(f"Lighthouse вернул код ошибки {process.returncode} для {url}")
+            logger.error(f"Сообщение об ошибке: {stderr}")
+            return {}
+
+        if stdout:
+            result_json = json.loads(stdout)
             return result_json
         else:
             logger.error(f"Нет вывода от Lighthouse для {url}")
             return {}
+
     except json.JSONDecodeError as json_err:
         logger.error(f"Ошибка декодирования JSON для {url}: {json_err}")
         return {}
@@ -203,6 +238,7 @@ async def track_metrics(context: ContextTypes.DEFAULT_TYPE) -> None:
 
     metrics = await get_lighthouse_metrics(url, mobile=True)
     if not metrics:
+        await context.bot.send_message(chat_id=CHANNEL_ID, text=f"Не удалось получить результаты аудита для {url}.")
         logger.error(f"Не удалось получить метрики для {url}")
         return
 
