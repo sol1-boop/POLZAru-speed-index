@@ -48,5 +48,108 @@
       "TTFB": "Root document took 250 ms",
       "TBT": "600 ms"
     }
+  },
+  {
+    "url": "https://apteka.ru",
+    "timestamp": "2024-10-12T04:28:20.595641",
+    "metrics": {
+      "FCP": "2.9 s",
+      "LCP": "7.4 s",
+      "TTFB": "Root document took 360 ms",
+      "TBT": "680 ms"
+    }
+  },
+  {
+    "url": "https://apteka.ru",
+    "timestamp": "2024-10-12T04:29:42.816341",
+    "metrics": {
+      "FCP": "2.9 s",
+      "LCP": "7.2 s",
+      "TTFB": "Root document took 290 ms",
+      "TBT": "660 ms"
+    }
+  },
+  {
+    "url": "https://apteka.ru",
+    "timestamp": "2024-10-12T04:36:42.150218",
+    "metrics": {
+      "FCP": "2.9 s",
+      "LCP": "7.2 s",
+      "TTFB": "Root document took 310 ms",
+      "WaitingForServerResponse": "N/A",
+      "TBT": "640 ms"
+    }
+  },
+  {
+    "url": "https://apteka.ru",
+    "timestamp": "2024-10-12T04:38:09.312285",
+    "metrics": {
+      "FCP": "2.9 s",
+      "LCP": "7.1 s",
+      "TTFB": "Root document took 280 ms",
+      "WaitingForServerResponse": "N/A",
+      "TBT": "470 ms"
+    }
+  },
+  {
+    "url": "https://apteka.ru",
+    "timestamp": "2024-10-12T04:41:25.173018",
+    "metrics": {
+      "FCP": "2.9 s",
+      "LCP": "7.4 s",
+      "TTFB": "Root document took 280 ms",
+      "WaitingForServerResponse": "N/A",
+      "TBT": "890 ms"
+    }
+  },
+  {
+    "url": "https://apteka.ru",
+    "timestamp": "2024-10-12T04:46:02.647272",
+    "metrics": {
+      "FCP": "2.9 s",
+      "LCP": "6.9 s",
+      "TTFB": "Root document took 260 ms",
+      "TBT": "860 ms"
+    }
+  },
+  {
+    "url": "https://apteka.ru",
+    "timestamp": "2024-10-12T04:50:39.170748",
+    "metrics": {
+      "FCP": "3.0 s",
+      "LCP": "7.3 s",
+      "TTFB": "Root document took 350 ms",
+      "TBT": "2,740 ms"
+    }
+  },
+  {
+    "url": "https://apteka.ru",
+    "timestamp": "2024-10-12T04:51:40.196620",
+    "metrics": {
+      "FCP": "2.9 s",
+      "LCP": "7.5 s",
+      "TTFB": "Root document took 280 ms",
+      "TBT": "1,010 ms"
+    }
+  },
+  {
+    "url": "https://apteka.ru",
+    "timestamp": "2024-10-12T04:53:50.456419",
+    "metrics": {
+      "FCP": "2.9 s",
+      "LCP": "6.0 s",
+      "TTFB": "Root document took 300 ms",
+      "TBT": "850 ms"
+    }
+  },
+  {
+    "url": "https://apteka.ru",
+    "timestamp": "2024-10-12T04:57:02.453594",
+    "metrics": {
+      "FCP": "2.9 s",
+      "LCP": "7.0 s",
+      "TTFB": "Root document took 330 ms",
+      "TBT": "780 ms"
+    }
   }
 ]

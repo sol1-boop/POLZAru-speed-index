@@ -5,12 +5,11 @@ import json
 import requests
 import time
 from datetime import datetime, timedelta
-from telegram import Update, InputFile
+from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
-from config import TELEGRAM_TOKEN
+from config import TELEGRAM_TOKEN, CHANNEL_ID  # Импортируем CHANNEL_ID
 import os
 import shutil
-import re
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -58,6 +57,7 @@ def sync_get_lighthouse_metrics(url: str, mobile: bool = False) -> dict:
                 url,
                 '--output=json',
                 '--quiet',
+                '--only-audits=first-contentful-paint,largest-contentful-paint,server-response-time,total-blocking-time',
                 '--emulated-form-factor=mobile',
                 f'--chrome-flags={chrome_flags}',
                 max_wait_for_load
@@ -68,6 +68,7 @@ def sync_get_lighthouse_metrics(url: str, mobile: bool = False) -> dict:
                 url,
                 '--output=json',
                 '--quiet',
+                '--only-audits=first-contentful-paint,largest-contentful-paint,server-response-time,total-blocking-time',
                 f'--chrome-flags={chrome_flags}',
                 max_wait_for_load
             ]
@@ -128,14 +129,14 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def audit_mobile(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     domains = load_domains()
     if not domains:
-        await update.message.reply_text("Список доменов пуст или файл не найден.")
+        await context.bot.send_message(chat_id=CHANNEL_ID, text="Список доменов пуст или файл не найден.")
         return
 
     for url in domains:
-        await update.message.reply_text(f"Начинаем аудит для: {url}")
+        await context.bot.send_message(chat_id=CHANNEL_ID, text=f"Начинаем аудит для: {url}")
         metrics = await get_lighthouse_metrics(url, mobile=True)
         if not metrics:
-            await update.message.reply_text(f"Не удалось получить результаты аудита для {url}.")
+            await context.bot.send_message(chat_id=CHANNEL_ID, text=f"Не удалось получить результаты аудита для {url}.")
             continue
 
         summary = {
@@ -148,7 +149,7 @@ async def audit_mobile(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         for key, value in summary.items():
             summary_text += f"{key}: {value if value is not None else 'N/A'}\n"
 
-        await update.message.reply_text(summary_text)
+        await context.bot.send_message(chat_id=CHANNEL_ID, text=summary_text)
 
         # Сохранение результатов в файл истории
         history_filename = f"history_{url.replace('http://', '').replace('https://', '').replace('/', '_')}.json"
@@ -177,30 +178,48 @@ async def audit_mobile(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 async def start_track(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     domains = load_domains()
     if not domains:
-        await update.message.reply_text("Список доменов пуст или файл не найден.")
+        await context.bot.send_message(chat_id=CHANNEL_ID, text="Список доменов пуст или файл не найден.")
         return
 
     for url in domains:
         if url in tracking_tasks:
-            await update.message.reply_text(f"{url} уже отслеживается.")
+            await context.bot.send_message(chat_id=CHANNEL_ID, text=f"{url} уже отслеживается.")
             continue
 
+        # Передаем url в data
         tracking_tasks[url] = context.job_queue.run_repeating(
             track_metrics,
             interval=timedelta(minutes=30),
             first=0,
             name=url,
-            data=url
+            data={'url': url}
         )
-        await update.message.reply_text(f"Запущено отслеживание для: {url}")
+        await context.bot.send_message(chat_id=CHANNEL_ID, text=f"Запущено отслеживание для: {url}")
 
 # Функция для периодического сбора метрик
 async def track_metrics(context: ContextTypes.DEFAULT_TYPE) -> None:
-    url = context.job.data
+    job_data = context.job.data
+    url = job_data['url']
+
     metrics = await get_lighthouse_metrics(url, mobile=True)
     if not metrics:
         logger.error(f"Не удалось получить метрики для {url}")
         return
+
+    metrics_to_save = {
+        'FCP': metrics.get("audits", {}).get("first-contentful-paint", {}).get("displayValue"),
+        'LCP': metrics.get("audits", {}).get("largest-contentful-paint", {}).get("displayValue"),
+        'TTFB': metrics.get("audits", {}).get("server-response-time", {}).get("displayValue"),
+        'TBT': metrics.get("audits", {}).get("total-blocking-time", {}).get("displayValue"),
+    }
+
+    # Формируем сообщение для отправки в канал
+    summary_text = f"Результаты аудита для {url}:\n"
+    for key, value in metrics_to_save.items():
+        summary_text += f"{key}: {value if value is not None else 'N/A'}\n"
+
+    # Отправляем сообщение в канал
+    await context.bot.send_message(chat_id=CHANNEL_ID, text=summary_text)
 
     history_filename = f"history_{url.replace('http://', '').replace('https://', '').replace('/', '_')}.json"
     history_data = []
@@ -215,13 +234,6 @@ async def track_metrics(context: ContextTypes.DEFAULT_TYPE) -> None:
     else:
         history_data = []
 
-    metrics_to_save = {
-        'FCP': metrics.get("audits", {}).get("first-contentful-paint", {}).get("displayValue"),
-        'LCP': metrics.get("audits", {}).get("largest-contentful-paint", {}).get("displayValue"),
-        'TTFB': metrics.get("audits", {}).get("server-response-time", {}).get("displayValue"),
-        'TBT': metrics.get("audits", {}).get("total-blocking-time", {}).get("displayValue"),
-    }
-
     history_data.append({
         'url': url,
         'timestamp': datetime.now().isoformat(),
@@ -235,22 +247,22 @@ async def track_metrics(context: ContextTypes.DEFAULT_TYPE) -> None:
 async def stop_track(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     domains = load_domains()
     if not domains:
-        await update.message.reply_text("Список доменов пуст или файл не найден.")
+        await context.bot.send_message(chat_id=CHANNEL_ID, text="Список доменов пуст или файл не найден.")
         return
 
     for url in domains:
         if url in tracking_tasks:
             tracking_tasks[url].schedule_removal()
             del tracking_tasks[url]
-            await update.message.reply_text(f"Отслеживание для {url} остановлено.")
+            await context.bot.send_message(chat_id=CHANNEL_ID, text=f"Отслеживание для {url} остановлено.")
         else:
-            await update.message.reply_text(f"{url} не отслеживается.")
+            await context.bot.send_message(chat_id=CHANNEL_ID, text=f"{url} не отслеживается.")
 
-# Обновлённая функция обработчик команды /stats
+# Функция обработчик команды /stats
 async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     domains = load_domains()
     if not domains:
-        await update.message.reply_text("Список доменов пуст или файл не найден.")
+        await context.bot.send_message(chat_id=CHANNEL_ID, text="Список доменов пуст или файл не найден.")
         return
 
     for url in domains:
@@ -269,7 +281,6 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                     tbt_values = []
 
                     for entry in history_data:
-                        # Проверяем наличие необходимых ключей
                         if 'metrics' not in entry or 'timestamp' not in entry:
                             logger.error(f"Запись не содержит 'metrics' или 'timestamp': {entry}")
                             continue
@@ -316,14 +327,14 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                     else:
                         stats_message += "TBT: нет данных\n"
 
-                    await update.message.reply_text(stats_message)
+                    await context.bot.send_message(chat_id=CHANNEL_ID, text=stats_message)
                 else:
-                    await update.message.reply_text(f"История для {url} пуста.")
+                    await context.bot.send_message(chat_id=CHANNEL_ID, text=f"История для {url} пуста.")
             except json.JSONDecodeError:
                 logger.error(f"Ошибка чтения JSON из файла {history_filename}. Пропуск файла.")
                 continue
         else:
-            await update.message.reply_text(f"История для {url} не найдена.")
+            await context.bot.send_message(chat_id=CHANNEL_ID, text=f"История для {url} не найдена.")
 
 def main() -> None:
     application = Application.builder().token(TELEGRAM_TOKEN).read_timeout(60).connect_timeout(60).build()

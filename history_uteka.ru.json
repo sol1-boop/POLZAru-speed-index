@@ -48,5 +48,108 @@
       "TTFB": "Root document took 380 ms",
       "TBT": "330 ms"
     }
+  },
+  {
+    "url": "https://uteka.ru",
+    "timestamp": "2024-10-12T04:28:36.296707",
+    "metrics": {
+      "FCP": "5.2 s",
+      "LCP": "7.1 s",
+      "TTFB": "Root document took 750 ms",
+      "TBT": "410 ms"
+    }
+  },
+  {
+    "url": "https://uteka.ru",
+    "timestamp": "2024-10-12T04:29:58.725442",
+    "metrics": {
+      "FCP": "4.7 s",
+      "LCP": "7.0 s",
+      "TTFB": "Root document took 640 ms",
+      "TBT": "320 ms"
+    }
+  },
+  {
+    "url": "https://uteka.ru",
+    "timestamp": "2024-10-12T04:36:57.993519",
+    "metrics": {
+      "FCP": "5.2 s",
+      "LCP": "7.5 s",
+      "TTFB": "Root document took 620 ms",
+      "WaitingForServerResponse": "N/A",
+      "TBT": "370 ms"
+    }
+  },
+  {
+    "url": "https://uteka.ru",
+    "timestamp": "2024-10-12T04:38:25.418142",
+    "metrics": {
+      "FCP": "5.1 s",
+      "LCP": "7.3 s",
+      "TTFB": "Root document took 570 ms",
+      "WaitingForServerResponse": "N/A",
+      "TBT": "350 ms"
+    }
+  },
+  {
+    "url": "https://uteka.ru",
+    "timestamp": "2024-10-12T04:41:37.347398",
+    "metrics": {
+      "FCP": "4.9 s",
+      "LCP": "7.1 s",
+      "TTFB": "Root document took 640 ms",
+      "WaitingForServerResponse": "N/A",
+      "TBT": "230 ms"
+    }
+  },
+  {
+    "url": "https://uteka.ru",
+    "timestamp": "2024-10-12T04:46:14.758186",
+    "metrics": {
+      "FCP": "5.1 s",
+      "LCP": "7.3 s",
+      "TTFB": "Root document took 420 ms",
+      "TBT": "350 ms"
+    }
+  },
+  {
+    "url": "https://uteka.ru",
+    "timestamp": "2024-10-12T04:50:38.136770",
+    "metrics": {
+      "FCP": "5.0 s",
+      "LCP": "7.3 s",
+      "TTFB": "Root document took 470 ms",
+      "TBT": "380 ms"
+    }
+  },
+  {
+    "url": "https://uteka.ru",
+    "timestamp": "2024-10-12T04:51:38.996489",
+    "metrics": {
+      "FCP": "4.9 s",
+      "LCP": "7.1 s",
+      "TTFB": "Root document took 590 ms",
+      "TBT": "650 ms"
+    }
+  },
+  {
+    "url": "https://uteka.ru",
+    "timestamp": "2024-10-12T04:53:49.406794",
+    "metrics": {
+      "FCP": "5.2 s",
+      "LCP": "7.1 s",
+      "TTFB": "Root document took 590 ms",
+      "TBT": "760 ms"
+    }
+  },
+  {
+    "url": "https://uteka.ru",
+    "timestamp": "2024-10-12T04:57:01.150511",
+    "metrics": {
+      "FCP": "5.0 s",
+      "LCP": "7.2 s",
+      "TTFB": "Root document took 640 ms",
+      "TBT": "440 ms"
+    }
   }
 ]

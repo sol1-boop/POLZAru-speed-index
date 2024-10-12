@@ -18,5 +18,98 @@
       "TTFB": "Root document took 430 ms",
       "TBT": "1,110 ms"
     }
+  },
+  {
+    "url": "https://polza.ru",
+    "timestamp": "2024-10-12T04:28:03.959515",
+    "metrics": {
+      "FCP": "8.2 s",
+      "LCP": "24.3 s",
+      "TTFB": "Root document took 280 ms",
+      "TBT": "550 ms"
+    }
+  },
+  {
+    "url": "https://polza.ru",
+    "timestamp": "2024-10-12T04:29:26.590912",
+    "metrics": {
+      "FCP": "7.0 s",
+      "LCP": "23.3 s",
+      "TTFB": "Root document took 290 ms",
+      "TBT": "1,850 ms"
+    }
+  },
+  {
+    "url": "https://polza.ru",
+    "timestamp": "2024-10-12T04:36:25.928205",
+    "metrics": {
+      "FCP": "2.3 s",
+      "LCP": "22.8 s",
+      "TTFB": "Root document took 870 ms",
+      "WaitingForServerResponse": "N/A",
+      "TBT": "1,090 ms"
+    }
+  },
+  {
+    "url": "https://polza.ru",
+    "timestamp": "2024-10-12T04:37:53.040268",
+    "metrics": {
+      "FCP": "6.1 s",
+      "LCP": "23.3 s",
+      "TTFB": "Root document took 430 ms",
+      "WaitingForServerResponse": "N/A",
+      "TBT": "700 ms"
+    }
+  },
+  {
+    "url": "https://polza.ru",
+    "timestamp": "2024-10-12T04:41:11.631826",
+    "metrics": {
+      "FCP": "8.2 s",
+      "LCP": "23.8 s",
+      "TTFB": "Root document took 350 ms",
+      "WaitingForServerResponse": "N/A",
+      "TBT": "570 ms"
+    }
+  },
+  {
+    "url": "https://polza.ru",
+    "timestamp": "2024-10-12T04:45:49.174223",
+    "metrics": {
+      "FCP": "8.2 s",
+      "LCP": "24.0 s",
+      "TTFB": "Root document took 290 ms",
+      "TBT": "1,740 ms"
+    }
+  },
+  {
+    "url": "https://polza.ru",
+    "timestamp": "2024-10-12T04:51:40.230628",
+    "metrics": {
+      "FCP": "2.3 s",
+      "LCP": "24.3 s",
+      "TTFB": "Root document took 300 ms",
+      "TBT": "1,540 ms"
+    }
+  },
+  {
+    "url": "https://polza.ru",
+    "timestamp": "2024-10-12T04:53:51.235023",
+    "metrics": {
+      "FCP": "2.3 s",
+      "LCP": "23.9 s",
+      "TTFB": "Root document took 520 ms",
+      "TBT": "1,740 ms"
+    }
+  },
+  {
+    "url": "https://polza.ru",
+    "timestamp": "2024-10-12T04:57:02.644876",
+    "metrics": {
+      "FCP": "2.3 s",
+      "LCP": "23.4 s",
+      "TTFB": "Root document took 430 ms",
+      "TBT": "1,610 ms"
+    }
   }
 ]
