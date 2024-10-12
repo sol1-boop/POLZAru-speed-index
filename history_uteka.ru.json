@@ -28,5 +28,15 @@
       "TTFB": "Root document took 670 ms",
       "TBT": "340 ms"
     }
+  },
+  {
+    "url": "https://uteka.ru",
+    "timestamp": "2024-10-12T04:21:53.764838",
+    "metrics": {
+      "FCP": "5.2 s",
+      "LCP": "7.4 s",
+      "TTFB": "Root document took 1,030 ms",
+      "TBT": "360 ms"
+    }
   }
 ]
