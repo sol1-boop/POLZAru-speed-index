@@ -1,0 +1,12 @@
+[
+  {
+    "url": "https://uteka.ru",
+    "timestamp": "2024-10-12T03:23:02.439928",
+    "metrics": {
+      "FCP": "5.1 s",
+      "LCP": "7.4 s",
+      "TTFB": "Root document took 830 ms",
+      "TBT": "360 ms"
+    }
+  }
+]

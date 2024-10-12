@@ -1,0 +1,12 @@
+[
+  {
+    "url": "https://apteka.ru",
+    "timestamp": "2024-10-12T03:22:45.968854",
+    "metrics": {
+      "FCP": "2.9 s",
+      "LCP": "6.3 s",
+      "TTFB": "Root document took 370 ms",
+      "TBT": "1,880 ms"
+    }
+  }
+]

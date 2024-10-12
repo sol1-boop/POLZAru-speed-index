@@ -8,7 +8,6 @@ from datetime import datetime, timedelta
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 from config import TELEGRAM_TOKEN, CHANNEL_ID  # Импортируем CHANNEL_ID из config.py
-from collections import deque
 import os
 import matplotlib.pyplot as plt
 import tempfile  # Новый импорт
@@ -17,22 +16,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 tracking_tasks = {}
-measurement_history_file = 'measurement_history.json'
 domain_file = 'domain.json'
-measurement_history = deque(maxlen=1000)  # Увеличиваем размер deque для хранения большего количества замеров
-
-# Загрузка истории замеров из файла
-def load_measurement_history():
-    if os.path.exists(measurement_history_file):
-        with open(measurement_history_file, 'r') as file:
-            data = json.load(file)
-            for entry in data:
-                measurement_history.append(entry)
-
-# Сохранение истории замеров в файл
-def save_measurement_history():
-    with open(measurement_history_file, 'w', encoding='utf-8') as file:
-        json.dump(list(measurement_history), file, ensure_ascii=False)
 
 # Загрузка списка доменов из файла
 def load_domains():
@@ -107,13 +91,42 @@ async def audit_mobile(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             "LCP": metrics.get("audits", {}).get("largest-contentful-paint", {}).get("displayValue"),
             "TTFB": metrics.get("audits", {}).get("server-response-time", {}).get("displayValue"),
             "TBT": metrics.get("audits", {}).get("total-blocking-time", {}).get("displayValue"),
-            "Waiting for server response": metrics.get("audits", {}).get("server-response-time", {}).get("numericValue"),
         }
         summary_text = f"Результаты аудита для {url}:\n"
         for key, value in summary.items():
             summary_text += f"{key}: {value if value is not None else 'N/A'}\n"
 
         await update.message.reply_text(summary_text)
+
+        # Сохранение результатов в файл истории
+        history_filename = f"history_{url.replace('http://', '').replace('https://', '').replace('/', '_')}.json"
+        history_data = []
+
+        if os.path.exists(history_filename):
+            with open(history_filename, 'r', encoding='utf-8') as file:
+                try:
+                    history_data = json.load(file)
+                except json.JSONDecodeError:
+                    logger.error(f"Ошибка чтения JSON из файла {history_filename}. Создание нового файла.")
+                    history_data = []
+        else:
+            # Создаем файл, если он не существует
+            with open(history_filename, 'w', encoding='utf-8') as file:
+                json.dump([], file, ensure_ascii=False, indent=2)
+
+        history_data.append({
+            'url': url,
+            'timestamp': datetime.now().isoformat(),
+            'metrics': {
+                'FCP': summary['FCP'],
+                'LCP': summary['LCP'],
+                'TTFB': summary['TTFB'],
+                'TBT': summary['TBT'],
+            }
+        })
+
+        with open(history_filename, 'w', encoding='utf-8') as file:
+            json.dump(history_data, file, ensure_ascii=False, indent=2)
 
 async def start_track(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     domains = load_domains()
@@ -132,12 +145,36 @@ async def start_track(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 async def track_metrics(context: ContextTypes.DEFAULT_TYPE) -> None:
     url = context.job.context
     metrics = await get_lighthouse_metrics(url, mobile=True)
-    measurement_history.append({
+    history_filename = f"history_{url.replace('http://', '').replace('https://', '').replace('/', '_')}.json"
+    history_data = []
+
+    if os.path.exists(history_filename):
+        with open(history_filename, 'r', encoding='utf-8') as file:
+            try:
+                history_data = json.load(file)
+            except json.JSONDecodeError:
+                logger.error(f"Ошибка чтения JSON из файла {history_filename}. Создание нового файла.")
+                history_data = []
+    else:
+        # Создаем файл, если он не существует
+        with open(history_filename, 'w', encoding='utf-8') as file:
+            json.dump([], file, ensure_ascii=False, indent=2)
+
+    metrics_to_save = {
+        'FCP': metrics.get("audits", {}).get("first-contentful-paint", {}).get("displayValue"),
+        'LCP': metrics.get("audits", {}).get("largest-contentful-paint", {}).get("displayValue"),
+        'TTFB': metrics.get("audits", {}).get("server-response-time", {}).get("displayValue"),
+        'TBT': metrics.get("audits", {}).get("total-blocking-time", {}).get("displayValue"),
+    }
+
+    history_data.append({
         'url': url,
         'timestamp': datetime.now().isoformat(),
-        'metrics': metrics
+        'metrics': metrics_to_save
     })
-    save_measurement_history()
+
+    with open(history_filename, 'w', encoding='utf-8') as file:
+        json.dump(history_data, file, ensure_ascii=False, indent=2)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text("Добро пожаловать! Используйте команду /start_track для начала отслеживания доменов или /audit_mobile для разового аудита.")
@@ -157,19 +194,26 @@ async def stop_track(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
             await update.message.reply_text(f"{url} не отслеживается.")
 
 async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if not measurement_history:
-        await update.message.reply_text("История замеров пуста.")
+    domains = load_domains()
+    if not domains:
+        await update.message.reply_text("Список доменов пуст или файл не найден.")
         return
 
     stats_message = "История замеров (последние 5 записей):\n"
-    for entry in list(measurement_history)[-5:]:
-        stats_message += f"{entry['timestamp']} - {entry['url']}: {json.dumps(entry['metrics'], indent=2, ensure_ascii=False)}\n\n"
+    for url in domains:
+        history_filename = f"history_{url.replace('http://', '').replace('https://', '').replace('/', '_')}.json"
+        if os.path.exists(history_filename):
+            with open(history_filename, 'r', encoding='utf-8') as file:
+                try:
+                    history_data = json.load(file)
+                    for entry in history_data[-5:]:
+                        stats_message += f"{entry['timestamp']} - {entry['url']}: {json.dumps(entry['metrics'], indent=2, ensure_ascii=False)}\n\n"
+                except json.JSONDecodeError:
+                    logger.error(f"Ошибка чтения JSON из файла {history_filename}. Пропуск файла.")
 
     await update.message.reply_text(stats_message)
 
 def main() -> None:
-    load_measurement_history()
-
     application = Application.builder().token(TELEGRAM_TOKEN).read_timeout(60).connect_timeout(60).build()
 
     job_queue = application.job_queue
