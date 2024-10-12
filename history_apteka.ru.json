@@ -38,5 +38,15 @@
       "TTFB": "Root document took 240 ms",
       "TBT": "650 ms"
     }
+  },
+  {
+    "url": "https://apteka.ru",
+    "timestamp": "2024-10-12T04:27:06.557479",
+    "metrics": {
+      "FCP": "2.9 s",
+      "LCP": "7.1 s",
+      "TTFB": "Root document took 250 ms",
+      "TBT": "600 ms"
+    }
   }
 ]

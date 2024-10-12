@@ -162,19 +162,12 @@ async def audit_mobile(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                 logger.error(f"Ошибка чтения JSON из файла {history_filename}. Создание нового файла.")
                 history_data = []
         else:
-            # Создаем файл, если он не существует
-            with open(history_filename, 'w', encoding='utf-8') as file:
-                json.dump([], file, ensure_ascii=False, indent=2)
+            history_data = []
 
         history_data.append({
             'url': url,
             'timestamp': datetime.now().isoformat(),
-            'metrics': {
-                'FCP': summary['FCP'],
-                'LCP': summary['LCP'],
-                'TTFB': summary['TTFB'],
-                'TBT': summary['TBT'],
-            }
+            'metrics': summary
         })
 
         with open(history_filename, 'w', encoding='utf-8') as file:
@@ -220,9 +213,7 @@ async def track_metrics(context: ContextTypes.DEFAULT_TYPE) -> None:
             logger.error(f"Ошибка чтения JSON из файла {history_filename}. Создание нового файла.")
             history_data = []
     else:
-        # Создаем файл, если он не существует
-        with open(history_filename, 'w', encoding='utf-8') as file:
-            json.dump([], file, ensure_ascii=False, indent=2)
+        history_data = []
 
     metrics_to_save = {
         'FCP': metrics.get("audits", {}).get("first-contentful-paint", {}).get("displayValue"),
@@ -264,11 +255,6 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     for url in domains:
         history_filename = f"history_{url.replace('http://', '').replace('https://', '').replace('/', '_')}.json"
-        domain_stats = {
-            'url': url,
-            'stats': {},
-            'history': []
-        }
 
         if os.path.exists(history_filename):
             try:
@@ -276,23 +262,21 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                     history_data = json.load(file)
 
                 if history_data:
-                    # Получение значений метрик для анализа
+                    # Инициализируем списки для метрик
                     fcp_values = []
                     lcp_values = []
                     ttfb_values = []
                     tbt_values = []
-                    measurements_list = []
 
                     for entry in history_data:
+                        # Проверяем наличие необходимых ключей
+                        if 'metrics' not in entry or 'timestamp' not in entry:
+                            logger.error(f"Запись не содержит 'metrics' или 'timestamp': {entry}")
+                            continue
+
                         metrics = entry['metrics']
-                        timestamp = entry['timestamp']
-                        # Форматируем строку для записи в файл
-                        metrics_str = ', '.join(f"{k}: {v}" for k, v in metrics.items())
-                        measurement_str = f"Timestamp: {timestamp}, Metrics: {metrics_str}\n"
 
-                        # Сохраняем измерения для файла
-                        measurements_list.append(measurement_str)
-
+                        # Парсим и собираем метрики для статистики
                         fcp = parse_metric(metrics.get('FCP'))
                         if fcp is not None:
                             fcp_values.append(fcp)
@@ -309,56 +293,30 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                         if tbt is not None:
                             tbt_values.append(tbt / 1000)  # Преобразуем в секунды
 
-                    # Вычисление минимального, среднего и максимального значений
-                    domain_stats['stats'] = {
-                        'FCP': {
-                            'min': min(fcp_values) if fcp_values else None,
-                            'avg': sum(fcp_values) / len(fcp_values) if fcp_values else None,
-                            'max': max(fcp_values) if fcp_values else None
-                        },
-                        'LCP': {
-                            'min': min(lcp_values) if lcp_values else None,
-                            'avg': sum(lcp_values) / len(lcp_values) if lcp_values else None,
-                            'max': max(lcp_values) if lcp_values else None
-                        },
-                        'TTFB': {
-                            'min': min(ttfb_values) if ttfb_values else None,
-                            'avg': sum(ttfb_values) / len(ttfb_values) if ttfb_values else None,
-                            'max': max(ttfb_values) if ttfb_values else None
-                        },
-                        'TBT': {
-                            'min': min(tbt_values) if tbt_values else None,
-                            'avg': sum(tbt_values) / len(tbt_values) if tbt_values else None,
-                            'max': max(tbt_values) if tbt_values else None
-                        }
-                    }
-
-                    # Формирование сообщения с метриками
+                    # Формируем сообщение с метриками
                     stats_message = f"Статистика для {url}:\n"
-                    for metric_name in ['FCP', 'LCP', 'TTFB', 'TBT']:
-                        metric_values = domain_stats['stats'][metric_name]
-                        if metric_values['min'] is not None:
-                            stats_message += (
-                                f"{metric_name}: "
-                                f"min={metric_values['min']:.2f}s, "
-                                f"avg={metric_values['avg']:.2f}s, "
-                                f"max={metric_values['max']:.2f}s\n"
-                            )
-                        else:
-                            stats_message += f"{metric_name}: нет данных\n"
+
+                    if fcp_values:
+                        stats_message += f"FCP: min={min(fcp_values):.2f}s, avg={sum(fcp_values) / len(fcp_values):.2f}s, max={max(fcp_values):.2f}s\n"
+                    else:
+                        stats_message += "FCP: нет данных\n"
+
+                    if lcp_values:
+                        stats_message += f"LCP: min={min(lcp_values):.2f}s, avg={sum(lcp_values) / len(lcp_values):.2f}s, max={max(lcp_values):.2f}s\n"
+                    else:
+                        stats_message += "LCP: нет данных\n"
+
+                    if ttfb_values:
+                        stats_message += f"TTFB: min={min(ttfb_values):.2f}s, avg={sum(ttfb_values) / len(ttfb_values):.2f}s, max={max(ttfb_values):.2f}s\n"
+                    else:
+                        stats_message += "TTFB: нет данных\n"
+
+                    if tbt_values:
+                        stats_message += f"TBT: min={min(tbt_values):.2f}s, avg={sum(tbt_values) / len(tbt_values):.2f}s, max={max(tbt_values):.2f}s\n"
+                    else:
+                        stats_message += "TBT: нет данных\n"
 
                     await update.message.reply_text(stats_message)
-
-                    # Сохраняем измерения в отдельный .txt файл для домена
-                    measurements_filename = f"measurements_{url.replace('http://', '').replace('https://', '').replace('/', '_')}.txt"
-                    with open(measurements_filename, 'w', encoding='utf-8') as file:
-                        for measurement in measurements_list:
-                            file.write(measurement)
-
-                    # Отправляем файл с измерениями
-                    await update.message.reply_document(InputFile(measurements_filename))
-                    os.remove(measurements_filename)  # Удаляем файл после отправки
-
                 else:
                     await update.message.reply_text(f"История для {url} пуста.")
             except json.JSONDecodeError:
