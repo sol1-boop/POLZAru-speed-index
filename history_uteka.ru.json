@@ -241,5 +241,95 @@
       "TTFB": "Root document took 790 ms",
       "TBT": "230 ms"
     }
+  },
+  {
+    "url": "https://uteka.ru",
+    "timestamp": "2024-10-21T23:49:11.937410",
+    "metrics": {
+      "FCP": "5.2 s",
+      "LCP": "7.4 s",
+      "TTFB": "Root document took 1,100 ms",
+      "TBT": "590 ms"
+    }
+  },
+  {
+    "url": "https://uteka.ru",
+    "timestamp": "2024-10-21T23:50:25.618067",
+    "metrics": {
+      "FCP": "5.2 s",
+      "LCP": "7.4 s",
+      "TTFB": "Root document took 760 ms",
+      "TBT": "780 ms"
+    }
+  },
+  {
+    "url": "https://uteka.ru",
+    "timestamp": "2024-10-21T23:52:04.969171",
+    "metrics": {
+      "FCP": "5.2 s",
+      "LCP": "7.7 s",
+      "TTFB": "Root document took 620 ms",
+      "TBT": "540 ms"
+    }
+  },
+  {
+    "url": "https://uteka.ru",
+    "timestamp": "2024-10-22T00:01:32.823825",
+    "metrics": {
+      "FCP": "5.3 s",
+      "LCP": "7.7 s",
+      "TTFB": "Root document took 1,160 ms",
+      "TBT": "540 ms"
+    }
+  },
+  {
+    "url": "https://uteka.ru",
+    "timestamp": "2024-10-22T00:07:49.047907",
+    "metrics": {
+      "FCP": "5.3 s",
+      "LCP": "7.4 s",
+      "TTFB": "Root document took 630 ms",
+      "TBT": "870 ms"
+    }
+  },
+  {
+    "url": "https://uteka.ru",
+    "timestamp": "2024-10-22T00:08:32.785320",
+    "metrics": {
+      "FCP": "5.2 s",
+      "LCP": "7.2 s",
+      "TTFB": "Root document took 590 ms",
+      "TBT": "640 ms"
+    }
+  },
+  {
+    "url": "https://uteka.ru",
+    "timestamp": "2024-10-22T00:09:18.467011",
+    "metrics": {
+      "FCP": "5.2 s",
+      "LCP": "7.3 s",
+      "TTFB": "Root document took 1,060 ms",
+      "TBT": "570 ms"
+    }
+  },
+  {
+    "url": "https://uteka.ru",
+    "timestamp": "2024-10-22T00:09:59.967803",
+    "metrics": {
+      "FCP": "4.9 s",
+      "LCP": "7.2 s",
+      "TTFB": "Root document took 630 ms",
+      "TBT": "280 ms"
+    }
+  },
+  {
+    "url": "https://uteka.ru",
+    "timestamp": "2024-10-22T00:11:40.628358",
+    "metrics": {
+      "FCP": "5.2 s",
+      "LCP": "7.2 s",
+      "TTFB": "Root document took 780 ms",
+      "TBT": "490 ms"
+    }
   }
 ]
