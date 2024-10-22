@@ -15,7 +15,7 @@ import shutil
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-tracking_task = None  # Обновлено для хранения одной задачи отслеживания
+tracking_task = None  # Используем одну задачу для отслеживания
 domain_file = 'domain.json'
 
 # Загрузка списка доменов из файла
@@ -211,7 +211,7 @@ async def audit_mobile(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 # Функция обработчик команды /start_track
 async def start_track(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    global tracking_task  # Используем глобальную переменную для хранения задачи
+    global tracking_task
     domains = load_domains()
     if not domains:
         await context.bot.send_message(chat_id=CHANNEL_ID, text="Список доменов пуст или файл не найден.")
@@ -222,39 +222,33 @@ async def start_track(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         return
 
     # Инициализируем данные для отслеживания
-    context.bot_data['track_data'] = {
-        'domains': domains,
-        'current_index': 0
-    }
+    context.bot_data['domains'] = domains
 
-    # Запускаем задачу, которая будет выполняться каждые 2 часа
+    # Запускаем задачу, которая будет выполнять аудит всех доменов и затем ждать заданный интервал
     tracking_task = context.job_queue.run_repeating(
-        track_next_domain,
+        track_all_domains,
         interval=timedelta(hours=2),
         first=0,
-        name='sequential_tracking',
+        name='full_cycle_tracking',
         data={'bot_data': context.bot_data}
     )
-    await context.bot.send_message(chat_id=CHANNEL_ID, text="Запущено последовательное отслеживание доменов каждые 2 часа.")
+    await context.bot.send_message(chat_id=CHANNEL_ID, text="Запущено отслеживание всех доменов каждые 2 часа.")
 
-# Функция для последовательного сбора метрик
-async def track_next_domain(context: ContextTypes.DEFAULT_TYPE) -> None:
-    track_data = context.job.data['bot_data']['track_data']
-    domains = track_data['domains']
-    current_index = track_data['current_index']
-
+# Функция для проведения аудита всех доменов
+async def track_all_domains(context: ContextTypes.DEFAULT_TYPE) -> None:
+    domains = context.job.data['bot_data'].get('domains', [])
     if not domains:
         logger.error("Список доменов пуст.")
         return
 
-    url = domains[current_index]
+    for url in domains:
+        await context.bot.send_message(chat_id=CHANNEL_ID, text=f"Начинаем аудит для: {url}")
+        metrics = await get_lighthouse_metrics(url, mobile=True)
+        if not metrics:
+            await context.bot.send_message(chat_id=CHANNEL_ID, text=f"Не удалось получить результаты аудита для {url}.")
+            logger.error(f"Не удалось получить метрики для {url}")
+            continue
 
-    await context.bot.send_message(chat_id=CHANNEL_ID, text=f"Начинаем аудит для: {url}")
-    metrics = await get_lighthouse_metrics(url, mobile=True)
-    if not metrics:
-        await context.bot.send_message(chat_id=CHANNEL_ID, text=f"Не удалось получить результаты аудита для {url}.")
-        logger.error(f"Не удалось получить метрики для {url}")
-    else:
         metrics_to_save = {
             'FCP': metrics.get("audits", {}).get("first-contentful-paint", {}).get("displayValue"),
             'LCP': metrics.get("audits", {}).get("largest-contentful-paint", {}).get("displayValue"),
@@ -293,16 +287,13 @@ async def track_next_domain(context: ContextTypes.DEFAULT_TYPE) -> None:
         with open(history_filename, 'w', encoding='utf-8') as file:
             json.dump(history_data, file, ensure_ascii=False, indent=2)
 
-    # Обновляем индекс для следующего домена
-    track_data['current_index'] = (current_index + 1) % len(domains)
-
 # Функция обработчик команды /stop_track
 async def stop_track(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     global tracking_task
     if tracking_task:
         tracking_task.schedule_removal()
         tracking_task = None
-        await context.bot.send_message(chat_id=CHANNEL_ID, text="Последовательное отслеживание остановлено.")
+        await context.bot.send_message(chat_id=CHANNEL_ID, text="Отслеживание остановлено.")
     else:
         await context.bot.send_message(chat_id=CHANNEL_ID, text="Отслеживание не запущено.")
 
