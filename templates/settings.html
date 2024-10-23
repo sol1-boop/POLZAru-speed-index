@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Настройки</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>Настройки</h1>
+    <p><a href="{{ url_for('logout') }}">Выйти</a></p>
+
+    <h2>Список доменов</h2>
+    <ul>
+        {% for domain in domains %}
+            <li>
+                {{ domain }}
+                <form action="{{ url_for('settings') }}" method="post" class="inline-form">
+                    <input type="hidden" name="action" value="remove">
+                    <input type="hidden" name="domain" value="{{ domain }}">
+                    <input type="submit" value="Удалить">
+                </form>
+            </li>
+        {% endfor %}
+    </ul>
+
+    <h2>Добавить новый домен</h2>
+    <form action="{{ url_for('settings') }}" method="post" class="add-domain-form">
+        <input type="hidden" name="action" value="add">
+        <input type="text" name="domain" placeholder="Введите домен в формате https://domain.ru" required>
+        <input type="submit" value="Добавить">
+    </form>
+
+    <h2>Изменить частоту измерений</h2>
+    <form action="{{ url_for('settings') }}" method="post" class="frequency-form">
+        <input type="hidden" name="action" value="change_frequency">
+        <label for="frequency">Частота измерений (в часах):</label>
+        <input type="number" id="frequency" name="frequency" value="{{ frequency }}" min="1" required>
+        <input type="submit" value="Сохранить">
+    </form>
+
+    <p><a href="{{ url_for('index') }}">Назад к списку доменов</a></p>
+</body>
+</html>

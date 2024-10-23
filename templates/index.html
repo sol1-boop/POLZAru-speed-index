@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Домены</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>Список доменов</h1>
+    <ul>
+        {% for domain in domains %}
+            <li><a href="#" class="domain-link" data-domain="{{ domain }}">{{ domain }}</a></li>
+        {% endfor %}
+    </ul>
+    <p>
+        <a href="#" id="settings-link">Настройки</a> |
+        {% if session.get('logged_in') %}
+            <a href="{{ url_for('logout') }}">Выйти</a>
+        {% else %}
+            <a href="#" id="login-link">Войти</a>
+        {% endif %}
+    </p>
+
+    <!-- Модальное окно для авторизации -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <span class="close login-close">&times;</span>
+            <h2>Вход в систему</h2>
+            <div id="login-error" class="error-message" style="display: none;"></div>
+            <form method="post" action="{{ url_for('login') }}">
+                <label for="username">Логин:</label>
+                <input type="text" id="username" name="username" required><br><br>
+                <label for="password">Пароль:</label>
+                <input type="password" id="password" name="password" required><br><br>
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <input type="submit" value="Войти">
+            </form>
+        </div>
+    </div>
+
+    <!-- Модальное окно для статистики -->
+    <div id="statsModal" class="modal">
+        <div class="modal-content">
+            <span class="close stats-close">&times;</span>
+            <h2>Статистика для <span id="stats-domain"></span></h2>
+            <div id="stats-content">
+                <!-- Здесь будет отображаться статистика -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var loggedIn = {{ session.get('logged_in') | tojson }};
+            var settingsLink = document.getElementById('settings-link');
+            var loginLink = document.getElementById('login-link');
+            var loginModal = document.getElementById('loginModal');
+            var loginClose = document.querySelector('.login-close');
+            var loginError = document.getElementById('login-error');
+
+            // Обработчик клика на "Настройки"
+            settingsLink.addEventListener('click', function(event) {
+                event.preventDefault();
+                if (loggedIn) {
+                    window.location.href = "{{ url_for('settings') }}";
+                } else {
+                    loginModal.style.display = 'block';
+                }
+            });
+
+            // Обработчик клика на "Войти"
+            if (loginLink) {
+                loginLink.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    loginModal.style.display = 'block';
+                });
+            }
+
+            // Закрытие модального окна авторизации
+            loginClose.onclick = function() {
+                loginModal.style.display = 'none';
+            };
+
+            window.onclick = function(event) {
+                if (event.target == loginModal) {
+                    loginModal.style.display = 'none';
+                } else if (event.target == statsModal) {
+                    statsModal.style.display = 'none';
+                }
+            };
+
+            // Автоматическое отображение модального окна при ошибке авторизации
+            {% if error %}
+                loginError.textContent = "{{ error }}";
+                loginError.style.display = 'block';
+                loginModal.style.display = 'block';
+            {% endif %}
+
+            // Код для модального окна статистики
+            var domainLinks = document.querySelectorAll('.domain-link');
+            var statsModal = document.getElementById('statsModal');
+            var statsClose = document.querySelector('.stats-close');
+            var statsDomain = document.getElementById('stats-domain');
+            var statsContent = document.getElementById('stats-content');
+
+            domainLinks.forEach(function(link) {
+                link.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    var domain = this.getAttribute('data-domain');
+                    statsDomain.textContent = domain;
+                    statsContent.innerHTML = 'Загрузка статистики...';
+
+                    fetch('/get_stats?domain=' + encodeURIComponent(domain))
+                        .then(function(response) {
+                            if (!response.ok) {
+                                throw new Error('Ошибка сети');
+                            }
+                            return response.json();
+                        })
+                        .then(function(data) {
+                            if (data.error) {
+                                statsContent.innerHTML = '<p>' + data.error + '</p>';
+                            } else {
+                                var contentHtml = '<table>';
+                                contentHtml += '<tr><th>Метрика</th><th>Минимум</th><th>Среднее</th><th>Максимум</th></tr>';
+
+                                for (var metric in data) {
+                                    var metricData = data[metric];
+                                    if (metricData) {
+                                        contentHtml += '<tr><td>' + metric + '</td><td>' + metricData.min.toFixed(2) + '</td><td>' + metricData.avg.toFixed(2) + '</td><td>' + metricData.max.toFixed(2) + '</td></tr>';
+                                    } else {
+                                        contentHtml += '<tr><td>' + metric + '</td><td colspan="3">Нет данных</td></tr>';
+                                    }
+                                }
+                                contentHtml += '</table>';
+                                statsContent.innerHTML = contentHtml;
+                            }
+                        })
+                        .catch(function(error) {
+                            statsContent.innerHTML = '<p>Ошибка при получении статистики.</p>';
+                            console.error('Ошибка:', error);
+                        });
+
+                    statsModal.style.display = 'block';
+                });
+            });
+
+            statsClose.onclick = function() {
+                statsModal.style.display = 'none';
+            };
+        });
+    </script>
+</body>
+</html>

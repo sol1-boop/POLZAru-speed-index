@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Метрики для {{ url }}</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>Метрики для {{ url }}</h1>
+    <canvas id="fcpChart"></canvas>
+    <canvas id="lcpChart"></canvas>
+    <canvas id="ttfbChart"></canvas>
+    <canvas id="tbtChart"></canvas>
+    <a href="{{ url_for('index') }}">Назад к списку доменов</a>
+
+    <script>
+        const timestamps = {{ timestamps|tojson }};
+        const fcpValues = {{ fcp_values|tojson }};
+        const lcpValues = {{ lcp_values|tojson }};
+        const ttfbValues = {{ ttfb_values|tojson }};
+        const tbtValues = {{ tbt_values|tojson }};
+
+        // Функция для создания графика
+        function createChart(ctx, label, data) {
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: timestamps,
+                    datasets: [{
+                        label: label,
+                        data: data,
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        fill: false,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Время'
+                            }
+                        },
+                        y: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Значение (секунды)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Создаем графики
+        createChart(document.getElementById('fcpChart'), 'FCP', fcpValues);
+        createChart(document.getElementById('lcpChart'), 'LCP', lcpValues);
+        createChart(document.getElementById('ttfbChart'), 'TTFB', ttfbValues);
+        createChart(document.getElementById('tbtChart'), 'TBT', tbtValues);
+    </script>
+</body>
+</html>

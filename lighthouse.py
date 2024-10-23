@@ -1,3 +1,5 @@
+# lighthouse.py
+
 import asyncio
 import logging
 import subprocess
@@ -17,13 +19,29 @@ logger = logging.getLogger(__name__)
 
 tracking_task = None  # Используем одну задачу для отслеживания
 domain_file = 'domain.json'
+CONFIG_FILE = 'config.json'
 
-# Загрузка списка доменов из файла
+# Функции для загрузки доменов и конфигурации
 def load_domains():
     if os.path.exists(domain_file):
-        with open(domain_file, 'r') as file:
-            return json.load(file)
+        try:
+            with open(domain_file, 'r', encoding='utf-8') as file:
+                return json.load(file)
+        except json.JSONDecodeError:
+            logger.error("Ошибка: 'domain.json' пуст или содержит некорректный JSON.")
+            return []
     return []
+
+def load_config():
+    if os.path.exists(CONFIG_FILE):
+        try:
+            with open(CONFIG_FILE, 'r', encoding='utf-8') as file:
+                return json.load(file)
+        except json.JSONDecodeError:
+            logger.error("Ошибка: 'config.json' пуст или содержит некорректный JSON. Используются настройки по умолчанию.")
+            return {'frequency': 2}
+    else:
+        return {'frequency': 2}
 
 def measure_backend_response_time(url: str) -> float:
     start_time = time.time()
@@ -145,6 +163,8 @@ def parse_metric(value, unit='s'):
                     return number
                 elif 'ms' in value or 'миллисек' in value.lower():
                     return number / 1000
+                else:
+                    return number
             else:
                 return number
         except ValueError:
@@ -224,74 +244,83 @@ async def start_track(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     # Инициализируем данные для отслеживания
     context.bot_data['domains'] = domains
 
-    # Запускаем задачу, которая будет выполнять аудит всех доменов и затем ждать заданный интервал
-    tracking_task = context.job_queue.run_repeating(
-        track_all_domains,
-        interval=timedelta(hours=2),
-        first=0,
-        name='full_cycle_tracking',
-        data={'bot_data': context.bot_data}
-    )
-    await context.bot.send_message(chat_id=CHANNEL_ID, text="Запущено отслеживание всех доменов каждые 2 часа.")
+    # Получаем частоту измерений из конфигурации
+    config = load_config()
+    frequency_hours = config.get('frequency', 2)
+    context.bot_data['frequency_hours'] = frequency_hours
+
+    # Запускаем задачу отслеживания
+    tracking_task = context.application.create_task(track_all_domains(context))
+
+    await context.bot.send_message(chat_id=CHANNEL_ID, text=f"Запущено отслеживание всех доменов каждые {frequency_hours} часа(ов).")
 
 # Функция для проведения аудита всех доменов
 async def track_all_domains(context: ContextTypes.DEFAULT_TYPE) -> None:
-    domains = context.job.data['bot_data'].get('domains', [])
-    if not domains:
-        logger.error("Список доменов пуст.")
-        return
+    while True:
+        domains = context.bot_data.get('domains', [])
+        if not domains:
+            logger.error("Список доменов пуст.")
+            break
 
-    for url in domains:
-        await context.bot.send_message(chat_id=CHANNEL_ID, text=f"Начинаем аудит для: {url}")
-        metrics = await get_lighthouse_metrics(url, mobile=True)
-        if not metrics:
-            await context.bot.send_message(chat_id=CHANNEL_ID, text=f"Не удалось получить результаты аудита для {url}.")
-            logger.error(f"Не удалось получить метрики для {url}")
-            continue
+        # Получаем частоту измерений из конфигурации
+        config = load_config()
+        frequency_hours = config.get('frequency', 2)
+        context.bot_data['frequency_hours'] = frequency_hours
 
-        metrics_to_save = {
-            'FCP': metrics.get("audits", {}).get("first-contentful-paint", {}).get("displayValue"),
-            'LCP': metrics.get("audits", {}).get("largest-contentful-paint", {}).get("displayValue"),
-            'TTFB': metrics.get("audits", {}).get("server-response-time", {}).get("displayValue"),
-            'TBT': metrics.get("audits", {}).get("total-blocking-time", {}).get("displayValue"),
-        }
+        for url in domains:
+            await context.bot.send_message(chat_id=CHANNEL_ID, text=f"Начинаем аудит для: {url}")
+            metrics = await get_lighthouse_metrics(url, mobile=True)
+            if not metrics:
+                await context.bot.send_message(chat_id=CHANNEL_ID, text=f"Не удалось получить результаты аудита для {url}.")
+                logger.error(f"Не удалось получить метрики для {url}")
+                continue
 
-        # Формируем сообщение для отправки в канал
-        summary_text = f"Результаты аудита для {url}:\n"
-        for key, value in metrics_to_save.items():
-            summary_text += f"{key}: {value if value is not None else 'N/A'}\n"
+            metrics_to_save = {
+                'FCP': metrics.get("audits", {}).get("first-contentful-paint", {}).get("displayValue"),
+                'LCP': metrics.get("audits", {}).get("largest-contentful-paint", {}).get("displayValue"),
+                'TTFB': metrics.get("audits", {}).get("server-response-time", {}).get("displayValue"),
+                'TBT': metrics.get("audits", {}).get("total-blocking-time", {}).get("displayValue"),
+            }
 
-        # Отправляем сообщение в канал
-        await context.bot.send_message(chat_id=CHANNEL_ID, text=summary_text)
+            # Формируем сообщение для отправки в канал
+            summary_text = f"Результаты аудита для {url}:\n"
+            for key, value in metrics_to_save.items():
+                summary_text += f"{key}: {value if value is not None else 'N/A'}\n"
 
-        # Сохранение результатов в файл истории
-        history_filename = f"history_{url.replace('http://', '').replace('https://', '').replace('/', '_')}.json"
-        history_data = []
+            # Отправляем сообщение в канал
+            await context.bot.send_message(chat_id=CHANNEL_ID, text=summary_text)
 
-        if os.path.exists(history_filename):
-            try:
-                with open(history_filename, 'r', encoding='utf-8') as file:
-                    history_data = json.load(file)
-            except json.JSONDecodeError:
-                logger.error(f"Ошибка чтения JSON из файла {history_filename}. Создание нового файла.")
-                history_data = []
-        else:
+            # Сохранение результатов в файл истории
+            history_filename = f"history_{url.replace('http://', '').replace('https://', '').replace('/', '_')}.json"
             history_data = []
 
-        history_data.append({
-            'url': url,
-            'timestamp': datetime.now().isoformat(),
-            'metrics': metrics_to_save
-        })
+            if os.path.exists(history_filename):
+                try:
+                    with open(history_filename, 'r', encoding='utf-8') as file:
+                        history_data = json.load(file)
+                except json.JSONDecodeError:
+                    logger.error(f"Ошибка чтения JSON из файла {history_filename}. Создание нового файла.")
+                    history_data = []
+            else:
+                history_data = []
 
-        with open(history_filename, 'w', encoding='utf-8') as file:
-            json.dump(history_data, file, ensure_ascii=False, indent=2)
+            history_data.append({
+                'url': url,
+                'timestamp': datetime.now().isoformat(),
+                'metrics': metrics_to_save
+            })
+
+            with open(history_filename, 'w', encoding='utf-8') as file:
+                json.dump(history_data, file, ensure_ascii=False, indent=2)
+
+        # Ждём заданный интервал перед следующим запуском
+        await asyncio.sleep(frequency_hours * 3600)
 
 # Функция обработчик команды /stop_track
 async def stop_track(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     global tracking_task
     if tracking_task:
-        tracking_task.schedule_removal()
+        tracking_task.cancel()
         tracking_task = None
         await context.bot.send_message(chat_id=CHANNEL_ID, text="Отслеживание остановлено.")
     else:
@@ -384,6 +413,7 @@ def main() -> None:
     application.add_handler(CommandHandler("audit_mobile", audit_mobile))
     application.add_handler(CommandHandler("stats", stats))
 
+    # Запускаем бота
     application.run_polling()
 
 if __name__ == '__main__':
