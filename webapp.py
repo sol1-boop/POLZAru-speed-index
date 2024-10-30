@@ -1,140 +1,114 @@
+# app.py
+
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
-import json
+from modules.utils import load_domains, save_domains, load_config, save_config, delete_history_file
+from modules.auth import login_required, login_user, logout_user
+from modules.metrics import load_history, parse_metric
 import os
-from functools import wraps
-from config import ADMIN_USERNAME, ADMIN_PASSWORD
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # Замените на ваш секретный ключ
 
-DOMAIN_FILE = 'domain.json'
-CONFIG_FILE = 'config.json'
-
-# Функции для загрузки и сохранения доменов
-def load_domains():
-    if os.path.exists(DOMAIN_FILE):
-        try:
-            with open(DOMAIN_FILE, 'r', encoding='utf-8') as file:
-                return json.load(file)
-        except json.JSONDecodeError:
-            print("Ошибка: 'domain.json' пуст или содержит некорректный JSON.")
-            return []
-    return []
-
-def save_domains(domains):
-    with open(DOMAIN_FILE, 'w', encoding='utf-8') as file:
-        json.dump(domains, file, indent=2, ensure_ascii=False)
-
-# Функции для загрузки и сохранения настроек
-def load_config():
-    if os.path.exists(CONFIG_FILE):
-        try:
-            with open(CONFIG_FILE, 'r', encoding='utf-8') as file:
-                return json.load(file)
-        except json.JSONDecodeError:
-            print("Ошибка: 'config.json' пуст или содержит некорректный JSON. Используются настройки по умолчанию.")
-            return {'frequency': 2}  # Значение по умолчанию
-    else:
-        return {'frequency': 2}  # Значение по умолчанию
-
-def save_config(config):
-    with open(CONFIG_FILE, 'w', encoding='utf-8') as file:
-        json.dump(config, file, indent=2, ensure_ascii=False)
-
-# Функции для авторизации
-def is_logged_in():
-    return session.get('logged_in')
-
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not is_logged_in():
-            return redirect(url_for('login', next=request.url))
-        return f(*args, **kwargs)
-    return decorated_function
-
-# Функция для парсинга метрик
-def parse_metric(value, unit='s'):
-    if value:
-        try:
-            value = value.replace('\u00A0', ' ')
-            cleaned_value = ''.join(c for c in value if c.isdigit() or c in ['.', ',', ' '])
-            cleaned_value = cleaned_value.replace(' ', '')
-            cleaned_value = cleaned_value.replace(',', '.')
-            number = float(cleaned_value)
-            if unit == 'ms':
-                if 'ms' in value or 'миллисек' in value.lower():
-                    return number
-                elif 's' in value or 'сек' in value.lower():
-                    return number * 1000
-            elif unit == 's':
-                if 's' in value or 'сек' in value.lower():
-                    return number
-                elif 'ms' in value or 'миллисек' in value.lower():
-                    return number / 1000
-                else:
-                    return number
-        except ValueError:
-            print(f"Невозможно преобразовать метрику: {value}")
-    else:
-        print(f"Пустое значение метрики: {value}")
-    return None
-
-# Маршруты для входа и выхода
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    error = None
-    next_page = request.args.get('next') or request.form.get('next')
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
-            session['logged_in'] = True
-            return redirect(next_page or url_for('settings'))
-        else:
-            error = 'Неверный логин или пароль. Попробуйте снова.'
-    return render_template('login.html', error=error, next=next_page)
-
-@app.route('/logout')
-def logout():
-    session.clear()
-    return redirect(url_for('index'))
-
-# Маршрут для главной страницы
 @app.route('/')
 def index():
     domains = load_domains()
     return render_template('index.html', domains=domains)
 
-# Маршрут для получения статистики
+@app.route('/login', methods=['POST'])
+def login():
+    username = request.form['username']
+    password = request.form['password']
+    next_url = request.form.get('next') or url_for('index')
+    if login_user(username, password):
+        return redirect(next_url)
+    else:
+        error = 'Неправильный логин или пароль'
+        return render_template('index.html', error=error, domains=load_domains())
+
+@app.route('/logout')
+def logout():
+    logout_user()
+    return redirect(url_for('index'))
+
+@app.route('/settings', methods=['GET', 'POST'])
+@login_required
+def settings():
+    domains = load_domains()
+    config = load_config()
+    frequency = config.get('frequency', 2)
+    max_display_points = config.get('max_display_points', 10)
+
+    if request.method == 'POST':
+        action = request.form.get('action')
+        if action == 'add':
+            domain = request.form.get('domain')
+            if domain:
+                domains.append({'domain': domain, 'budget': {}})
+                save_domains(domains)
+        elif action == 'remove':
+            domain_to_remove = request.form.get('domain')
+            domains = [d for d in domains if d['domain'] != domain_to_remove]
+            save_domains(domains)
+        elif action == 'change_frequency':
+            frequency = int(request.form.get('frequency', 2))
+            config['frequency'] = frequency
+            save_config(config)
+        elif action == 'update_budget':
+            domain = request.form.get('domain')
+            for d in domains:
+                if d['domain'] == domain:
+                    d['budget'] = {
+                        'FCP': float(request.form.get('budget_fcp', 0)),
+                        'LCP': float(request.form.get('budget_lcp', 0)),
+                        'TTFB': float(request.form.get('budget_ttfb', 0)),
+                        'TBT': float(request.form.get('budget_tbt', 0))
+                    }
+                    break
+            save_domains(domains)
+        elif action == 'change_display_points':
+            max_display_points = int(request.form.get('max_display_points', 10))
+            config['max_display_points'] = max_display_points
+            save_config(config)
+
+        return redirect(url_for('settings'))
+
+    return render_template('settings.html', domains=domains, frequency=frequency, max_display_points=max_display_points)
+
 @app.route('/get_stats', methods=['GET'])
 def get_stats():
     domain = request.args.get('domain')
     if not domain:
         return jsonify({'error': 'Домен не указан'}), 400
 
-    # Очистка домена для безопасности (убираем '..' и '\')
-    domain_safe = domain.replace('..', '').replace('\\', '')
+    history_data = load_history(domain)
+    if not history_data:
+        return jsonify({'error': 'Файл истории не найден или повреждён'}), 404
 
-    # Формируем имя файла истории, используя ту же логику, что и в lighthouse.py
-    history_filename = f"history_{domain_safe.replace('http://', '').replace('https://', '').replace('/', '_')}.json"
+    # Получаем бюджет для данного домена
+    domains = load_domains()
+    budget = {}
+    for d in domains:
+        if d['domain'] == domain:
+            budget = d.get('budget', {})
+            break
 
-    if not os.path.exists(history_filename):
-        return jsonify({'error': 'Файл истории не найден'}), 404
+    # Загружаем настройку количества отображаемых значений
+    config = load_config()
+    max_display_points = config.get('max_display_points', 10)
 
-    try:
-        with open(history_filename, 'r', encoding='utf-8') as file:
-            history_data = json.load(file)
-    except json.JSONDecodeError:
-        return jsonify({'error': 'Некорректный JSON в файле истории'}), 500
-
-    # Сбор метрик
+    # Сбор метрик и дат для графика
+    dates = []
     fcp_values = []
     lcp_values = []
     ttfb_values = []
     tbt_values = []
 
     for entry in history_data:
+        timestamp = entry.get('timestamp')
+        if not timestamp:
+            continue
+        dates.append(timestamp)
+
         metrics = entry.get('metrics', {})
 
         fcp = parse_metric(metrics.get('FCP'))
@@ -153,16 +127,32 @@ def get_stats():
         if tbt is not None:
             tbt_values.append(tbt / 1000)  # Переводим в секунды
 
-    # Вычисление статистики
+    # Инвертируем списки, чтобы самые новые данные были первыми
+    dates = dates[::-1]
+    fcp_values = fcp_values[::-1]
+    lcp_values = lcp_values[::-1]
+    ttfb_values = ttfb_values[::-1]
+    tbt_values = tbt_values[::-1]
+
+    # Ограничиваем количество выводимых значений
+    dates = dates[:max_display_points]
+    fcp_values = fcp_values[:max_display_points]
+    lcp_values = lcp_values[:max_display_points]
+    ttfb_values = ttfb_values[:max_display_points]
+    tbt_values = tbt_values[:max_display_points]
+
+    # Вычисление статистики (минимум, среднее, максимум) для каждой метрики
+    import statistics
+
     def calculate_stats(values):
         if values:
             return {
-                'min': min(values),
-                'avg': sum(values) / len(values),
-                'max': max(values)
+                'min': round(min(values), 2),
+                'avg': round(statistics.mean(values), 2),
+                'max': round(max(values), 2)
             }
         else:
-            return None
+            return {'min': None, 'avg': None, 'max': None}
 
     stats = {
         'FCP': calculate_stats(fcp_values),
@@ -171,34 +161,34 @@ def get_stats():
         'TBT': calculate_stats(tbt_values)
     }
 
-    return jsonify(stats)
+    # Формирование данных для ответа
+    data = {
+        'dates': dates,
+        'metrics': {
+            'FCP': fcp_values,
+            'LCP': lcp_values,
+            'TTFB': ttfb_values,
+            'TBT': tbt_values
+        },
+        'budget': budget,
+        'stats': stats
+    }
 
-# Маршрут для настроек
-@app.route('/settings', methods=['GET', 'POST'])
-@login_required
-def settings():
-    domains = load_domains()
-    config = load_config()
-    frequency = config.get('frequency', 2)
-    if request.method == 'POST':
-        action = request.form.get('action')
-        if action == 'add':
-            domain = request.form.get('domain')
-            if domain and domain not in domains:
-                domains.append(domain)
-                save_domains(domains)
-        elif action == 'remove':
-            domain = request.form.get('domain')
-            if domain in domains:
-                domains.remove(domain)
-                save_domains(domains)
-        elif action == 'change_frequency':
-            frequency = request.form.get('frequency', type=int)
-            if frequency and frequency >= 1:
-                config['frequency'] = frequency
-                save_config(config)
-        return redirect(url_for('settings'))
-    return render_template('settings.html', domains=domains, frequency=frequency)
+    return jsonify(data)
+
+@app.route('/reset_history', methods=['POST'])
+@login_required  # Только авторизованные пользователи могут сбрасывать историю
+def reset_history():
+    data = request.get_json()
+    domain = data.get('domain')
+    if not domain:
+        return jsonify({'error': 'Домен не указан'}), 400
+
+    success = delete_history_file(domain)
+    if success:
+        return jsonify({'success': True})
+    else:
+        return jsonify({'error': 'Не удалось удалить файл истории'}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)

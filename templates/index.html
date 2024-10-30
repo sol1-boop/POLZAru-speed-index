@@ -1,154 +1,282 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>Домены</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-    <h1>Список доменов</h1>
-    <ul>
-        {% for domain in domains %}
-            <li><a href="#" class="domain-link" data-domain="{{ domain }}">{{ domain }}</a></li>
-        {% endfor %}
-    </ul>
-    <p>
-        <a href="#" id="settings-link">Настройки</a> |
-        {% if session.get('logged_in') %}
-            <a href="{{ url_for('logout') }}">Выйти</a>
-        {% else %}
-            <a href="#" id="login-link">Войти</a>
-        {% endif %}
-    </p>
+<!-- templates/index.html -->
+{% extends 'base.html' %}
 
-    <!-- Модальное окно для авторизации -->
-    <div id="loginModal" class="modal">
-        <div class="modal-content">
-            <span class="close login-close">&times;</span>
-            <h2>Вход в систему</h2>
-            <div id="login-error" class="error-message" style="display: none;"></div>
-            <form method="post" action="{{ url_for('login') }}">
-                <label for="username">Логин:</label>
-                <input type="text" id="username" name="username" required><br><br>
-                <label for="password">Пароль:</label>
-                <input type="password" id="password" name="password" required><br><br>
-                <input type="hidden" name="next" value="{{ request.path }}">
-                <input type="submit" value="Войти">
-            </form>
-        </div>
+{% block title %}Домены{% endblock %}
+
+{% block content %}
+<h1>Список доменов</h1>
+<ul>
+    {% for domain in domains %}
+        <li>
+            {{ domain.domain }}
+            <button class="stats-button" data-domain="{{ domain.domain }}">Статистика</button>
+            <button class="chart-button" data-domain="{{ domain.domain }}">График</button>
+        </li>
+    {% endfor %}
+</ul>
+<p>
+    <a href="#" id="settings-link">Настройки</a> |
+    {% if session.get('logged_in') %}
+        <a href="{{ url_for('logout') }}">Выйти</a>
+    {% else %}
+        <a href="#" id="login-link">Войти</a>
+    {% endif %}
+</p>
+
+<!-- Модальные окна -->
+<!-- Модальное окно авторизации -->
+<div id="loginModal" class="modal">
+    <div class="modal-content">
+        <span class="close login-close">&times;</span>
+        <h2>Вход в систему</h2>
+        <div id="login-error" class="error-message" style="display: none;"></div>
+        <form method="post" action="{{ url_for('login') }}">
+            <label for="username">Логин:</label>
+            <input type="text" id="username" name="username" required><br><br>
+            <label for="password">Пароль:</label>
+            <input type="password" id="password" name="password" required><br><br>
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <input type="submit" value="Войти">
+        </form>
     </div>
+</div>
 
-    <!-- Модальное окно для статистики -->
-    <div id="statsModal" class="modal">
-        <div class="modal-content">
-            <span class="close stats-close">&times;</span>
-            <h2>Статистика для <span id="stats-domain"></span></h2>
-            <div id="stats-content">
-                <!-- Здесь будет отображаться статистика -->
-            </div>
-        </div>
+<!-- Модальное окно статистики -->
+<div id="statsModal" class="modal">
+    <div class="modal-content">
+        <span class="close stats-close">&times;</span>
+        <h2>Статистика для <span id="stats-domain"></span></h2>
+        <div id="stats-content"></div>
     </div>
+</div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            var loggedIn = {{ session.get('logged_in') | tojson }};
-            var settingsLink = document.getElementById('settings-link');
-            var loginLink = document.getElementById('login-link');
-            var loginModal = document.getElementById('loginModal');
-            var loginClose = document.querySelector('.login-close');
-            var loginError = document.getElementById('login-error');
+<!-- Модальное окно графика -->
+<div id="chartModal" class="modal">
+    <div class="modal-content">
+        <span class="close chart-close">&times;</span>
+        <h2>График метрик для <span id="chart-domain"></span></h2>
+        <canvas id="metricsChart"></canvas>
+    </div>
+</div>
+{% endblock %}
 
-            // Обработчик клика на "Настройки"
-            settingsLink.addEventListener('click', function(event) {
-                event.preventDefault();
-                if (loggedIn) {
-                    window.location.href = "{{ url_for('settings') }}";
-                } else {
-                    loginModal.style.display = 'block';
-                }
-            });
+{% block scripts %}
+<!-- Подключаем библиотеки Chart.js и Chart.js Annotation через CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.1.0"></script>
+<!-- Основной скрипт -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var loggedIn = {{ 'true' if session.get('logged_in') else 'false' }};
+    var settingsLink = document.getElementById('settings-link');
+    var loginLink = document.getElementById('login-link');
+    var loginModal = document.getElementById('loginModal');
+    var loginClose = document.querySelector('.login-close');
+    var loginError = document.getElementById('login-error');
 
-            // Обработчик клика на "Войти"
-            if (loginLink) {
-                loginLink.addEventListener('click', function(event) {
-                    event.preventDefault();
-                    loginModal.style.display = 'block';
-                });
-            }
+    // Обработчик клика на "Настройки"
+    settingsLink.addEventListener('click', function(event) {
+        if (!loggedIn) {
+            event.preventDefault();
+            loginModal.style.display = 'block';
+        } else {
+            // Если пользователь авторизован, переходим на страницу настроек
+            window.location.href = "{{ url_for('settings') }}";
+        }
+    });
 
-            // Закрытие модального окна авторизации
-            loginClose.onclick = function() {
-                loginModal.style.display = 'none';
-            };
+    // Обработчик клика на "Войти"
+    if (loginLink) {
+        loginLink.addEventListener('click', function(event) {
+            event.preventDefault();
+            loginModal.style.display = 'block';
+        });
+    }
 
-            window.onclick = function(event) {
-                if (event.target == loginModal) {
-                    loginModal.style.display = 'none';
-                } else if (event.target == statsModal) {
-                    statsModal.style.display = 'none';
-                }
-            };
+    // Закрытие модального окна авторизации
+    loginClose.onclick = function() {
+        loginModal.style.display = 'none';
+    };
 
-            // Автоматическое отображение модального окна при ошибке авторизации
-            {% if error %}
-                loginError.textContent = "{{ error }}";
-                loginError.style.display = 'block';
-                loginModal.style.display = 'block';
-            {% endif %}
+    // Обработка клика вне модального окна для его закрытия
+    window.onclick = function(event) {
+        if (event.target == loginModal) {
+            loginModal.style.display = 'none';
+        } else if (event.target == statsModal) {
+            statsModal.style.display = 'none';
+        } else if (event.target == chartModal) {
+            chartModal.style.display = 'none';
+        }
+    };
 
-            // Код для модального окна статистики
-            var domainLinks = document.querySelectorAll('.domain-link');
-            var statsModal = document.getElementById('statsModal');
-            var statsClose = document.querySelector('.stats-close');
-            var statsDomain = document.getElementById('stats-domain');
-            var statsContent = document.getElementById('stats-content');
+    // Если была ошибка авторизации, отображаем сообщение
+    {% if error %}
+        loginError.textContent = "{{ error }}";
+        loginError.style.display = 'block';
+        loginModal.style.display = 'block';
+    {% endif %}
 
-            domainLinks.forEach(function(link) {
-                link.addEventListener('click', function(event) {
-                    event.preventDefault();
-                    var domain = this.getAttribute('data-domain');
-                    statsDomain.textContent = domain;
-                    statsContent.innerHTML = 'Загрузка статистики...';
+    // Обработчики для кнопок "Статистика" и "График"
+    var statsButtons = document.querySelectorAll('.stats-button');
+    var chartButtons = document.querySelectorAll('.chart-button');
+    var statsModal = document.getElementById('statsModal');
+    var chartModal = document.getElementById('chartModal');
+    var statsClose = document.querySelector('.stats-close');
+    var chartClose = document.querySelector('.chart-close');
+    var statsDomain = document.getElementById('stats-domain');
+    var statsContent = document.getElementById('stats-content');
+    var chartDomain = document.getElementById('chart-domain');
+    var metricsChart = null;  // Переменная для хранения графика
 
-                    fetch('/get_stats?domain=' + encodeURIComponent(domain))
-                        .then(function(response) {
-                            if (!response.ok) {
-                                throw new Error('Ошибка сети');
-                            }
-                            return response.json();
-                        })
-                        .then(function(data) {
-                            if (data.error) {
-                                statsContent.innerHTML = '<p>' + data.error + '</p>';
-                            } else {
-                                var contentHtml = '<table>';
-                                contentHtml += '<tr><th>Метрика</th><th>Минимум</th><th>Среднее</th><th>Максимум</th></tr>';
+    statsButtons.forEach(function(button) {
+        button.addEventListener('click', function() {
+            var domain = button.getAttribute('data-domain');
+            statsDomain.textContent = domain;
+            fetch('/get_stats?domain=' + encodeURIComponent(domain))
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(data) {
+                    if (data.error) {
+                        statsContent.innerHTML = '<p>' + data.error + '</p>';
+                    } else {
+                        // Форматируем данные для отображения статистики
+                        var stats = data.stats;
+                        var html = '<h3>Статистика</h3>';
+                        html += '<table>';
+                        html += '<tr><th>Метрика</th><th>Минимум</th><th>Среднее</th><th>Максимум</th></tr>';
+                        for (var metric in stats) {
+                            html += '<tr>';
+                            html += '<td>' + metric + '</td>';
+                            html += '<td>' + (stats[metric].min !== null ? stats[metric].min + 's' : 'N/A') + '</td>';
+                            html += '<td>' + (stats[metric].avg !== null ? stats[metric].avg + 's' : 'N/A') + '</td>';
+                            html += '<td>' + (stats[metric].max !== null ? stats[metric].max + 's' : 'N/A') + '</td>';
+                            html += '</tr>';
+                        }
+                        html += '</table>';
 
-                                for (var metric in data) {
-                                    var metricData = data[metric];
-                                    if (metricData) {
-                                        contentHtml += '<tr><td>' + metric + '</td><td>' + metricData.min.toFixed(2) + '</td><td>' + metricData.avg.toFixed(2) + '</td><td>' + metricData.max.toFixed(2) + '</td></tr>';
-                                    } else {
-                                        contentHtml += '<tr><td>' + metric + '</td><td colspan="3">Нет данных</td></tr>';
-                                    }
-                                }
-                                contentHtml += '</table>';
-                                statsContent.innerHTML = contentHtml;
-                            }
-                        })
-                        .catch(function(error) {
-                            statsContent.innerHTML = '<p>Ошибка при получении статистики.</p>';
-                            console.error('Ошибка:', error);
-                        });
-
+                        // Отображаем историю замеров
+                        html += '<h3>История замеров</h3>';
+                        html += '<table><tr><th>Дата</th><th>FCP (s)</th><th>LCP (s)</th><th>TTFB (s)</th><th>TBT (s)</th></tr>';
+                        for (var i = 0; i < data.dates.length; i++) {
+                            html += '<tr><td>' + data.dates[i] + '</td>';
+                            html += '<td>' + (data.metrics.FCP[i] !== null ? data.metrics.FCP[i] + 's' : 'N/A') + '</td>';
+                            html += '<td>' + (data.metrics.LCP[i] !== null ? data.metrics.LCP[i] + 's' : 'N/A') + '</td>';
+                            html += '<td>' + (data.metrics.TTFB[i] !== null ? data.metrics.TTFB[i] + 's' : 'N/A') + '</td>';
+                            html += '<td>' + (data.metrics.TBT[i] !== null ? data.metrics.TBT[i] + 's' : 'N/A') + '</td></tr>';
+                        }
+                        html += '</table>';
+                        statsContent.innerHTML = html;
+                    }
+                    statsModal.style.display = 'block';
+                })
+                .catch(function(error) {
+                    statsContent.innerHTML = '<p>Ошибка при получении данных.</p>';
                     statsModal.style.display = 'block';
                 });
-            });
-
-            statsClose.onclick = function() {
-                statsModal.style.display = 'none';
-            };
         });
-    </script>
-</body>
-</html>
+    });
+
+    statsClose.onclick = function() {
+        statsModal.style.display = 'none';
+    };
+
+    chartButtons.forEach(function(button) {
+        button.addEventListener('click', function() {
+            var domain = button.getAttribute('data-domain');
+            chartDomain.textContent = domain;
+            fetch('/get_stats?domain=' + encodeURIComponent(domain))
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(data) {
+                    if (data.error) {
+                        alert(data.error);
+                    } else {
+                        // Уничтожаем предыдущий график, если он существует
+                        if (metricsChart) {
+                            metricsChart.destroy();
+                        }
+                        var ctx = document.getElementById('metricsChart').getContext('2d');
+
+                        // Подготовка данных для графика
+                        var labels = data.dates;
+                        var datasets = [];
+                        var colors = {
+                            'FCP': 'rgba(75, 192, 192, 0.6)',
+                            'LCP': 'rgba(153, 102, 255, 0.6)',
+                            'TTFB': 'rgba(255, 159, 64, 0.6)',
+                            'TBT': 'rgba(255, 99, 132, 0.6)'
+                        };
+
+                        // Для каждой метрики создаём набор данных
+                        for (var metric in data.metrics) {
+                            datasets.push({
+                                label: metric,
+                                data: data.metrics[metric],
+                                backgroundColor: colors[metric],
+                                borderColor: colors[metric],
+                                borderWidth: 1
+                            });
+                        }
+
+                        // Создаём график
+                        metricsChart = new Chart(ctx, {
+                            type: 'bar',
+                            data: {
+                                labels: labels,
+                                datasets: datasets
+                            },
+                            options: {
+                                responsive: true,
+                                scales: {
+                                    y: {
+                                        beginAtZero: true
+                                    }
+                                },
+                                plugins: {
+                                    annotation: {
+                                        annotations: []
+                                    }
+                                }
+                            }
+                        });
+
+                        // Добавляем линии бюджета
+                        var budget = data.budget || {};
+                        for (var metric in budget) {
+                            if (budget[metric]) {
+                                metricsChart.options.plugins.annotation.annotations.push({
+                                    type: 'line',
+                                    yMin: budget[metric],
+                                    yMax: budget[metric],
+                                    borderColor: colors[metric],
+                                    borderWidth: 2,
+                                    label: {
+                                        content: 'Бюджет ' + metric,
+                                        enabled: true,
+                                        position: 'end',
+                                        backgroundColor: colors[metric]
+                                    }
+                                });
+                            }
+                        }
+
+                        metricsChart.update();
+
+                        // Отображаем модальное окно
+                        chartModal.style.display = 'block';
+                    }
+                })
+                .catch(function(error) {
+                    alert('Ошибка при получении данных для графика.');
+                });
+        });
+    });
+
+    chartClose.onclick = function() {
+        chartModal.style.display = 'none';
+    };
+});
+</script>
+{% endblock %}

@@ -1,43 +1,103 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>Настройки</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-    <h1>Настройки</h1>
-    <p><a href="{{ url_for('logout') }}">Выйти</a></p>
+<!-- templates/settings.html -->
+{% extends 'base.html' %}
 
-    <h2>Список доменов</h2>
-    <ul>
-        {% for domain in domains %}
-            <li>
-                {{ domain }}
-                <form action="{{ url_for('settings') }}" method="post" class="inline-form">
-                    <input type="hidden" name="action" value="remove">
-                    <input type="hidden" name="domain" value="{{ domain }}">
-                    <input type="submit" value="Удалить">
-                </form>
-            </li>
-        {% endfor %}
-    </ul>
+{% block title %}Настройки{% endblock %}
 
-    <h2>Добавить новый домен</h2>
-    <form action="{{ url_for('settings') }}" method="post" class="add-domain-form">
-        <input type="hidden" name="action" value="add">
-        <input type="text" name="domain" placeholder="Введите домен в формате https://domain.ru" required>
-        <input type="submit" value="Добавить">
-    </form>
+{% block content %}
+<h1>Настройки</h1>
+<p><a href="{{ url_for('logout') }}">Выйти</a></p>
 
-    <h2>Изменить частоту измерений</h2>
-    <form action="{{ url_for('settings') }}" method="post" class="frequency-form">
-        <input type="hidden" name="action" value="change_frequency">
-        <label for="frequency">Частота измерений (в часах):</label>
-        <input type="number" id="frequency" name="frequency" value="{{ frequency }}" min="1" required>
-        <input type="submit" value="Сохранить">
-    </form>
+<h2>Список доменов</h2>
+<ul>
+    {% for domain in domains %}
+        <li>
+            {{ domain.domain }}
+            <!-- Кнопка "Удалить домен" -->
+            <form action="{{ url_for('settings') }}" method="post" class="inline-form">
+                <input type="hidden" name="action" value="remove">
+                <input type="hidden" name="domain" value="{{ domain.domain }}">
+                <input type="submit" value="Удалить">
+            </form>
+            <!-- Кнопка "Сбросить историю" -->
+            <button class="reset-button" data-domain="{{ domain.domain }}">Сбросить историю</button>
+            <!-- Форма для обновления бюджета -->
+            <form action="{{ url_for('settings') }}" method="post" class="budget-form">
+                <input type="hidden" name="action" value="update_budget">
+                <input type="hidden" name="domain" value="{{ domain.domain }}">
+                <label>FCP:</label>
+                <input type="number" step="0.1" name="budget_fcp" value="{{ domain.budget.FCP }}">
+                <label>LCP:</label>
+                <input type="number" step="0.1" name="budget_lcp" value="{{ domain.budget.LCP }}">
+                <label>TTFB:</label>
+                <input type="number" step="0.1" name="budget_ttfb" value="{{ domain.budget.TTFB }}">
+                <label>TBT:</label>
+                <input type="number" step="0.1" name="budget_tbt" value="{{ domain.budget.TBT }}">
+                <input type="submit" value="Сохранить бюджет">
+            </form>
+        </li>
+    {% endfor %}
+</ul>
 
-    <p><a href="{{ url_for('index') }}">Назад к списку доменов</a></p>
-</body>
-</html>
+<h2>Добавить новый домен</h2>
+<form action="{{ url_for('settings') }}" method="post" class="add-domain-form">
+    <input type="hidden" name="action" value="add">
+    <input type="text" name="domain" placeholder="Введите домен в формате https://domain.ru" required>
+    <input type="submit" value="Добавить">
+</form>
+
+<h2>Изменить частоту измерений</h2>
+<form action="{{ url_for('settings') }}" method="post" class="frequency-form">
+    <input type="hidden" name="action" value="change_frequency">
+    <label for="frequency">Частота измерений (в часах):</label>
+    <input type="number" id="frequency" name="frequency" value="{{ frequency }}" min="1" required>
+    <input type="submit" value="Сохранить">
+</form>
+
+<h2>Изменить количество выводимых значений</h2>
+<form action="{{ url_for('settings') }}" method="post" class="display-points-form">
+    <input type="hidden" name="action" value="change_display_points">
+    <label for="max_display_points">Количество значений для отображения:</label>
+    <input type="number" id="max_display_points" name="max_display_points" value="{{ max_display_points }}" min="1" required>
+    <input type="submit" value="Сохранить">
+</form>
+
+<p><a href="{{ url_for('index') }}">Назад к списку доменов</a></p>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Обработчики для кнопок "Сбросить историю"
+    var resetButtons = document.querySelectorAll('.reset-button');
+
+    resetButtons.forEach(function(button) {
+        button.addEventListener('click', function() {
+            var domain = button.getAttribute('data-domain');
+            var confirmation = confirm('Вы уверены, что хотите сбросить историю для домена ' + domain + '?');
+            if (confirmation) {
+                fetch('/reset_history', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ domain: domain })
+                })
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(data) {
+                    if (data.success) {
+                        alert('История для домена ' + domain + ' успешно сброшена.');
+                    } else {
+                        alert('Ошибка: ' + data.error);
+                    }
+                })
+                .catch(function(error) {
+                    alert('Ошибка при сбросе истории.');
+                });
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
