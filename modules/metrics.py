@@ -7,32 +7,45 @@ logger = logging.getLogger(__name__)
 def parse_metric(value, unit='s'):
     if value:
         try:
-            value = value.replace('\u00A0', ' ')
-            cleaned_value = ''.join(c for c in value if c.isdigit() or c in ['.', ',', ' '])
-            cleaned_value = cleaned_value.replace(' ', '')
-            cleaned_value = cleaned_value.replace(',', '.')
-            number = float(cleaned_value)
-            if unit == 'ms':
-                if 'ms' in value or 'миллисек' in value.lower():
-                    return number
-                elif 's' in value or 'сек' in value.lower():
-                    return number * 1000
-                else:
-                    return number
-            elif unit == 's':
-                if 's' in value or 'сек' in value.lower():
-                    return number
-                elif 'ms' in value or 'миллисек' in value.lower():
-                    return number / 1000
+            # Удаляем неразрывные пробелы и дополнительные пробелы
+            value = value.replace('\u00A0', ' ').strip()
+            # Удаляем дополнительный текст из TTFB
+            if 'Root document took' in value:
+                value = value.replace('Root document took', '').strip()
+            # Извлекаем числовое значение с помощью регулярного выражения
+            import re
+            match = re.search(r'([\d,\.]+)', value)
+            if match:
+                number_str = match.group(1)
+                # Удаляем разделители тысяч (запятые)
+                number_str = number_str.replace(',', '')
+                # Преобразуем строку в число
+                number = float(number_str)
+                # Приводим к нужной единице измерения
+                if unit == 'ms':
+                    if 'ms' in value.lower() or 'миллисек' in value.lower():
+                        return number
+                    elif 's' in value.lower() or 'сек' in value.lower():
+                        return number * 1000
+                    else:
+                        return number
+                elif unit == 's':
+                    if 's' in value.lower() or 'сек' in value.lower():
+                        return number
+                    elif 'ms' in value.lower() or 'миллисек' in value.lower():
+                        return number / 1000
+                    else:
+                        return number
                 else:
                     return number
             else:
-                return number
-        except ValueError:
-            logger.error(f"Невозможно преобразовать метрику: {value}")
+                logger.error(f"Не удалось извлечь числовое значение из метрики: {value}")
+        except ValueError as e:
+            logger.error(f"Ошибка при преобразовании метрики '{value}': {e}")
     else:
         logger.error(f"Пустое значение метрики: {value}")
     return None
+
 
 def load_history(domain):
     import os

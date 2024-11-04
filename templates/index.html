@@ -148,9 +148,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         for (var metric in stats) {
                             html += '<tr>';
                             html += '<td>' + metric + '</td>';
-                            html += '<td>' + (stats[metric].min !== null ? stats[metric].min + 's' : 'N/A') + '</td>';
-                            html += '<td>' + (stats[metric].avg !== null ? stats[metric].avg + 's' : 'N/A') + '</td>';
-                            html += '<td>' + (stats[metric].max !== null ? stats[metric].max + 's' : 'N/A') + '</td>';
+                            html += '<td>' + (stats[metric].min !== null ? stats[metric].min.toFixed(2) + 's' : 'N/A') + '</td>';
+                            html += '<td>' + (stats[metric].avg !== null ? stats[metric].avg.toFixed(2) + 's' : 'N/A') + '</td>';
+                            html += '<td>' + (stats[metric].max !== null ? stats[metric].max.toFixed(2) + 's' : 'N/A') + '</td>';
                             html += '</tr>';
                         }
                         html += '</table>';
@@ -160,10 +160,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         html += '<table><tr><th>Дата</th><th>FCP (s)</th><th>LCP (s)</th><th>TTFB (s)</th><th>TBT (s)</th></tr>';
                         for (var i = 0; i < data.dates.length; i++) {
                             html += '<tr><td>' + data.dates[i] + '</td>';
-                            html += '<td>' + (data.metrics.FCP[i] !== null ? data.metrics.FCP[i] + 's' : 'N/A') + '</td>';
-                            html += '<td>' + (data.metrics.LCP[i] !== null ? data.metrics.LCP[i] + 's' : 'N/A') + '</td>';
-                            html += '<td>' + (data.metrics.TTFB[i] !== null ? data.metrics.TTFB[i] + 's' : 'N/A') + '</td>';
-                            html += '<td>' + (data.metrics.TBT[i] !== null ? data.metrics.TBT[i] + 's' : 'N/A') + '</td></tr>';
+                            html += '<td>' + (data.metrics.FCP[i] !== null ? data.metrics.FCP[i].toFixed(2) + 's' : 'N/A') + '</td>';
+                            html += '<td>' + (data.metrics.LCP[i] !== null ? data.metrics.LCP[i].toFixed(2) + 's' : 'N/A') + '</td>';
+                            html += '<td>' + (data.metrics.TTFB[i] !== null ? data.metrics.TTFB[i].toFixed(2) + 's' : 'N/A') + '</td>';
+                            html += '<td>' + (data.metrics.TBT[i] !== null ? data.metrics.TBT[i].toFixed(2) + 's' : 'N/A') + '</td></tr>';
                         }
                         html += '</table>';
                         statsContent.innerHTML = html;

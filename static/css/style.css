@@ -1,16 +1,30 @@
-/* static/css/style.css */
+/* Переменные CSS для единых стилей */
+:root {
+    --spacing-small: 5px;
+    --spacing-medium: 10px;
+    --spacing-large: 20px;
+    --input-width: 200px;
+    --primary-color: #333;
+    --secondary-color: #000;
+    --background-color: #fff;
+    --error-color: #e74c3c;
+}
 
 /* Основные стили */
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    margin: 20px;
-    background-color: #f5f5f5;
-    color: #2c3e50;
+    font-family: sans-serif;
+    margin: var(--spacing-large);
+    background-color: var(--background-color);
+    color: var(--primary-color);
 }
 
 h1, h2 {
-    color: #2c3e50;
-    margin-bottom: 20px;
+    margin-bottom: var(--spacing-large);
+    color: var(--secondary-color);
+}
+
+p {
+    margin: var(--spacing-small) 0;
 }
 
 ul {
@@ -19,118 +33,172 @@ ul {
 }
 
 li {
-    margin: 15px 0;
+    margin-bottom: var(--spacing-small);
 }
 
+/* Стили для ссылок */
 a {
+    color: var(--secondary-color);
     text-decoration: none;
-    color: #3498db;
 }
 
 a:hover {
-    color: #2980b9;
+    text-decoration: underline;
 }
 
-p {
-    margin: 10px 0;
-}
-
+/* Стили для форм */
 form {
     display: block;
-    margin-top: 10px;
+    margin-top: var(--spacing-medium);
 }
 
 .inline-form {
     display: inline-block;
-    margin-left: 10px;
+    margin-left: var(--spacing-medium);
 }
 
 input[type="text"],
 input[type="password"],
 input[type="number"] {
-    padding: 10px;
-    margin-right: 5px;
+    padding: var(--spacing-medium);
+    margin: var(--spacing-small) 0;
     box-sizing: border-box;
-    border: 1px solid #bdc3c7;
-    border-radius: 3px;
-    background-color: #ecf0f1;
-    color: #2c3e50;
+    border: 1px solid #ccc;
+    border-radius: 0;
+    background-color: var(--background-color);
+    color: var(--primary-color);
+    height: 40px;
+    width: var(--input-width);
 }
 
 input[type="text"]:focus,
 input[type="password"]:focus,
 input[type="number"]:focus {
-    border-color: #3498db;
+    border-color: var(--secondary-color);
     outline: none;
 }
 
 input[type="submit"],
 button {
-    padding: 10px 15px;
-    margin-top: 10px;
-    background-color: #3498db;
-    color: #ffffff;
-    border: none;
+    padding: var(--spacing-medium);
+    margin-top: 0px;
+    background-color: var(--background-color);
+    color: var(--primary-color);
+    border: 1px solid #ccc;
     cursor: pointer;
-    border-radius: 3px;
+    border-radius: 0;
     font-size: 14px;
+    height: 40px;
+    width: var(--input-width);
 }
 
 input[type="submit"]:hover,
 button:hover {
-    background-color: #2980b9;
+    background-color: #f0f0f0;
 }
 
+/* Стили для формы добавления домена */
 .add-domain-form {
     max-width: 500px;
+    margin-top: var(--spacing-large);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-medium);
+    padding: var(--spacing-large);
+    border: 1px solid #ddd;
+    border-radius: 5px;
 }
 
 .add-domain-form input[type="text"] {
-    width: calc(100% - 130px);
-    display: inline-block;
-    vertical-align: top;
-    margin-top: 0;
+    flex-grow: 1;
+    margin: 0;
 }
 
 .add-domain-form input[type="submit"] {
-    display: inline-block;
-    vertical-align: top;
-    margin-top: 0;
-    margin-left: 10px;
+    flex-shrink: 0;
+    cursor: pointer;
+    height: 40px;
+    width: var(--input-width);
 }
 
-/* Стили для форм настроек */
-.frequency-form,
+/* Стили для формы частоты */
+.frequency-form {
+    max-width: 800px;
+    margin-top: var(--spacing-large);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-medium);
+    padding: var(--spacing-large);
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+.frequency-form input[type="number"] {
+    flex-grow: 1;
+    margin: 0;
+    width: 200px;
+}
+
+.frequency-form input[type="submit"] {
+    flex-shrink: 0;
+    cursor: pointer;
+    height: 40px;
+    width: var(--input-width);
+}
+
+/* Стили для формы отображения очков */
 .display-points-form {
-    max-width: 500px;
-    margin-top: 20px;
+    max-width: 800px;
+    margin-top: var(--spacing-large);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-medium);
+    padding: var(--spacing-large);
+    border: 1px solid #ddd;
+    border-radius: 5px;
 }
 
-.frequency-form label,
-.display-points-form label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
-}
-
-.frequency-form input[type="number"],
 .display-points-form input[type="number"] {
-    width: calc(100% - 130px);
-    display: inline-block;
-    vertical-align: top;
-    margin-top: 0;
-    padding: 10px;
-    border: 1px solid #bdc3c7;
-    border-radius: 3px;
-    background-color: #ecf0f1;
+    flex-grow: 1;
+    margin: 0;
 }
 
-.frequency-form input[type="submit"],
 .display-points-form input[type="submit"] {
-    display: inline-block;
-    vertical-align: top;
-    margin-top: 0;
-    margin-left: 10px;
+    flex-shrink: 0;
+    cursor: pointer;
+    height: 40px;
+    width: var(--input-width);
+}
+
+/* Стили для формы бюджета */
+.budget-form {
+    max-width: 1500px;
+    margin-top: var(--spacing-large);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-medium);
+    padding: var(--spacing-large);
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+.budget-form input[type="number"] {
+    flex-grow: 1;
+    margin: 0;
+}
+
+.budget-form input[type="submit"] {
+    flex-shrink: 0;
+    cursor: pointer;
+    height: 40px;
+    width: var(--input-width);
+}
+
+label {
+    display: block;
+    margin-bottom: 0px;
+    font-weight: bold;
+    font-size: 20px;
 }
 
 /* Стили для модальных окон */
@@ -143,22 +211,21 @@ button:hover {
     width: 100%;
     height: 100%;
     overflow: auto;
-    background-color: rgba(44, 62, 80, 0.8);
+    background-color: rgba(0, 0, 0, 0.5);
 }
 
 .modal-content {
-    background-color: #ffffff;
+    background-color: var(--background-color);
     margin: 5% auto;
-    padding: 20px;
+    padding: var(--spacing-large);
     border: none;
     width: 80%;
     max-width: 600px;
     position: relative;
-    border-radius: 5px;
 }
 
 .close {
-    color: #7f8c8d;
+    color: var(--primary-color);
     font-size: 24px;
     font-weight: bold;
     cursor: pointer;
@@ -169,177 +236,94 @@ button:hover {
 
 .close:hover,
 .close:focus {
-    color: #2c3e50;
+    color: var(--secondary-color);
     text-decoration: none;
-    cursor: pointer;
 }
 
 /* Стили для модального окна авторизации */
-#loginModal .modal-content form {
-    margin-top: 20px;
-}
-
-#loginModal label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
-}
-
 #loginModal input[type="text"],
-#loginModal input[type="password"] {
-    width: 100%;
-    padding: 10px;
-    margin-bottom: 15px;
-    border: 1px solid #bdc3c7;
-    border-radius: 3px;
-    background-color: #ecf0f1;
-}
-
+#loginModal input[type="password"],
 #loginModal input[type="submit"] {
     width: 100%;
-    padding: 12px;
-    background-color: #3498db;
-    border: none;
-    color: #ffffff;
-    cursor: pointer;
-    border-radius: 3px;
-    font-size: 16px;
-}
-
-#loginModal input[type="submit"]:hover {
-    background-color: #2980b9;
+    margin-bottom: var(--spacing-medium);
 }
 
 .error-message {
-    color: #e74c3c;
-    margin-bottom: 15px;
+    color: var(--error-color);
+    margin-bottom: var(--spacing-medium);
     font-weight: bold;
-}
-
-/* Стили для модального окна статистики */
-#statsModal .modal-content table,
-#statsModal .modal-content table th,
-#statsModal .modal-content table td {
-    border: none;
-    text-align: left;
-}
-
-#statsModal .modal-content table {
-    width: 100%;
-    margin-top: 20px;
-}
-
-#statsModal .modal-content table th {
-    padding: 10px;
-    background-color: #ecf0f1;
-    font-weight: bold;
-}
-
-#statsModal .modal-content table td {
-    padding: 10px;
-    border-bottom: 1px solid #ecf0f1;
-}
-
-/* Стили для модального окна графика */
-#chartModal .modal-content {
-    width: 90%;
-    max-width: 800px;
-    height: auto;
-    margin-top: 5%;
-}
-
-#metricsChart {
-    max-width: 100%;
-    height: 400px;
-}
-
-/* Стили для формы бюджета */
-.budget-form {
-    margin-top: 10px;
-}
-
-.budget-form label {
-    margin-right: 5px;
-    font-weight: bold;
-}
-
-.budget-form input[type="number"] {
-    width: 80px;
-    margin-right: 10px;
-    padding: 5px;
-    border: 1px solid #bdc3c7;
-    border-radius: 3px;
-    background-color: #ecf0f1;
-}
-
-.budget-form input[type="submit"] {
-    margin-top: 10px;
-    background-color: #27ae60;
-}
-
-.budget-form input[type="submit"]:hover {
-    background-color: #219150;
-}
-
-/* Стили для кнопок */
-button {
-    padding: 10px 15px;
-    margin-right: 5px;
-    cursor: pointer;
-    background-color: #3498db;
-    color: #ffffff;
-    border: none;
-    border-radius: 3px;
-}
-
-button:hover {
-    background-color: #2980b9;
-}
-
-.reset-button {
-    background-color: #e74c3c;
-}
-
-.reset-button:hover {
-    background-color: #c0392b;
 }
 
 /* Стили для таблиц */
 table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 10px;
+    margin-top: var(--spacing-medium);
 }
 
 th,
 td {
-    padding: 12px;
+    padding: var(--spacing-medium);
     text-align: left;
-    border-bottom: 1px solid #ecf0f1;
+    border-bottom: 1px solid #eee;
 }
 
 th {
-    background-color: #ecf0f1;
+    background-color: #f9f9f9;
     font-weight: bold;
 }
 
-/* Стили для ссылок */
-a {
-    color: #3498db;
-    text-decoration: none;
+/* Стили для кнопок */
+button,
+.reset-button {
+    padding: var(--spacing-medium);
+    margin-right: var(--spacing-small);
+    cursor: pointer;
+    background-color: var(--background-color);
+    color: var(--primary-color);
+    border: 1px solid #ccc;
+    border-radius: 0;
+    height: 40px;
+    width: var(--input-width);
 }
 
-a:hover {
-    color: #2980b9;
-    text-decoration: underline;
+button:hover,
+.reset-button:hover {
+    background-color: #f0f0f0;
 }
 
-/* Стили для списков */
-ul {
-    list-style: none;
-    padding: 0;
+.reset-button {
+    border-color: var(--error-color);
+    color: var(--error-color);
 }
 
+.reset-button:hover {
+    background-color: var(--error-color);
+    color: var(--background-color);
+}
+
+/* Стили для списка с кнопками */
 li {
-    margin-bottom: 15px;
+    margin-bottom: var(--spacing-small);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-small);
+}
+
+.button-class {
+    margin-top: var(--spacing-small);
+    align-self: flex-start;
+}
+
+/* Стили для расположения кнопок в одну строку */
+.button-container {
+    display: flex;
+    flex-direction: row;
+    gap: var(--spacing-small);
+}
+
+.button-container .reset-button,
+.button-container button {
+    margin-top: 0;
+    align-self: center;
 }

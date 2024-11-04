@@ -4,6 +4,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, j
 from modules.utils import load_domains, save_domains, load_config, save_config, delete_history_file
 from modules.auth import login_required, login_user, logout_user
 from modules.metrics import load_history, parse_metric
+from datetime import datetime
 import os
 
 app = Flask(__name__)
