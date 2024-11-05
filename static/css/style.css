@@ -327,3 +327,28 @@ li {
     margin-top: 0;
     align-self: center;
 }
+
+/* Стили для чекбоксов сравнения доменов */
+.compare-checkbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    vertical-align: middle;
+    margin-right: 8px;
+}
+
+/* Дополнительные стили для красивого чекбокса */
+.compare-checkbox:checked {
+    background-color: #4caf50;
+    border: 2px solid #4caf50;
+}
+
+.compare-checkbox:checked::before {
+    content: '✔';
+    display: inline-block;
+    color: white;
+    font-size: 14px;
+    position: absolute;
+    left: 4px;
+    top: 2px;
+}
