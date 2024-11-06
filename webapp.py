@@ -184,7 +184,7 @@ def reset_history():
     domain = data.get('domain')
     if not domain:
         return jsonify({'error': 'Домен не указан'}), 400
-
+    
     success = delete_history_file(domain)
     if success:
         return jsonify({'success': True})
