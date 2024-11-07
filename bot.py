@@ -5,17 +5,14 @@ import logging
 from datetime import datetime
 import os
 import json
-
+import subprocess
+from config import TELEGRAM_TOKEN, CHANNEL_ID  # Используем CHANNEL_ID и TELEGRAM_TOKEN из config.py
 from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler
 
 from modules.utils import load_domains, load_config
 from modules.metrics import parse_metric
 from lighthouse import get_lighthouse_metrics
-
-# Настройки для Telegram Bot
-TELEGRAM_TOKEN = '6370386978:AAEEeQFUPoeFW1XgJUVNEMVvUJqlH44IQHw'  # Замените на ваш токен
-CHANNEL_ID = '-1002157891114'  # Замените на ваш ID канала или чата
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -83,6 +80,10 @@ async def audit_mobile(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
         with open(history_filepath, 'w', encoding='utf-8') as file:
             json.dump(history_data, file, ensure_ascii=False, indent=2)
+
+    # Запуск alerts.py после каждого цикла отслеживания
+    logger.info("Запуск alerts.py для проверки бюджетов...")
+    subprocess.run(["python", "alerts.py"])
 
 # Обработчик команды /start_track
 async def start_track(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -167,6 +168,10 @@ async def track_all_domains(context: ContextTypes.DEFAULT_TYPE) -> None:
 
             with open(history_filepath, 'w', encoding='utf-8') as file:
                 json.dump(history_data, file, ensure_ascii=False, indent=2)
+
+        # Запуск alerts.py после каждого цикла отслеживания
+        logger.info("Запуск alerts.py для проверки бюджетов...")
+        subprocess.run(["python", "alerts.py"])
 
         # Ждём заданный интервал перед следующим запуском
         logger.info(f"Ждём {frequency_hours} часа(ов) до следующего запуска.")

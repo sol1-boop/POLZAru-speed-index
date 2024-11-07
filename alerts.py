@@ -1,8 +1,8 @@
+import re
 import json
 import os
 import requests
-from bot import TELEGRAM_TOKEN, CHANNEL_ID  # Используем CHANNEL_ID и TELEGRAM_TOKEN из bot.py
-
+from config import TELEGRAM_TOKEN, CHANNEL_ID  # Используем CHANNEL_ID и TELEGRAM_TOKEN из config.py
 
 # Функция для чтения бюджета из domain.json
 def get_budget():
@@ -16,23 +16,6 @@ def get_budget():
 
 
 # Функция для загрузки последних метрик из файлов в history_files
-import json
-import os
-
-import json
-import os
-
-import json
-import os
-
-import json
-import os
-import re
-
-import json
-import os
-import re
-
 
 def get_latest_metrics(domain):
     # Извлекаем только имя домена, убирая протокол (http, https) и слеши
