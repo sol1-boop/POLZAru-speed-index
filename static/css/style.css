@@ -33,7 +33,9 @@ ul {
 }
 
 li {
-    margin-bottom: var(--spacing-small);
+    margin-top: 100px;
+    font-size: 30px;
+
 }
 
 /* Стили для ссылок */
@@ -81,7 +83,20 @@ input[type="number"]:focus {
 input[type="submit"],
 button {
     padding: var(--spacing-medium);
-    margin-top: 0px;
+    margin-left: 0px;
+    background-color: var(--background-color);
+    color: var(--primary-color);
+    border: 1px solid #ccc;
+    cursor: pointer;
+    border-radius: 0;
+    font-size: 14px;
+    height: 40px;
+    width: var(--input-width);
+}
+
+input[type="submit"][value="Удалить"] {
+    padding: var(--spacing-medium);
+    margin-left: -10px;
     background-color: var(--background-color);
     color: var(--primary-color);
     border: 1px solid #ccc;
@@ -94,7 +109,8 @@ button {
 
 input[type="submit"]:hover,
 button:hover {
-    background-color: #f0f0f0;
+    background-color: var(--error-color);
+    color: #f9f9f9;
 }
 
 /* Стили для формы добавления домена */
