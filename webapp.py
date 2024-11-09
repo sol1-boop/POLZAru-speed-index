@@ -4,10 +4,12 @@ from flask import Flask, render_template, request, redirect, url_for, session, j
 from modules.utils import load_domains, save_domains, load_config, save_config, delete_history_file
 from modules.auth import login_required, login_user, logout_user
 from modules.metrics import load_history, parse_metric
+from alerts_api import alerts_api
 from datetime import datetime
 import os
 
 app = Flask(__name__)
+app.register_blueprint(alerts_api)
 app.secret_key = 'your_secret_key'  # Замените на ваш секретный ключ
 
 @app.route('/')

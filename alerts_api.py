@@ -1,10 +1,10 @@
-from flask import Flask, jsonify
+from flask import Blueprint, jsonify, make_response
 import json
 import os
 import re
 from datetime import datetime
 
-app = Flask(__name__)
+alerts_api = Blueprint('alerts_api', __name__)
 
 HISTORY_DIR = 'history_files'
 DOMAIN_CONFIG = 'domain.json'
@@ -95,7 +95,7 @@ from flask import Flask, jsonify, make_response
 from flask import Flask, jsonify, make_response
 import json
 
-@app.route("/check_metrics", methods=["GET"])
+@alerts_api.route("/check_metrics", methods=["GET"])
 def check_metrics_endpoint():
     exceeded_metrics = check_metrics()
     if exceeded_metrics:
