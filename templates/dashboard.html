@@ -1,0 +1,196 @@
+<!-- templates/dashboard.html -->
+{% extends 'base.html' %}
+
+{% block title %}Дашборд{% endblock %}
+
+{% block head %}
+    <!-- Подключаем файл стилей -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/panel_style.css') }}">
+{% endblock %}
+
+{% block content %}
+<h1>Дашборд метрик сайта</h1>
+<p>Выберите домен для отображения метрик:</p>
+<select id="domainSelect">
+    {% for domain in domains %}
+        <option value="{{ domain.domain }}">{{ domain.domain }}</option>
+    {% endfor %}
+</select>
+
+<div id="charts-container">
+    <div class="chart-wrapper">
+        <h2>FCP (First Contentful Paint)</h2>
+        <canvas id="fcpChart" style="max-height: 500px;"></canvas>
+    </div>
+    <div class="chart-wrapper">
+        <h2>LCP (Largest Contentful Paint)</h2>
+        <canvas id="lcpChart" style="max-height: 500px;"></canvas>
+    </div>
+    <div class="chart-wrapper">
+        <h2>TTFB (Time to First Byte)</h2>
+        <canvas id="ttfbChart" style="max-height: 500px;"></canvas>
+    </div>
+    <div class="chart-wrapper">
+        <h2>TBT (Total Blocking Time)</h2>
+        <canvas id="tbtChart" style="max-height: 500px;"></canvas>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const domainSelect = document.getElementById('domainSelect');
+    let fcpChart, lcpChart, ttfbChart, tbtChart;
+
+    function createComparisonChart(ctx, label, currentData, previousData, budgetValue, borderColorCurrent, borderColorPrevious) {
+        return new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: currentData.dates,
+                datasets: [
+                    {
+                        label: `${label} - Текущий период`,
+                        data: currentData.metrics,
+                        borderColor: borderColorCurrent,
+                        backgroundColor: borderColorCurrent.replace('1)', '0.2)'),
+                        fill: true
+                    },
+                    previousData.metrics ? {
+                        label: `${label} (Предыдущий месяц)`,
+                        data: previousData.metrics,
+                        fill: false,
+                        borderColor: borderColorPrevious,
+                        borderDash: [10, 5],
+                        borderWidth: 1,
+                        tension: 0.1
+                    } : null,
+                    budgetValue ? {
+                        label: 'Бюджет',
+                        data: Array(currentData.dates.length).fill(budgetValue),
+                        fill: false,
+                        borderColor: 'red',
+                        borderWidth: 1,
+                        borderDash: [5, 5]
+                    } : null
+                ].filter(Boolean)
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: true },
+                    tooltip: {
+                        enabled: true,
+                        callbacks: {
+                            title: function(tooltipItems) {
+                                return `Дата: ${tooltipItems[0].label}`;
+                            },
+                            label: function(tooltipItem) {
+                                const currentValue = currentData.metrics[tooltipItem.dataIndex].toFixed(2);
+                                const previousValue = previousData.metrics[tooltipItem.dataIndex]
+                                    ? previousData.metrics[tooltipItem.dataIndex].toFixed(2)
+                                    : 'N/A';
+                                const budget = budgetValue !== undefined ? budgetValue.toFixed(2) : 'N/A';
+
+                                return [
+                                    `${label}:`,
+                                    `  - Текущий: ${currentValue}`,
+                                    `  - Предыдущий: ${previousValue}`,
+                                    `  - Бюджет: ${budget}`
+                                ];
+                            },
+                            afterLabel: function() {
+                                return '';
+                            }
+                        },
+                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                        titleFont: { size: 14, weight: 'bold' },
+                        bodyFont: { size: 12 },
+                        padding: 10
+                    }
+                },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+    }
+
+    function fetchAndRenderCharts(domain) {
+        fetch(`/get_stats?domain=${encodeURIComponent(domain)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                    return;
+                }
+
+                // Destroy existing charts if they exist
+                if (fcpChart) fcpChart.destroy();
+                if (lcpChart) lcpChart.destroy();
+                if (ttfbChart) ttfbChart.destroy();
+                if (tbtChart) tbtChart.destroy();
+
+                // Создаем новые графики
+                const fcpCtx = document.getElementById('fcpChart').getContext('2d');
+                fcpChart = createComparisonChart(
+                    fcpCtx,
+                    'FCP',
+                    { dates: data.dates, metrics: data.metrics.FCP },
+                    { dates: data.dates.slice(-data.previous_metrics.FCP.length), metrics: data.previous_metrics.FCP },
+                    data.budget.FCP,
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(75, 192, 192, 0.6)'
+                );
+
+                const lcpCtx = document.getElementById('lcpChart').getContext('2d');
+                lcpChart = createComparisonChart(
+                    lcpCtx,
+                    'LCP',
+                    { dates: data.dates, metrics: data.metrics.LCP },
+                    { dates: data.dates.slice(-data.previous_metrics.LCP.length), metrics: data.previous_metrics.LCP },
+                    data.budget.LCP,
+                    'rgba(153, 102, 255, 1)',
+                    'rgba(153, 102, 255, 0.6)'
+                );
+
+                const ttfbCtx = document.getElementById('ttfbChart').getContext('2d');
+                ttfbChart = createComparisonChart(
+                    ttfbCtx,
+                    'TTFB',
+                    { dates: data.dates, metrics: data.metrics.TTFB },
+                    { dates: data.dates.slice(-data.previous_metrics.TTFB.length), metrics: data.previous_metrics.TTFB },
+                    data.budget.TTFB,
+                    'rgba(255, 159, 64, 1)',
+                    'rgba(255, 159, 64, 0.6)'
+                );
+
+                const tbtCtx = document.getElementById('tbtChart').getContext('2d');
+                tbtChart = createComparisonChart(
+                    tbtCtx,
+                    'TBT',
+                    { dates: data.dates, metrics: data.metrics.TBT },
+                    { dates: data.dates.slice(-data.previous_metrics.TBT.length), metrics: data.previous_metrics.TBT },
+                    data.budget.TBT,
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(255, 99, 132, 0.6)'
+                );
+            })
+            .catch(error => {
+                alert('Ошибка при загрузке данных.');
+                console.error(error);
+            });
+    }
+
+    // Initial load for the first domain in the select list
+    fetchAndRenderCharts(domainSelect.value);
+
+    // Event listener for domain change
+    domainSelect.addEventListener('change', function() {
+        fetchAndRenderCharts(this.value);
+    });
+});
+</script>
+{% endblock %}

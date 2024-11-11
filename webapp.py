@@ -5,8 +5,13 @@ from modules.utils import load_domains, save_domains, load_config, save_config, 
 from modules.auth import login_required, login_user, logout_user
 from modules.metrics import load_history, parse_metric
 from alerts_api import alerts_api
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
+import statistics
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
+
 
 app = Flask(__name__)
 app.register_blueprint(alerts_api)
@@ -99,54 +104,81 @@ def get_stats():
     config = load_config()
     max_display_points = config.get('max_display_points', 10)
 
-    # Сбор метрик и дат для графика
-    dates = []
-    fcp_values = []
-    lcp_values = []
-    ttfb_values = []
-    tbt_values = []
+    # Дата один месяц назад для извлечения данных за аналогичные даты прошлого месяца
+    today = datetime.now()
+    one_month_ago = today - timedelta(days=30)
+
+    # Словари для метрик текущего периода и предыдущего месяца
+    current_period = []
+    previous_period = {
+        'FCP': [],
+        'LCP': [],
+        'TTFB': [],
+        'TBT': []
+    }
+
+    # Словарь для быстрого доступа к данным за предыдущий месяц по датам
+    previous_month_data = {}
 
     for entry in history_data:
         timestamp = entry.get('timestamp')
         if not timestamp:
             continue
-        dates.append(timestamp)
+
+        # Преобразование строки с датой в объект datetime
+        try:
+            entry_date = datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S.%f")
+        except ValueError:
+            continue  # Пропускаем запись, если формат даты не подходит
 
         metrics = entry.get('metrics', {})
 
-        fcp = parse_metric(metrics.get('FCP'))
-        if fcp is not None:
-            fcp_values.append(fcp)
+        # Данные за текущий месяц
+        if entry_date.month == today.month and entry_date.year == today.year:
+            current_period.append({
+                'timestamp': entry_date,
+                'FCP': parse_metric(metrics.get('FCP')),
+                'LCP': parse_metric(metrics.get('LCP')),
+                'TTFB': parse_metric(metrics.get('TTFB'), unit='ms') / 1000 if metrics.get('TTFB') else None,
+                'TBT': parse_metric(metrics.get('TBT'), unit='ms') / 1000 if metrics.get('TBT') else None
+            })
 
-        lcp = parse_metric(metrics.get('LCP'))
-        if lcp is not None:
-            lcp_values.append(lcp)
+        # Сохраняем данные предыдущего месяца в словаре по точным датам
+        elif entry_date.month == one_month_ago.month and entry_date.year == one_month_ago.year:
+            previous_month_data[entry_date.day] = {
+                'FCP': parse_metric(metrics.get('FCP')),
+                'LCP': parse_metric(metrics.get('LCP')),
+                'TTFB': parse_metric(metrics.get('TTFB'), unit='ms') / 1000 if metrics.get('TTFB') else None,
+                'TBT': parse_metric(metrics.get('TBT'), unit='ms') / 1000 if metrics.get('TBT') else None
+            }
 
-        ttfb = parse_metric(metrics.get('TTFB'), unit='ms')
-        if ttfb is not None:
-            ttfb_values.append(ttfb / 1000)  # Переводим в секунды
+    # Сортируем данные текущего периода
+    current_period = sorted(current_period, key=lambda x: x['timestamp'])
 
-        tbt = parse_metric(metrics.get('TBT'), unit='ms')
-        if tbt is not None:
-            tbt_values.append(tbt / 1000)  # Переводим в секунды
+    # Извлекаем даты и значения метрик для текущего периода
+    dates = [record['timestamp'].strftime("%Y-%m-%dT%H:%M:%S.%f") for record in current_period]
+    fcp_values = [record['FCP'] for record in current_period if record['FCP'] is not None]
+    lcp_values = [record['LCP'] for record in current_period if record['LCP'] is not None]
+    ttfb_values = [record['TTFB'] for record in current_period if record['TTFB'] is not None]
+    tbt_values = [record['TBT'] for record in current_period if record['TBT'] is not None]
 
-    # Инвертируем списки, чтобы самые новые данные были первыми
-    dates = dates[::-1]
-    fcp_values = fcp_values[::-1]
-    lcp_values = lcp_values[::-1]
-    ttfb_values = ttfb_values[::-1]
-    tbt_values = tbt_values[::-1]
+    # Формируем данные для предыдущего периода, используя даты текущего периода
+    for record in current_period:
+        day = record['timestamp'].day
+        previous_data = previous_month_data.get(day, {})
+        previous_period['FCP'].append(previous_data.get('FCP'))
+        previous_period['LCP'].append(previous_data.get('LCP'))
+        previous_period['TTFB'].append(previous_data.get('TTFB'))
+        previous_period['TBT'].append(previous_data.get('TBT'))
 
-    # Ограничиваем количество выводимых значений
-    dates = dates[:max_display_points]
-    fcp_values = fcp_values[:max_display_points]
-    lcp_values = lcp_values[:max_display_points]
-    ttfb_values = ttfb_values[:max_display_points]
-    tbt_values = tbt_values[:max_display_points]
+    # Ограничиваем количество выводимых значений для графиков
+    dates = dates[-max_display_points:]
+    fcp_values = fcp_values[-max_display_points:]
+    lcp_values = lcp_values[-max_display_points:]
+    ttfb_values = ttfb_values[-max_display_points:]
+    tbt_values = tbt_values[-max_display_points:]
 
-    # Вычисление статистики (минимум, среднее, максимум) для каждой метрики
-    import statistics
-
+    # Функция для расчета статистики
     def calculate_stats(values):
         if values:
             return {
@@ -157,6 +189,7 @@ def get_stats():
         else:
             return {'min': None, 'avg': None, 'max': None}
 
+    # Рассчитываем статистику для текущего периода
     stats = {
         'FCP': calculate_stats(fcp_values),
         'LCP': calculate_stats(lcp_values),
@@ -164,7 +197,7 @@ def get_stats():
         'TBT': calculate_stats(tbt_values)
     }
 
-    # Формирование данных для ответа
+    # Формируем данные для API-ответа
     data = {
         'dates': dates,
         'metrics': {
@@ -172,6 +205,12 @@ def get_stats():
             'LCP': lcp_values,
             'TTFB': ttfb_values,
             'TBT': tbt_values
+        },
+        'previous_metrics': {
+            'FCP': previous_period['FCP'][:max_display_points],
+            'LCP': previous_period['LCP'][:max_display_points],
+            'TTFB': previous_period['TTFB'][:max_display_points],
+            'TBT': previous_period['TBT'][:max_display_points]
         },
         'budget': budget,
         'stats': stats
@@ -186,12 +225,17 @@ def reset_history():
     domain = data.get('domain')
     if not domain:
         return jsonify({'error': 'Домен не указан'}), 400
-    
+
     success = delete_history_file(domain)
     if success:
         return jsonify({'success': True})
     else:
         return jsonify({'error': 'Не удалось удалить файл истории'}), 500
+
+@app.route('/dashboard')
+def dashboard():
+    domains = load_domains()
+    return render_template('dashboard.html', domains=domains)
 
 if __name__ == '__main__':
     app.run(debug=True)

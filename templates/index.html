@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Настройки для отображения графиков
     const chartConfig = {
-        type: 'line',  // Начальный тип графика
+        type: 'line',
         data: {
             labels: [],
             datasets: []
@@ -181,15 +181,22 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                     html += '</table>';
 
+                    // Сортируем данные по дате (от последних к первым)
+                    const sortedDates = [...data.dates].reverse();
+                    const sortedFCP = [...data.metrics.FCP].reverse();
+                    const sortedLCP = [...data.metrics.LCP].reverse();
+                    const sortedTTFB = [...data.metrics.TTFB].reverse();
+                    const sortedTBT = [...data.metrics.TBT].reverse();
+
                     html += '<h3>История замеров</h3>';
                     html += '<table><tr><th>Дата</th><th>FCP (s)</th><th>LCP (s)</th><th>TTFB (s)</th><th>TBT (s)</th></tr>';
-                    for (let i = 0; i < data.dates.length; i++) {
+                    for (let i = 0; i < sortedDates.length; i++) {
                         html += `<tr>
-                                    <td>${data.dates[i]}</td>
-                                    <td>${data.metrics.FCP[i] !== null ? data.metrics.FCP[i] + 's' : 'N/A'}</td>
-                                    <td>${data.metrics.LCP[i] !== null ? data.metrics.LCP[i] + 's' : 'N/A'}</td>
-                                    <td>${data.metrics.TTFB[i] !== null ? data.metrics.TTFB[i] + 's' : 'N/A'}</td>
-                                    <td>${data.metrics.TBT[i] !== null ? data.metrics.TBT[i] + 's' : 'N/A'}</td>
+                                    <td>${sortedDates[i]}</td>
+                                    <td>${sortedFCP[i] !== null ? sortedFCP[i] + 's' : 'N/A'}</td>
+                                    <td>${sortedLCP[i] !== null ? sortedLCP[i] + 's' : 'N/A'}</td>
+                                    <td>${sortedTTFB[i] !== null ? sortedTTFB[i] + 's' : 'N/A'}</td>
+                                    <td>${sortedTBT[i] !== null ? sortedTBT[i] + 's' : 'N/A'}</td>
                                  </tr>`;
                     }
                     html += '</table>';
@@ -211,7 +218,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(results => {
                 chartConfig.data.labels = results[0].dates;
                 chartConfig.data.datasets = [];
-                                const colors = ['rgba(75, 192, 192, 1)', 'rgba(153, 102, 255, 1)', 'rgba(255, 159, 64, 1)', 'rgba(255, 99, 132, 1)'];
+                const colors = ['rgba(75, 192, 192, 1)', 'rgba(153, 102, 255, 1)', 'rgba(255, 159, 64, 1)', 'rgba(255, 99, 132, 1)'];
 
                 results.forEach((data, index) => {
                     if (data.error) {
@@ -219,7 +226,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         return;
                     }
 
-                    // Добавляем данные для каждого домена с уникальными цветами
                     chartConfig.data.datasets.push(
                         {
                             label: `FCP - ${domains[index]}`,
@@ -339,99 +345,6 @@ document.addEventListener('DOMContentLoaded', function() {
             chartModal.style.display = 'none';
         }
     };
-    // Функция для отображения графика одного домена с учетом бюджета
-function fetchData(domain) {
-    fetch(`/get_stats?domain=${encodeURIComponent(domain)}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                alert(data.error);
-                return;
-            }
-
-            chartConfig.data.labels = data.dates;
-            chartConfig.data.datasets = [
-                {
-                    label: `FCP - ${domain}`,
-                    data: data.metrics.FCP,
-                    borderColor: 'rgba(75, 192, 192, 1)',
-                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                    fill: true
-                },
-                {
-                    label: `LCP - ${domain}`,
-                    data: data.metrics.LCP,
-                    borderColor: 'rgba(153, 102, 255, 1)',
-                    backgroundColor: 'rgba(153, 102, 255, 0.2)',
-                    fill: true
-                },
-                {
-                    label: `TTFB - ${domain}`,
-                    data: data.metrics.TTFB,
-                    borderColor: 'rgba(255, 159, 64, 1)',
-                    backgroundColor: 'rgba(255, 159, 64, 0.2)',
-                    fill: true
-                },
-                {
-                    label: `TBT - ${domain}`,
-                    data: data.metrics.TBT,
-                    borderColor: 'rgba(255, 99, 132, 1)',
-                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                    fill: true
-                }
-            ];
-
-            // Добавляем бюджетные линии для каждой метрики, если они заданы
-            if (data.budget) {
-                if (data.budget.FCP) {
-                    chartConfig.data.datasets.push({
-                        label: `FCP Budget`,
-                        data: Array(data.dates.length).fill(data.budget.FCP),
-                        borderColor: 'rgba(75, 192, 192, 0.6)',
-                        borderDash: [5, 5],
-                        pointRadius: 0,
-                        fill: false
-                    });
-                }
-                if (data.budget.LCP) {
-                    chartConfig.data.datasets.push({
-                        label: `LCP Budget`,
-                        data: Array(data.dates.length).fill(data.budget.LCP),
-                        borderColor: 'rgba(153, 102, 255, 0.6)',
-                        borderDash: [5, 5],
-                        pointRadius: 0,
-                        fill: false
-                    });
-                }
-                if (data.budget.TTFB) {
-                    chartConfig.data.datasets.push({
-                        label: `TTFB Budget`,
-                        data: Array(data.dates.length).fill(data.budget.TTFB),
-                        borderColor: 'rgba(255, 159, 64, 0.6)',
-                        borderDash: [5, 5],
-                        pointRadius: 0,
-                        fill: false
-                    });
-                }
-                if (data.budget.TBT) {
-                    chartConfig.data.datasets.push({
-                        label: `TBT Budget`,
-                        data: Array(data.dates.length).fill(data.budget.TBT),
-                        borderColor: 'rgba(255, 99, 132, 0.6)',
-                        borderDash: [5, 5],
-                        pointRadius: 0,
-                        fill: false
-                    });
-                }
-            }
-
-            if (metricsChart) metricsChart.destroy();
-            metricsChart = new Chart(ctx, chartConfig);
-            chartDomain.textContent = domain;
-            chartModal.style.display = 'block';
-        });
-}
-
 });
 </script>
 {% endblock %}

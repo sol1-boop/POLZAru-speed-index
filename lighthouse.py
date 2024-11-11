@@ -41,7 +41,7 @@ def sync_get_lighthouse_metrics(url: str, mobile: bool = False) -> dict:
                 url,
                 '--output=json',
                 '--quiet',
-                '--only-audits=first-contentful-paint,largest-contentful-paint,server-response-time,total-blocking-time',
+                '--only-audits=first-contentful-paint,largest-contentful-paint,server-response-time,total-blocking-time, speed-index',
                 '--emulated-form-factor=mobile',
                 f'--chrome-flags={chrome_flags}',
                 max_wait_for_load
