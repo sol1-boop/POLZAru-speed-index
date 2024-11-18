@@ -181,13 +181,16 @@ def get_stats():
     # Функция для расчета статистики
     def calculate_stats(values):
         if values:
+            values.sort()  # Убедимся, что данные отсортированы для расчета процентилей
             return {
                 'min': round(min(values), 2),
-                'avg': round(statistics.mean(values), 2),
+                'median': round(statistics.median(values), 2),  # 50% процентиль (медиана)
+                'percentile_75': round(statistics.quantiles(values, n=100)[74], 2),  # 75% процентиль
+                'percentile_95': round(statistics.quantiles(values, n=100)[94], 2),  # 95% процентиль
                 'max': round(max(values), 2)
             }
         else:
-            return {'min': None, 'avg': None, 'max': None}
+            return {'min': None, 'median': None, 'percentile_75': None, 'percentile_95': None, 'max': None}
 
     # Рассчитываем статистику для текущего периода
     stats = {

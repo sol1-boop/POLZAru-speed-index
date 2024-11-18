@@ -69,6 +69,7 @@
         <canvas id="metricsChart"></canvas>
     </div>
 </div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -170,12 +171,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     statsContent.innerHTML = `<p>${data.error}</p>`;
                 } else {
                     let html = '<h3>Статистика</h3>';
-                    html += '<table><tr><th>Метрика</th><th>Минимум</th><th>Среднее</th><th>Максимум</th></tr>';
+                    html += '<table><tr><th>Метрика</th><th>Мин.</th><th>50%</th><th>75%</th><th>95%</th><th>Макс.</th></tr>';
                     for (let metric in data.stats) {
                         html += `<tr>
                                     <td>${metric}</td>
                                     <td>${data.stats[metric].min !== null ? data.stats[metric].min + 's' : 'N/A'}</td>
-                                    <td>${data.stats[metric].avg !== null ? data.stats[metric].avg + 's' : 'N/A'}</td>
+                                    <td>${data.stats[metric].median !== null ? data.stats[metric].median + 's' : 'N/A'}</td>
+                                    <td>${data.stats[metric].percentile_75 !== null ? data.stats[metric].percentile_75 + 's' : 'N/A'}</td>
+                                    <td>${data.stats[metric].percentile_95 !== null ? data.stats[metric].percentile_95 + 's' : 'N/A'}</td>
                                     <td>${data.stats[metric].max !== null ? data.stats[metric].max + 's' : 'N/A'}</td>
                                  </tr>`;
                     }
