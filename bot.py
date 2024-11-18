@@ -6,10 +6,8 @@ from datetime import datetime
 import os
 import json
 import subprocess
-from config import TELEGRAM_TOKEN, CHANNEL_ID  # Используем CHANNEL_ID и TELEGRAM_TOKEN из config.py
 from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler
-
 from modules.utils import load_domains, load_config
 from modules.metrics import parse_metric
 from lighthouse import get_lighthouse_metrics
@@ -22,6 +20,25 @@ if not os.path.exists(HISTORY_DIR):
     os.makedirs(HISTORY_DIR)
 
 tracking_task = None  # Используем одну задачу для отслеживания
+
+def load_telegram_config():
+    config_path = os.path.join(os.path.dirname(__file__), 'config.json')
+    if not os.path.exists(config_path):
+        raise FileNotFoundError(f"Файл конфигурации {config_path} не найден.")
+    with open(config_path, 'r', encoding='utf-8') as file:
+        config = json.load(file)
+
+    # Проверяем наличие необходимых ключей
+    if 'telegram_token' not in config or 'channel_id' not in config:
+        raise KeyError("В файле config.json отсутствуют ключи 'telegram_token' или 'channel_id'.")
+
+    return config
+
+# Загружаем конфигурацию
+telegram_config = load_telegram_config()
+TELEGRAM_TOKEN = telegram_config['telegram_token']
+CHANNEL_ID = telegram_config['channel_id']
+
 
 # Обработчик команды /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

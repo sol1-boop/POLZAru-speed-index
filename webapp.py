@@ -45,6 +45,8 @@ def settings():
     config = load_config()
     frequency = config.get('frequency', 2)
     max_display_points = config.get('max_display_points', 10)
+    telegram_token = config.get('telegram_token', '')
+    channel_id = config.get('channel_id', '')
 
     if request.method == 'POST':
         action = request.form.get('action')
@@ -77,8 +79,24 @@ def settings():
             max_display_points = int(request.form.get('max_display_points', 10))
             config['max_display_points'] = max_display_points
             save_config(config)
+        elif action == 'update_telegram_settings':
+            # Сохранение настроек Telegram
+            telegram_token = request.form.get('telegram_token', '')
+            channel_id = request.form.get('channel_id', '')
+            config['telegram_token'] = telegram_token
+            config['channel_id'] = channel_id
+            save_config(config)
 
         return redirect(url_for('settings'))
+
+    return render_template(
+        'settings.html',
+        domains=domains,
+        frequency=frequency,
+        max_display_points=max_display_points,
+        telegram_token=telegram_token,
+        channel_id=channel_id
+    )
 
     return render_template('settings.html', domains=domains, frequency=frequency, max_display_points=max_display_points)
 
