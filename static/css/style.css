@@ -378,6 +378,7 @@ li {
     padding: 20px; /* Отступы для содержимого */
     box-sizing: border-box;
     overflow: auto; /* Прокрутка, если содержимое выходит за границы */
+
 }
 
 /* Стиль модального окна */
@@ -391,7 +392,7 @@ li {
     max-width: 1440px; /* Устанавливаем максимальную ширину */
     height: auto; /* Устанавливаем высоту в зависимости от контента */
     max-height: 90%; /* Устанавливаем максимальную высоту */
-    background-color: #fff;
+    background-color: var(--background-color);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     z-index: 1000;
     padding: 20px;
@@ -405,6 +406,7 @@ li {
     height: auto; /* Автоматическая высота */
     max-height: 500px; /* Ограничиваем максимальную высоту для избежания скролла */
     box-sizing: border-box; /* Учитываем отступы */
+    background-color: var(--background-color);
 }
 
 #domainSelect {
@@ -426,6 +428,8 @@ li {
     height: 40px;
 
 }
+
+
 
 
 
