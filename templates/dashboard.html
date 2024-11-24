@@ -18,6 +18,52 @@
     {% endfor %}
 </select>
 
+<div id="key-metrics">
+    <div class="metric-card" id="fcpCard">
+        <h3>FCP</h3>
+        <p id="fcpValue"></p>
+        <span id="fcpStatus" class="status-indicator"></span>
+    </div>
+    <div class="metric-card" id="lcpCard">
+        <h3>LCP</h3>
+        <p id="lcpValue"></p>
+        <span id="lcpStatus" class="status-indicator"></span>
+    </div>
+    <div class="metric-card" id="ttfbCard">
+        <h3>TTFB</h3>
+        <p id="ttfbValue"></p>
+        <span id="ttfbStatus" class="status-indicator"></span>
+    </div>
+    <div class="metric-card" id="tbtCard">
+        <h3>TBT</h3>
+        <p id="tbtValue"></p>
+        <span id="tbtStatus" class="status-indicator"></span>
+    </div>
+</div>
+
+<div id="trend-metrics">
+    <div class="metric-card" id="fcpTrendCard">
+        <h3>FCP Тренд</h3>
+        <p id="fcpTrendValue"></p>
+        <span id="fcpTrendStatus" class="status-indicator"></span>
+    </div>
+    <div class="metric-card" id="lcpTrendCard">
+        <h3>LCP Тренд</h3>
+        <p id="lcpTrendValue"></p>
+        <span id="lcpTrendStatus" class="status-indicator"></span>
+    </div>
+    <div class="metric-card" id="ttfbTrendCard">
+        <h3>TTFB Тренд</h3>
+        <p id="ttfbTrendValue"></p>
+        <span id="ttfbTrendStatus" class="status-indicator"></span>
+    </div>
+    <div class="metric-card" id="tbtTrendCard">
+        <h3>TBT Тренд</h3>
+        <p id="tbtTrendValue"></p>
+        <span id="tbtTrendStatus" class="status-indicator"></span>
+    </div>
+</div>
+
 <div id="charts-container">
     <div class="chart-wrapper">
         <h2>FCP (First Contentful Paint)</h2>
@@ -46,37 +92,31 @@ document.addEventListener('DOMContentLoaded', function() {
     const domainSelect = document.getElementById('domainSelect');
     let fcpChart, lcpChart, ttfbChart, tbtChart;
 
+    function createDataset(label, data, borderColor, fill = true, borderDash = [], borderWidth = 1, tension = 0.1) {
+        return {
+            label: label,
+            data: data,
+            borderColor: borderColor,
+            backgroundColor: fill ? borderColor.replace('1)', '0.2)') : undefined,
+            fill: fill,
+            borderDash: borderDash,
+            borderWidth: borderWidth,
+            tension: tension
+        };
+    }
+
     function createComparisonChart(ctx, label, currentData, previousData, budgetValue, borderColorCurrent, borderColorPrevious) {
+        const datasets = [
+            createDataset(`${label} - Текущий период`, currentData.metrics, borderColorCurrent, true),
+            previousData.metrics ? createDataset(`${label} (Предыдущий месяц)`, previousData.metrics, borderColorPrevious, false, [10, 5]) : null,
+            budgetValue ? createDataset('Бюджет', Array(currentData.dates.length).fill(budgetValue), 'red', false, [5, 5]) : null
+        ].filter(Boolean);
+
         return new Chart(ctx, {
             type: 'line',
             data: {
                 labels: currentData.dates,
-                datasets: [
-                    {
-                        label: `${label} - Текущий период`,
-                        data: currentData.metrics,
-                        borderColor: borderColorCurrent,
-                        backgroundColor: borderColorCurrent.replace('1)', '0.2)'),
-                        fill: true
-                    },
-                    previousData.metrics ? {
-                        label: `${label} (Предыдущий месяц)`,
-                        data: previousData.metrics,
-                        fill: false,
-                        borderColor: borderColorPrevious,
-                        borderDash: [10, 5],
-                        borderWidth: 1,
-                        tension: 0.1
-                    } : null,
-                    budgetValue ? {
-                        label: 'Бюджет',
-                        data: Array(currentData.dates.length).fill(budgetValue),
-                        fill: false,
-                        borderColor: 'red',
-                        borderWidth: 1,
-                        borderDash: [5, 5]
-                    } : null
-                ].filter(Boolean)
+                datasets: datasets
             },
             options: {
                 responsive: true,
@@ -109,11 +149,73 @@ document.addEventListener('DOMContentLoaded', function() {
                         },
                         backgroundColor: 'rgba(0, 0, 0, 0.7)',
                         titleFont: { size: 14, weight: 'bold' },
-                        bodyFont: { size: 12 },
+                        bodyFont: { size: 18 },
                         padding: 10
                     }
                 },
                 scales: { y: { beginAtZero: true } }
+            }
+        });
+    }
+
+    function destroyCharts() {
+        if (fcpChart) fcpChart.destroy();
+        if (lcpChart) lcpChart.destroy();
+        if (ttfbChart) ttfbChart.destroy();
+        if (tbtChart) tbtChart.destroy();
+    }
+
+    function updateMetricCards(data) {
+        const metrics = ['FCP', 'LCP', 'TTFB', 'TBT'];
+        metrics.forEach(metric => {
+            const valueElement = document.getElementById(`${metric.toLowerCase()}Value`);
+            const statusElement = document.getElementById(`${metric.toLowerCase()}Status`);
+            const trendValueElement = document.getElementById(`${metric.toLowerCase()}TrendValue`);
+            const trendStatusElement = document.getElementById(`${metric.toLowerCase()}TrendStatus`);
+            const currentValues = data.metrics[metric];
+            const budgetValue = data.budget[metric] !== undefined ? data.budget[metric] : null;
+
+            if (currentValues && currentValues.length > 0) {
+                const currentValue = currentValues[currentValues.length - 1];
+                const currentValueText = currentValue !== null ? currentValue.toFixed(2) : 'N/A';
+                const budgetValueText = budgetValue !== null ? budgetValue.toFixed(2) : 'N/A';
+
+                valueElement.innerText = `Текущий: ${currentValueText}, Бюджет: ${budgetValueText}`;
+
+                if (currentValue <= budgetValue) {
+                    valueElement.classList.remove('over-budget');
+                    valueElement.classList.add('within-budget');
+                    statusElement.innerHTML = '✅';
+                } else {
+                    valueElement.classList.remove('within-budget');
+                    valueElement.classList.add('over-budget');
+                    statusElement.innerHTML = '⚠️';
+                }
+
+                // Calculating trend for the last 84 measurements
+                if (currentValues.length >= 10) {
+                    const pastValue = currentValues[currentValues.length - 10];
+                    const trend = ((currentValue - pastValue) / pastValue) * 100;
+                    const trendText = trend > 0 ? `Ухудшение на ${trend.toFixed(2)}%` : `Улучшение на ${Math.abs(trend).toFixed(2)}%`;
+                    trendValueElement.innerText = trendText;
+
+                    if (trend > 0) {
+                        trendValueElement.classList.add('worsened');
+                        trendStatusElement.innerHTML = '⬇️';
+                    } else {
+                        trendValueElement.classList.add('improved');
+                        trendStatusElement.innerHTML = '⬆️';
+                    }
+                } else {
+                    trendValueElement.innerText = 'Недостаточно данных';
+                    trendValueElement.classList.remove('improved', 'worsened');
+                    trendStatusElement.innerHTML = '❓';
+                }
+            } else {
+                valueElement.innerText = 'Нет данных';
+                valueElement.classList.remove('within-budget', 'over-budget');
+                valueElement.classList.add('no-data');
+                statusElement.innerHTML = '❓';
             }
         });
     }
@@ -127,11 +229,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
 
+                // Update metric cards
+                updateMetricCards(data);
+
                 // Destroy existing charts if they exist
-                if (fcpChart) fcpChart.destroy();
-                if (lcpChart) lcpChart.destroy();
-                if (ttfbChart) ttfbChart.destroy();
-                if (tbtChart) tbtChart.destroy();
+                destroyCharts();
 
                 // Создаем новые графики
                 const fcpCtx = document.getElementById('fcpChart').getContext('2d');

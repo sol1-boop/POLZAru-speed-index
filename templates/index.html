@@ -24,6 +24,7 @@
     {% endif %}
 </p>
 <button id="compare-button">Сравнить домены</button>
+<button id="compare-button" onclick="location.href='/dashboard'">Дашборд</button>
 
 <!-- Модальные окна -->
 <div id="loginModal" class="modal">
@@ -88,21 +89,39 @@ document.addEventListener('DOMContentLoaded', function() {
     const chartDomain = document.getElementById('chart-domain');
 
     // Настройки для отображения графиков
-    const chartConfig = {
-        type: 'line',
-        data: {
-            labels: [],
-            datasets: []
+const chartConfig = {
+    type: 'line', // или любой другой тип графика
+    data: {
+        labels: [], // метки, полученные из данных
+        datasets: [] // данные для графиков
+    },
+    options: {
+        responsive: true, // Делает график адаптивным к размеру контейнера
+        maintainAspectRatio: false, // Позволяет ширине и высоте изменяться независимо
+        plugins: {
+            legend: {
+                display: true,
+                position: 'top'
+            }
         },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: { position: 'top' },
-                tooltip: { enabled: true }
-            },
-            scales: { y: { beginAtZero: true } }
+        layout: {
+            padding: {
+                left: 20,
+                right: 20,
+                top: 20,
+                bottom: 20
+            }
         }
-    };
+    }
+};
+
+// Пересоздание графика с новыми параметрами
+if (metricsChart) metricsChart.destroy();
+metricsChart = new Chart(ctx, chartConfig);
+
+// Пересоздаем график
+if (metricsChart) metricsChart.destroy();
+metricsChart = new Chart(ctx, chartConfig);
 
     // Обработчик для изменения типа графика
     document.getElementById('chartType').addEventListener('change', function() {
