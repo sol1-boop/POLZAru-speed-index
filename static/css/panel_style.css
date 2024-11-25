@@ -1,0 +1,93 @@
+/* css/panel_style.css */
+
+/* Основной контейнер для всех метрик */
+#key-metrics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px; /* Промежуток между карточками */
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 0px;
+    background-color: #f2f5fb;
+    justify-content: space-around;
+    margin: 10px;
+}
+
+#trend-metrics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px; /* Промежуток между карточками */
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 0px;
+    background-color: #f2f5fb;
+    justify-content: space-around;
+    margin: 10px;
+}
+
+/* Карточка метрики */
+.metric-card {
+    border: 1px solid #e0e0e0;
+    padding: 15px;
+    border-radius: 0px;
+    background-color: #ffffff;
+    width: 220px; /* Ширина каждой карточки */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.metric-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* Заголовок метрики */
+.metric-card h3 {
+    font-size: 1.2em;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+/* Значение метрики */
+.metric-card p {
+    font-size: 1.1em;
+    margin-bottom: 10px;
+}
+
+/* Статусный индикатор */
+.status-indicator {
+    font-size: 1.5em;
+}
+
+/* Цвет для значений, которые находятся в пределах бюджета */
+.within-budget {
+    color: green;
+}
+
+/* Цвет для значений, которые превышают бюджет */
+.over-budget {
+    color: red;
+}
+
+/* Цвет для значений, когда нет данных */
+.no-data {
+    color: black;
+}
+
+/* Цвет для значений, которые улучшились */
+.improved {
+    color: blue;
+}
+
+/* Цвет для значений, которые ухудшились */
+.worsened {
+    color: orange;
+}
+
+#showStatsButton {
+    margin-bottom: 20px;
+}

@@ -45,6 +45,8 @@ def settings():
     config = load_config()
     frequency = config.get('frequency', 2)
     max_display_points = config.get('max_display_points', 10)
+    telegram_token = config.get('telegram_token', '')
+    channel_id = config.get('channel_id', '')
 
     if request.method == 'POST':
         action = request.form.get('action')
@@ -77,8 +79,24 @@ def settings():
             max_display_points = int(request.form.get('max_display_points', 10))
             config['max_display_points'] = max_display_points
             save_config(config)
+        elif action == 'update_telegram_settings':
+            # Сохранение настроек Telegram
+            telegram_token = request.form.get('telegram_token', '')
+            channel_id = request.form.get('channel_id', '')
+            config['telegram_token'] = telegram_token
+            config['channel_id'] = channel_id
+            save_config(config)
 
         return redirect(url_for('settings'))
+
+    return render_template(
+        'settings.html',
+        domains=domains,
+        frequency=frequency,
+        max_display_points=max_display_points,
+        telegram_token=telegram_token,
+        channel_id=channel_id
+    )
 
     return render_template('settings.html', domains=domains, frequency=frequency, max_display_points=max_display_points)
 
@@ -181,13 +199,16 @@ def get_stats():
     # Функция для расчета статистики
     def calculate_stats(values):
         if values:
+            values.sort()  # Убедимся, что данные отсортированы для расчета процентилей
             return {
                 'min': round(min(values), 2),
-                'avg': round(statistics.mean(values), 2),
+                'median': round(statistics.median(values), 2),  # 50% процентиль (медиана)
+                'percentile_75': round(statistics.quantiles(values, n=100)[74], 2),  # 75% процентиль
+                'percentile_95': round(statistics.quantiles(values, n=100)[94], 2),  # 95% процентиль
                 'max': round(max(values), 2)
             }
         else:
-            return {'min': None, 'avg': None, 'max': None}
+            return {'min': None, 'median': None, 'percentile_75': None, 'percentile_95': None, 'max': None}
 
     # Рассчитываем статистику для текущего периода
     stats = {

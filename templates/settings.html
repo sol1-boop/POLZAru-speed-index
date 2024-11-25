@@ -61,6 +61,17 @@
     <input type="submit" value="Сохранить">
 </form>
 
+<h2>Настройки Telegram</h2>
+<form action="{{ url_for('settings') }}" method="post" class="telegram-settings-form">
+    <input type="hidden" name="action" value="update_telegram_settings">
+    <label for="telegram_token">Telegram Token:</label>
+    <input type="text" id="telegram_token" name="telegram_token" value="{{ telegram_token }}" required>
+    <label for="channel_id">Channel ID:</label>
+    <input type="text" id="channel_id" name="channel_id" value="{{ channel_id }}" required>
+    <input type="submit" value="Сохранить">
+</form>
+
+
 <p><a href="{{ url_for('index') }}">Назад к списку доменов</a></p>
 {% endblock %}
 

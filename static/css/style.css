@@ -1,4 +1,4 @@
-/* Переменные CSS для единых стилей */
+/* Переменные CSS для единых стилей (общие) */
 :root {
     --spacing-small: 5px;
     --spacing-medium: 10px;
@@ -6,7 +6,7 @@
     --input-width: 200px;
     --primary-color: #333;
     --secondary-color: #000;
-    --background-color: #fff;
+    --background-color: #f2f5fb;
     --error-color: #e74c3c;
 }
 
@@ -33,7 +33,7 @@ ul {
 }
 
 li {
-    margin-top: 100px;
+    margin-top: 50px;
     font-size: 30px;
 
 }
@@ -301,11 +301,12 @@ button,
     border-radius: 0;
     height: 40px;
     width: var(--input-width);
+
 }
 
 button:hover,
 .reset-button:hover {
-    background-color: #f0f0f0;
+    background-color: var(--error-color);
 }
 
 .reset-button {
@@ -368,3 +369,74 @@ li {
     left: 4px;
     top: 2px;
 }
+
+/* Модальное окно */
+.modal-content {
+    width: 90%; /* Увеличиваем ширину модального окна */
+    height: 700px; /* Увеличиваем высоту для большего пространства */
+    max-width: 1440px; /* Максимальная ширина */
+    max-height: 700px; /* Максимальная высота */
+    padding: 20px; /* Отступы для содержимого */
+    box-sizing: border-box;
+    overflow: auto; /* Прокрутка, если содержимое выходит за границы */
+
+}
+
+/* Стиль модального окна */
+.modal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%; /* Делаем шире для более крупного отображения */
+    max-width: 1440px; /* Устанавливаем максимальную ширину */
+    height: auto; /* Устанавливаем высоту в зависимости от контента */
+    max-height: 90%; /* Устанавливаем максимальную высоту */
+    background-color: var(--background-color);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    padding: 20px;
+    overflow: hidden; /* Убираем прокрутку */
+    box-sizing: border-box; /* Учет отступов в общей ширине и высоте */
+}
+
+/* Canvas внутри модального окна */
+#metricsChart {
+    width: 100% !important; /* Занимает всю ширину */
+    height: auto; /* Автоматическая высота */
+    max-height: 500px; /* Ограничиваем максимальную высоту для избежания скролла */
+    box-sizing: border-box; /* Учитываем отступы */
+    background-color: var(--background-color);
+}
+
+#domainSelect {
+    width: 500px;
+    padding: 10px;
+    font-size: 16px;
+    border-radius: 0px;
+    border: 1px solid #ccc;
+    margin-bottom: 20px;
+    margin-left: 10px;
+    height: 40px;
+
+}
+
+#domainSelect:focus {
+    widht: 500px;
+    outline: none;
+    border-color: var(--error-color);
+    height: 40px;
+
+}
+
+.controls-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+
+
+
+

@@ -45,8 +45,6 @@ def parse_metric(value, unit='s'):
     else:
         logger.error(f"Пустое значение метрики: {value}")
     return None
-
-
 def load_history(domain):
     import os
     import json

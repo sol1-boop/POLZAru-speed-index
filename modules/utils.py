@@ -21,12 +21,10 @@ def load_domains():
             return []
     else:
         return []
-
 def save_domains(domains):
     domain_file = 'domain.json'
     with open(domain_file, 'w', encoding='utf-8') as file:
         json.dump(domains, file, ensure_ascii=False, indent=2)
-
 def load_config():
     config_file = 'config.json'
     if os.path.exists(config_file):
@@ -37,12 +35,10 @@ def load_config():
             return {}
     else:
         return {}
-
 def save_config(config):
     config_file = 'config.json'
     with open(config_file, 'w', encoding='utf-8') as file:
         json.dump(config, file, ensure_ascii=False, indent=2)
-
 def delete_history_file(domain):
     history_dir = 'history_files'
     history_filename = f"history_{domain.replace('http://', '').replace('https://', '').replace('/', '_')}.json"
