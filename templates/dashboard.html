@@ -21,6 +21,7 @@
     <button class="stats-button" id="showStatsButton">Статистика</button>
 </div>
 
+<h2>Последний замер</h2>
 <div id="key-metrics">
     <div class="metric-card" id="fcpCard">
         <h3>FCP</h3>
@@ -44,24 +45,25 @@
     </div>
 </div>
 
+<h2>Тренд</h2>
 <div id="trend-metrics">
     <div class="metric-card" id="fcpTrendCard">
-        <h3>FCP Тренд</h3>
+        <h3>FCP</h3>
         <p id="fcpTrendValue"></p>
         <span id="fcpTrendStatus" class="status-indicator"></span>
     </div>
     <div class="metric-card" id="lcpTrendCard">
-        <h3>LCP Тренд</h3>
+        <h3>LCP</h3>
         <p id="lcpTrendValue"></p>
         <span id="lcpTrendStatus" class="status-indicator"></span>
     </div>
     <div class="metric-card" id="ttfbTrendCard">
-        <h3>TTFB Тренд</h3>
+        <h3>TTFB</h3>
         <p id="ttfbTrendValue"></p>
         <span id="ttfbTrendStatus" class="status-indicator"></span>
     </div>
     <div class="metric-card" id="tbtTrendCard">
-        <h3>TBT Тренд</h3>
+        <h3>TBT</h3>
         <p id="tbtTrendValue"></p>
         <span id="tbtTrendStatus" class="status-indicator"></span>
     </div>
@@ -218,9 +220,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     statusElement.innerHTML = '⚠️';
                 }
 
-                // Calculating trend for the last 84 measurements
-                if (currentValues.length >= 10) {
-                    const pastValue = currentValues[currentValues.length - 10];
+                // Calculating trend for the last 12 measurements (сутки)
+                if (currentValues.length >= 12) {
+                    const pastValue = currentValues[currentValues.length - 12];
                     const trend = ((currentValue - pastValue) / pastValue) * 100;
                     const trendText = trend > 0 ? `Ухудшение на ${trend.toFixed(2)}%` : `Улучшение на ${Math.abs(trend).toFixed(2)}%`;
                     trendValueElement.innerText = trendText;
