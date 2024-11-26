@@ -45,8 +45,8 @@
 
 <!-- Модальное окно статистики -->
 <div id="statsModal" class="modal">
-            <h2>Статистика для <span id="stats-domain"></span></h2>
-            <span class="close stats-close">&times;</span>
+    <h2>Статистика для <span id="stats-domain"></span></h2>
+    <span class="close stats-close">&times;</span>
     <div class="modal-content">
         <div id="stats-content"></div>
     </div>
@@ -54,8 +54,8 @@
 
 <!-- Модальное окно для графика -->
 <div id="chartModal" class="modal">
-            <span class="close chart-close">&times;</span>
-            <h2>График для <span id="chart-domain"></span></h2>
+    <span class="close chart-close">&times;</span>
+    <h2>График для <span id="chart-domain"></span></h2>
     <div class="modal-content">
 
         <!-- Настройки графика -->
@@ -89,48 +89,86 @@ document.addEventListener('DOMContentLoaded', function() {
     const chartDomain = document.getElementById('chart-domain');
 
     // Настройки для отображения графиков
-const chartConfig = {
-    type: 'line', // или любой другой тип графика
-    data: {
-        labels: [], // метки, полученные из данных
-        datasets: [] // данные для графиков
-    },
-    options: {
-        responsive: true, // Делает график адаптивным к размеру контейнера
-        maintainAspectRatio: false, // Позволяет ширине и высоте изменяться независимо
-        plugins: {
-            legend: {
-                display: true,
-                position: 'top'
-            }
+    const chartConfig = {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: []
         },
-        layout: {
-            padding: {
-                left: 20,
-                right: 20,
-                top: 20,
-                bottom: 20
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
+            },
+            layout: {
+                padding: {
+                    left: 20,
+                    right: 20,
+                    top: 20,
+                    bottom: 20
+                }
             }
         }
+    };
+
+    // Функция для отображения статистики одного домена
+    function fetchStats(domain) {
+        fetch(`/get_stats?domain=${encodeURIComponent(domain)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    statsContent.innerHTML = `<p>${data.error}</p>`;
+                } else {
+                    let html = ''; // Сброс истории замеров перед каждым новым запросом
+                    html += '<h3>Статистика</h3>';
+                    html += '<table><tr><th>Метрика</th><th>Мин.</th><th>50%</th><th>75%</th><th>95%</th><th>Макс.</th></tr>';
+                    for (let metric in data.stats) {
+                        html += `<tr>
+                                    <td>${metric}</td>
+                                    <td>${data.stats[metric].min !== null ? data.stats[metric].min + 's' : 'N/A'}</td>
+                                    <td>${data.stats[metric].median !== null ? data.stats[metric].median + 's' : 'N/A'}</td>
+                                    <td>${data.stats[metric].percentile_75 !== null ? data.stats[metric].percentile_75 + 's' : 'N/A'}</td>
+                                    <td>${data.stats[metric].percentile_95 !== null ? data.stats[metric].percentile_95 + 's' : 'N/A'}</td>
+                                    <td>${data.stats[metric].max !== null ? data.stats[metric].max + 's' : 'N/A'}</td>
+                                 </tr>`;
+                    }
+                    html += '</table>';
+
+                    // История замеров
+                    // Сортируем данные по дате в порядке убывания
+                    const sortedIndices = [...data.dates.keys()].sort((a, b) => new Date(data.dates[b]) - new Date(data.dates[a]));
+
+                    // Создаем отсортированные массивы для дат и метрик
+                    const sortedDates = sortedIndices.map(index => data.dates[index]);
+                    const sortedFCP = sortedIndices.map(index => data.metrics.FCP[index]);
+                    const sortedLCP = sortedIndices.map(index => data.metrics.LCP[index]);
+                    const sortedTTFB = sortedIndices.map(index => data.metrics.TTFB[index]);
+                    const sortedTBT = sortedIndices.map(index => data.metrics.TBT[index]);
+
+                    // Генерация HTML с использованием отсортированных данных
+                    html += '<h3>История замеров</h3>';
+                    html += '<table><tr><th>Дата</th><th>FCP (s)</th><th>LCP (s)</th><th>TTFB (s)</th><th>TBT (s)</th></tr>';
+                    for (let i = 0; i < sortedDates.length; i++) {
+                        html += `<tr>
+                                    <td>${sortedDates[i]}</td>
+                                    <td>${sortedFCP[i] !== null ? sortedFCP[i] + 's' : 'N/A'}</td>
+                                    <td>${sortedLCP[i] !== null ? sortedLCP[i] + 's' : 'N/A'}</td>
+                                    <td>${sortedTTFB[i] !== null ? sortedTTFB[i] + 's' : 'N/A'}</td>
+                                    <td>${sortedTBT[i] !== null ? sortedTBT[i] + 's' : 'N/A'}</td>
+                                 </tr>`;
+                    }
+                    html += '</table>';
+
+                    statsContent.innerHTML = html;
+                }
+                statsDomain.textContent = domain;
+                statsModal.style.display = 'block';
+            });
     }
-};
-
-// Пересоздание графика с новыми параметрами
-if (metricsChart) metricsChart.destroy();
-metricsChart = new Chart(ctx, chartConfig);
-
-// Пересоздаем график
-if (metricsChart) metricsChart.destroy();
-metricsChart = new Chart(ctx, chartConfig);
-
-    // Обработчик для изменения типа графика
-    document.getElementById('chartType').addEventListener('change', function() {
-        chartConfig.type = this.value;
-        if (metricsChart) {
-            metricsChart.destroy();
-            metricsChart = new Chart(ctx, chartConfig);
-        }
-    });
 
     // Функция для отображения графика одного домена
     function fetchData(domain) {
@@ -181,56 +219,7 @@ metricsChart = new Chart(ctx, chartConfig);
             });
     }
 
-    // Функция для отображения статистики одного домена
-    function fetchStats(domain) {
-        fetch(`/get_stats?domain=${encodeURIComponent(domain)}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    statsContent.innerHTML = `<p>${data.error}</p>`;
-                } else {
-                    let html = '<h3>Статистика</h3>';
-                    html += '<table><tr><th>Метрика</th><th>Мин.</th><th>50%</th><th>75%</th><th>95%</th><th>Макс.</th></tr>';
-                    for (let metric in data.stats) {
-                        html += `<tr>
-                                    <td>${metric}</td>
-                                    <td>${data.stats[metric].min !== null ? data.stats[metric].min + 's' : 'N/A'}</td>
-                                    <td>${data.stats[metric].median !== null ? data.stats[metric].median + 's' : 'N/A'}</td>
-                                    <td>${data.stats[metric].percentile_75 !== null ? data.stats[metric].percentile_75 + 's' : 'N/A'}</td>
-                                    <td>${data.stats[metric].percentile_95 !== null ? data.stats[metric].percentile_95 + 's' : 'N/A'}</td>
-                                    <td>${data.stats[metric].max !== null ? data.stats[metric].max + 's' : 'N/A'}</td>
-                                 </tr>`;
-                    }
-                    html += '</table>';
-
-                    // Сортируем данные по дате (от последних к первым)
-                    const sortedDates = [...data.dates].reverse();
-                    const sortedFCP = [...data.metrics.FCP].reverse();
-                    const sortedLCP = [...data.metrics.LCP].reverse();
-                    const sortedTTFB = [...data.metrics.TTFB].reverse();
-                    const sortedTBT = [...data.metrics.TBT].reverse();
-
-                    html += '<h3>История замеров</h3>';
-                    html += '<table><tr><th>Дата</th><th>FCP (s)</th><th>LCP (s)</th><th>TTFB (s)</th><th>TBT (s)</th></tr>';
-                    for (let i = 0; i < sortedDates.length; i++) {
-                        html += `<tr>
-                                    <td>${sortedDates[i]}</td>
-                                    <td>${sortedFCP[i] !== null ? sortedFCP[i] + 's' : 'N/A'}</td>
-                                    <td>${sortedLCP[i] !== null ? sortedLCP[i] + 's' : 'N/A'}</td>
-                                    <td>${sortedTTFB[i] !== null ? sortedTTFB[i] + 's' : 'N/A'}</td>
-                                    <td>${sortedTBT[i] !== null ? sortedTBT[i] + 's' : 'N/A'}</td>
-                                 </tr>`;
-                    }
-                    html += '</table>';
-
-                    statsContent.innerHTML = html;
-                }
-                statsDomain.textContent = domain;
-                statsModal.style.display = 'block';
-            });
-    }
-
-    // Функция для сравнения графиков выбранных доменов
+        // Функция для сравнения графиков выбранных доменов
     function fetchComparisonData(domains) {
         const requests = domains.map(domain =>
             fetch(`/get_stats?domain=${encodeURIComponent(domain)}`).then(response => response.json())
