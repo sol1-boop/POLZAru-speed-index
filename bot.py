@@ -67,11 +67,11 @@ async def audit_mobile(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             "LCP": metrics.get("audits", {}).get("largest-contentful-paint", {}).get("displayValue"),
             "TTFB": metrics.get("audits", {}).get("server-response-time", {}).get("displayValue"),
             "TBT": metrics.get("audits", {}).get("total-blocking-time", {}).get("displayValue"),
+            "Speed Index": metrics.get("audits", {}).get("speed-index", {}).get("displayValue"),
         }
         summary_text = f"Результаты аудита для {url}:\n"
         for key, value in summary.items():
             summary_text += f"{key}: {value if value is not None else 'N/A'}\n"
-
         await context.bot.send_message(chat_id=CHANNEL_ID, text=summary_text)
 
         # Сохранение результатов в файл истории
@@ -154,6 +154,7 @@ async def track_all_domains(context: ContextTypes.DEFAULT_TYPE) -> None:
                 "LCP": metrics.get("audits", {}).get("largest-contentful-paint", {}).get("displayValue"),
                 "TTFB": metrics.get("audits", {}).get("server-response-time", {}).get("displayValue"),
                 "TBT": metrics.get("audits", {}).get("total-blocking-time", {}).get("displayValue"),
+                "Speed Index": metrics.get("audits", {}).get("speed-index", {}).get("displayValue"),
             }
             summary_text = f"Результаты аудита для {url}:\n"
             for key, value in summary.items():
