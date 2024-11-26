@@ -2,9 +2,25 @@ import re
 import json
 import os
 import requests
-from config import TELEGRAM_TOKEN, CHANNEL_ID  # Используем CHANNEL_ID и TELEGRAM_TOKEN из config.py
 
-# Функция для чтения бюджета из domain.json
+def load_telegram_config():
+    config_path = os.path.join(os.path.dirname(__file__), 'config.json')
+    if not os.path.exists(config_path):
+        raise FileNotFoundError(f"Файл конфигурации {config_path} не найден.")
+    with open(config_path, 'r', encoding='utf-8') as file:
+        config = json.load(file)
+
+    # Проверяем наличие необходимых ключей
+    if 'telegram_token' not in config or 'channel_id' not in config:
+        raise KeyError("В файле config.json отсутствуют ключи 'telegram_token' или 'channel_id'.")
+
+    return config
+
+# Загружаем конфигурацию
+telegram_config = load_telegram_config()
+TELEGRAM_TOKEN = telegram_config['telegram_token']
+CHANNEL_ID = telegram_config['channel_id']
+
 def get_budget():
     try:
         with open("domain.json", "r") as file:

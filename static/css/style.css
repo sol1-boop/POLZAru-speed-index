@@ -65,7 +65,7 @@ input[type="number"] {
     padding: var(--spacing-medium);
     margin: var(--spacing-small) 0;
     box-sizing: border-box;
-    border: 1px solid #ccc;
+    border: 1px solid #5383c7;
     border-radius: 0;
     background-color: var(--background-color);
     color: var(--primary-color);
@@ -105,6 +105,7 @@ input[type="submit"][value="Удалить"] {
     font-size: 14px;
     height: 40px;
     width: var(--input-width);
+    
 }
 
 input[type="submit"]:hover,
@@ -135,6 +136,7 @@ button:hover {
     cursor: pointer;
     height: 40px;
     width: var(--input-width);
+
 }
 
 /* Стили для формы частоты */
@@ -347,11 +349,11 @@ li {
 
 /* Стили для чекбоксов сравнения доменов */
 .compare-checkbox {
-    width: 18px;
-    height: 18px;
+    width: 15px;
+    height: 15px;
     cursor: pointer;
     vertical-align: middle;
-    margin-right: 8px;
+    margin-right: 0px;
 }
 
 /* Дополнительные стили для красивого чекбокса */
@@ -379,7 +381,6 @@ li {
     padding: 20px; /* Отступы для содержимого */
     box-sizing: border-box;
     overflow: auto; /* Прокрутка, если содержимое выходит за границы */
-
 }
 
 /* Стиль модального окна */
@@ -399,6 +400,7 @@ li {
     padding: 20px;
     overflow: hidden; /* Убираем прокрутку */
     box-sizing: border-box; /* Учет отступов в общей ширине и высоте */
+    border: 2px solid var(--error-color);
 }
 
 /* Canvas внутри модального окна */

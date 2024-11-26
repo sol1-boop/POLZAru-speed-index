@@ -220,7 +220,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     statusElement.innerHTML = '⚠️';
                 }
 
-                // Calculating trend for the last 12 measurements (сутки)
+                // Вычисляем тренды за сутки 12 measurements (сутки)
                 if (currentValues.length >= 12) {
                     const pastValue = currentValues[currentValues.length - 12];
                     const trend = ((currentValue - pastValue) / pastValue) * 100;

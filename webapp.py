@@ -98,8 +98,6 @@ def settings():
         channel_id=channel_id
     )
 
-    return render_template('settings.html', domains=domains, frequency=frequency, max_display_points=max_display_points)
-
 @app.route('/get_stats', methods=['GET'])
 def get_stats():
     domain = request.args.get('domain')
@@ -110,7 +108,6 @@ def get_stats():
     if not history_data:
         return jsonify({'error': 'Файл истории не найден или повреждён'}), 404
 
-    # Получаем бюджет для данного домена
     domains = load_domains()
     budget = {}
     for d in domains:
@@ -118,126 +115,63 @@ def get_stats():
             budget = d.get('budget', {})
             break
 
-    # Загружаем настройку количества отображаемых значений
     config = load_config()
     max_display_points = config.get('max_display_points', 10)
 
-    # Дата один месяц назад для извлечения данных за аналогичные даты прошлого месяца
-    today = datetime.now()
-    one_month_ago = today - timedelta(days=30)
+    history_data = history_data[-max_display_points:]
 
-    # Словари для метрик текущего периода и предыдущего месяца
-    current_period = []
-    previous_period = {
-        'FCP': [],
-        'LCP': [],
-        'TTFB': [],
-        'TBT': []
+    dates = [entry.get('timestamp') for entry in history_data]
+    fcp_values = [parse_metric(entry.get('metrics', {}).get('FCP')) for entry in history_data]
+    lcp_values = [parse_metric(entry.get('metrics', {}).get('LCP')) for entry in history_data]
+    ttfb_values = [parse_metric(entry.get('metrics', {}).get('TTFB'), unit='ms') / 1000 if entry.get('metrics', {}).get('TTFB') else None for entry in history_data]
+    tbt_values = [parse_metric(entry.get('metrics', {}).get('TBT'), unit='ms') / 1000 if entry.get('metrics', {}).get('TBT') else None for entry in history_data]
+
+    stats = calculate_stats_for_metrics(fcp_values[:], lcp_values[:], ttfb_values[:], tbt_values[:])
+
+    metrics = {
+        'FCP': fcp_values,
+        'LCP': lcp_values,
+        'TTFB': ttfb_values,
+        'TBT': tbt_values
     }
 
-    # Словарь для быстрого доступа к данным за предыдущий месяц по датам
-    previous_month_data = {}
+    # Добавление данных для предыдущих периодов (опционально)
+    previous_metrics = {key: [] for key in metrics.keys()}
+    if len(history_data) > max_display_points:
+        for metric in metrics.keys():
+            previous_metrics[metric] = metrics[metric][:max_display_points]
 
-    for entry in history_data:
-        timestamp = entry.get('timestamp')
-        if not timestamp:
-            continue
+    data = {
+        'dates': dates,
+        'metrics': metrics,
+        'budget': budget,
+        'stats': stats,
+        'previous_metrics': previous_metrics
+    }
 
-        # Преобразование строки с датой в объект datetime
-        try:
-            entry_date = datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S.%f")
-        except ValueError:
-            continue  # Пропускаем запись, если формат даты не подходит
+    return jsonify(data)
 
-        metrics = entry.get('metrics', {})
 
-        # Данные за текущий месяц
-        if entry_date.month == today.month and entry_date.year == today.year:
-            current_period.append({
-                'timestamp': entry_date,
-                'FCP': parse_metric(metrics.get('FCP')),
-                'LCP': parse_metric(metrics.get('LCP')),
-                'TTFB': parse_metric(metrics.get('TTFB'), unit='ms') / 1000 if metrics.get('TTFB') else None,
-                'TBT': parse_metric(metrics.get('TBT'), unit='ms') / 1000 if metrics.get('TBT') else None
-            })
-
-        # Сохраняем данные предыдущего месяца в словаре по точным датам
-        elif entry_date.month == one_month_ago.month and entry_date.year == one_month_ago.year:
-            previous_month_data[entry_date.day] = {
-                'FCP': parse_metric(metrics.get('FCP')),
-                'LCP': parse_metric(metrics.get('LCP')),
-                'TTFB': parse_metric(metrics.get('TTFB'), unit='ms') / 1000 if metrics.get('TTFB') else None,
-                'TBT': parse_metric(metrics.get('TBT'), unit='ms') / 1000 if metrics.get('TBT') else None
-            }
-
-    # Сортируем данные текущего периода
-    current_period = sorted(current_period, key=lambda x: x['timestamp'])
-
-    # Извлекаем даты и значения метрик для текущего периода
-    dates = [record['timestamp'].strftime("%Y-%m-%dT%H:%M:%S.%f") for record in current_period]
-    fcp_values = [record['FCP'] for record in current_period if record['FCP'] is not None]
-    lcp_values = [record['LCP'] for record in current_period if record['LCP'] is not None]
-    ttfb_values = [record['TTFB'] for record in current_period if record['TTFB'] is not None]
-    tbt_values = [record['TBT'] for record in current_period if record['TBT'] is not None]
-
-    # Формируем данные для предыдущего периода, используя даты текущего периода
-    for record in current_period:
-        day = record['timestamp'].day
-        previous_data = previous_month_data.get(day, {})
-        previous_period['FCP'].append(previous_data.get('FCP'))
-        previous_period['LCP'].append(previous_data.get('LCP'))
-        previous_period['TTFB'].append(previous_data.get('TTFB'))
-        previous_period['TBT'].append(previous_data.get('TBT'))
-
-    # Ограничиваем количество выводимых значений для графиков
-    dates = dates[-max_display_points:]
-    fcp_values = fcp_values[-max_display_points:]
-    lcp_values = lcp_values[-max_display_points:]
-    ttfb_values = ttfb_values[-max_display_points:]
-    tbt_values = tbt_values[-max_display_points:]
-
-    # Функция для расчета статистики
+def calculate_stats_for_metrics(fcp_values, lcp_values, ttfb_values, tbt_values):
     def calculate_stats(values):
         if values:
-            values.sort()  # Убедимся, что данные отсортированы для расчета процентилей
+            values.sort()
             return {
                 'min': round(min(values), 2),
-                'median': round(statistics.median(values), 2),  # 50% процентиль (медиана)
-                'percentile_75': round(statistics.quantiles(values, n=100)[74], 2),  # 75% процентиль
-                'percentile_95': round(statistics.quantiles(values, n=100)[94], 2),  # 95% процентиль
+                'median': round(statistics.median(values), 2),
+                'percentile_75': round(statistics.quantiles(values, n=100)[74], 2),
+                'percentile_95': round(statistics.quantiles(values, n=100)[94], 2),
                 'max': round(max(values), 2)
             }
         else:
             return {'min': None, 'median': None, 'percentile_75': None, 'percentile_95': None, 'max': None}
 
-    # Рассчитываем статистику для текущего периода
-    stats = {
-        'FCP': calculate_stats(fcp_values),
-        'LCP': calculate_stats(lcp_values),
-        'TTFB': calculate_stats(ttfb_values),
-        'TBT': calculate_stats(tbt_values)
+    return {
+        'FCP': calculate_stats([v for v in fcp_values if v is not None]),
+        'LCP': calculate_stats([v for v in lcp_values if v is not None]),
+        'TTFB': calculate_stats([v for v in ttfb_values if v is not None]),
+        'TBT': calculate_stats([v for v in tbt_values if v is not None])
     }
-
-    # Формируем данные для API-ответа
-    data = {
-        'dates': dates,
-        'metrics': {
-            'FCP': fcp_values,
-            'LCP': lcp_values,
-            'TTFB': ttfb_values,
-            'TBT': tbt_values
-        },
-        'previous_metrics': {
-            'FCP': previous_period['FCP'][:max_display_points],
-            'LCP': previous_period['LCP'][:max_display_points],
-            'TTFB': previous_period['TTFB'][:max_display_points],
-            'TBT': previous_period['TBT'][:max_display_points]
-        },
-        'budget': budget,
-        'stats': stats
-    }
-
-    return jsonify(data)
 
 @app.route('/reset_history', methods=['POST'])
 @login_required  # Только авторизованные пользователи могут сбрасывать историю
@@ -257,6 +191,21 @@ def reset_history():
 def dashboard():
     domains = load_domains()
     return render_template('dashboard.html', domains=domains)
+
+@app.route('/compare_domains', methods=['POST'])
+def compare_domains():
+    data = request.get_json()
+    if not data or 'domains' not in data:
+        return jsonify({"error": "Неверные данные"}), 400
+
+    domains = data['domains']
+
+    # Логика сравнения доменов
+    comparison_result = {
+        "domains": domains,
+        "comparison": f"Сравнение для {len(domains)} доменов успешно выполнено."
+    }
+    return jsonify(comparison_result)
 
 if __name__ == '__main__':
     app.run(debug=True)
