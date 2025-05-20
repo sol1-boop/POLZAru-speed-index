@@ -4,13 +4,12 @@ import asyncio
 import logging
 from datetime import datetime
 import os
-import json
 import subprocess
 from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler
-from modules.utils import load_domains, load_config
-from modules.metrics import parse_metric
-from lighthouse import get_lighthouse_metrics
+from modules.utils import load_domains, get_telegram_settings
+from modules.tracking import audit_domain, DomainTracker
+from modules.metrics import summarize_history
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -19,25 +18,9 @@ HISTORY_DIR = 'history_files'
 if not os.path.exists(HISTORY_DIR):
     os.makedirs(HISTORY_DIR)
 
-tracking_task = None  # Используем одну задачу для отслеживания
+tracker = None  # Экземпляр DomainTracker
 
-def load_telegram_config():
-    config_path = os.path.join(os.path.dirname(__file__), 'config.json')
-    if not os.path.exists(config_path):
-        raise FileNotFoundError(f"Файл конфигурации {config_path} не найден.")
-    with open(config_path, 'r', encoding='utf-8') as file:
-        config = json.load(file)
-
-    # Проверяем наличие необходимых ключей
-    if 'telegram_token' not in config or 'channel_id' not in config:
-        raise KeyError("В файле config.json отсутствуют ключи 'telegram_token' или 'channel_id'.")
-
-    return config
-
-# Загружаем конфигурацию
-telegram_config = load_telegram_config()
-TELEGRAM_TOKEN = telegram_config['telegram_token']
-CHANNEL_ID = telegram_config['channel_id']
+TELEGRAM_TOKEN, CHANNEL_ID = get_telegram_settings()
 
 
 # Обработчик команды /start
@@ -55,48 +38,7 @@ async def audit_mobile(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         return
 
     for domain_info in domains_data:
-        url = domain_info['domain']
-        await context.bot.send_message(chat_id=CHANNEL_ID, text=f"Начинаем аудит для: {url}")
-        metrics = await get_lighthouse_metrics(url, mobile=True)
-        if not metrics:
-            await context.bot.send_message(chat_id=CHANNEL_ID, text=f"Не удалось получить результаты аудита для {url}.")
-            continue
-
-        summary = {
-            "FCP": metrics.get("audits", {}).get("first-contentful-paint", {}).get("displayValue"),
-            "LCP": metrics.get("audits", {}).get("largest-contentful-paint", {}).get("displayValue"),
-            "TTFB": metrics.get("audits", {}).get("server-response-time", {}).get("displayValue"),
-            "TBT": metrics.get("audits", {}).get("total-blocking-time", {}).get("displayValue"),
-            "Speed Index": metrics.get("audits", {}).get("speed-index", {}).get("displayValue"),
-        }
-        summary_text = f"Результаты аудита для {url}:\n"
-        for key, value in summary.items():
-            summary_text += f"{key}: {value if value is not None else 'N/A'}\n"
-        await context.bot.send_message(chat_id=CHANNEL_ID, text=summary_text)
-
-        # Сохранение результатов в файл истории
-        history_filename = f"history_{url.replace('http://', '').replace('https://', '').replace('/', '_')}.json"
-        history_filepath = os.path.join(HISTORY_DIR, history_filename)
-        history_data = []
-
-        if os.path.exists(history_filepath):
-            try:
-                with open(history_filepath, 'r', encoding='utf-8') as file:
-                    history_data = json.load(file)
-            except json.JSONDecodeError:
-                logger.error(f"Ошибка чтения JSON из файла {history_filepath}. Создание нового файла.")
-                history_data = []
-        else:
-            history_data = []
-
-        history_data.append({
-            'url': url,
-            'timestamp': datetime.now().isoformat(),
-            'metrics': summary
-        })
-
-        with open(history_filepath, 'w', encoding='utf-8') as file:
-            json.dump(history_data, file, ensure_ascii=False, indent=2)
+        await audit_domain(domain_info['domain'], context.bot, CHANNEL_ID)
 
     # Запуск alerts.py после каждого цикла отслеживания
     logger.info("Запуск alerts.py для проверки бюджетов...")
@@ -107,119 +49,23 @@ async def audit_mobile(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 # Обработчик команды /start_track
 async def start_track(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    global tracking_task
-    domains_data = load_domains()
-    if not domains_data:
-        await context.bot.send_message(chat_id=CHANNEL_ID, text="Список доменов пуст или файл не найден.")
-        return
-
-    if tracking_task:
+    global tracker
+    if tracker and tracker.task:
         await context.bot.send_message(chat_id=CHANNEL_ID, text="Отслеживание уже запущено.")
         return
 
-    # Инициализируем данные для отслеживания
-    context.bot_data['domains_data'] = domains_data
+    tracker = DomainTracker(context.bot, CHANNEL_ID)
+    tracker.start()
+    await context.bot.send_message(chat_id=CHANNEL_ID, text="Запущено отслеживание доменов.")
 
-    # Получаем частоту измерений из конфигурации
-    config = load_config()
-    frequency_hours = config.get('frequency', 2)
-    context.bot_data['frequency_hours'] = frequency_hours
-
-    # Запускаем задачу отслеживания
-    tracking_task = context.application.create_task(track_all_domains(context))
-
-    await context.bot.send_message(chat_id=CHANNEL_ID, text=f"Запущено отслеживание всех доменов каждые {frequency_hours} часа(ов).")
-
-# Функция для отслеживания всех доменов
-async def track_all_domains(context: ContextTypes.DEFAULT_TYPE) -> None:
-    while True:
-        try:
-            # Обновляем список доменов из файла при каждой итерации
-            new_domains = load_domains()
-            if new_domains:
-                context.bot_data['domains_data'] = new_domains
-
-            domains_data = context.bot_data.get('domains_data', [])
-            if not domains_data:
-                logger.error("Список доменов пуст. Пропуск цикла отслеживания.")
-                await asyncio.sleep(context.bot_data.get('frequency_hours', 2) * 3600)
-                continue
-
-            # Получаем частоту измерений из конфигурации
-            config = load_config()
-            frequency_hours = config.get('frequency', 2)
-            context.bot_data['frequency_hours'] = frequency_hours
-
-            for domain_info in domains_data:
-                url = domain_info['domain']
-                await context.bot.send_message(chat_id=CHANNEL_ID, text=f"Начинаем аудит для: {url}")
-                metrics = await get_lighthouse_metrics(url, mobile=True)
-                if not metrics:
-                    await context.bot.send_message(chat_id=CHANNEL_ID, text=f"Не удалось получить результаты аудита для {url}.")
-                    logger.error(f"Не удалось получить метрики для {url}")
-                    continue
-
-                summary = {
-                    "FCP": metrics.get("audits", {}).get("first-contentful-paint", {}).get("displayValue"),
-                    "LCP": metrics.get("audits", {}).get("largest-contentful-paint", {}).get("displayValue"),
-                    "TTFB": metrics.get("audits", {}).get("server-response-time", {}).get("displayValue"),
-                    "TBT": metrics.get("audits", {}).get("total-blocking-time", {}).get("displayValue"),
-                    "Speed Index": metrics.get("audits", {}).get("speed-index", {}).get("displayValue"),
-                }
-                summary_text = f"Результаты аудита для {url}:\n"
-                for key, value in summary.items():
-                    summary_text += f"{key}: {value if value is not None else 'N/A'}\n"
-
-                # Отправляем сообщение в канал
-                await context.bot.send_message(chat_id=CHANNEL_ID, text=summary_text)
-
-                # Сохранение результатов в файл истории
-                history_filename = f"history_{url.replace('http://', '').replace('https://', '').replace('/', '_')}.json"
-                history_filepath = os.path.join(HISTORY_DIR, history_filename)
-                history_data = []
-
-                if os.path.exists(history_filepath):
-                    try:
-                        with open(history_filepath, 'r', encoding='utf-8') as file:
-                            history_data = json.load(file)
-                    except json.JSONDecodeError:
-                        logger.error(f"Ошибка чтения JSON из файла {history_filepath}. Создание нового файла.")
-                        history_data = []
-                else:
-                    history_data = []
-
-                history_data.append({
-                    'url': url,
-                    'timestamp': datetime.now().isoformat(),
-                    'metrics': summary
-                })
-
-                with open(history_filepath, 'w', encoding='utf-8') as file:
-                    json.dump(history_data, file, ensure_ascii=False, indent=2)
-
-            # Запуск alerts.py после каждого цикла отслеживания
-            logger.info("Запуск alerts.py для проверки бюджетов...")
-            try:
-                subprocess.run(["python", "alerts.py"], check=True)
-            except Exception as e:
-                logger.exception("Не удалось запустить alerts.py: %s", e)
-
-            # Ждём заданный интервал перед следующим запуском
-            logger.info(f"Ждём {frequency_hours} часа(ов) до следующего запуска.")
-            await asyncio.sleep(frequency_hours * 3600)
-        except asyncio.CancelledError:
-            logger.info("Tracking loop cancelled.")
-            break
-        except Exception as e:
-            logger.exception("Error in tracking loop: %s", e)
 
 # Обработчик команды /stop_track
 async def stop_track(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    global tracking_task
-    if tracking_task:
-        tracking_task.cancel()
-        tracking_task = None
+    global tracker
+    if tracker and tracker.task:
+        tracker.stop()
         await context.bot.send_message(chat_id=CHANNEL_ID, text="Отслеживание остановлено.")
+        tracker = None
     else:
         await context.bot.send_message(chat_id=CHANNEL_ID, text="Отслеживание не запущено.")
 
@@ -241,59 +87,13 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                     history_data = json.load(file)
 
                 if history_data:
-                    # Инициализируем списки для метрик
-                    fcp_values = []
-                    lcp_values = []
-                    ttfb_values = []
-                    tbt_values = []
-
-                    for entry in history_data:
-                        if 'metrics' not in entry or 'timestamp' not in entry:
-                            logger.error(f"Запись не содержит 'metrics' или 'timestamp': {entry}")
-                            continue
-
-                        metrics = entry['metrics']
-
-                        # Парсим и собираем метрики для статистики
-                        fcp = parse_metric(metrics.get('FCP'))
-                        if fcp is not None:
-                            fcp_values.append(fcp)
-
-                        lcp = parse_metric(metrics.get('LCP'))
-                        if lcp is not None:
-                            lcp_values.append(lcp)
-
-                        ttfb = parse_metric(metrics.get('TTFB'), unit='ms')
-                        if ttfb is not None:
-                            ttfb_values.append(ttfb / 1000)  # Преобразуем в секунды
-
-                        tbt = parse_metric(metrics.get('TBT'), unit='ms')
-                        if tbt is not None:
-                            tbt_values.append(tbt / 1000)  # Преобразуем в секунды
-
-                    # Формируем сообщение с метриками
+                    stats = summarize_history(history_data)
                     stats_message = f"Статистика для {url}:\n"
-
-                    if fcp_values:
-                        stats_message += f"FCP: min={min(fcp_values):.2f}s, avg={sum(fcp_values) / len(fcp_values):.2f}s, max={max(fcp_values):.2f}s\n"
-                    else:
-                        stats_message += "FCP: нет данных\n"
-
-                    if lcp_values:
-                        stats_message += f"LCP: min={min(lcp_values):.2f}s, avg={sum(lcp_values) / len(lcp_values):.2f}s, max={max(lcp_values):.2f}s\n"
-                    else:
-                        stats_message += "LCP: нет данных\n"
-
-                    if ttfb_values:
-                        stats_message += f"TTFB: min={min(ttfb_values):.2f}s, avg={sum(ttfb_values) / len(ttfb_values):.2f}s, max={max(ttfb_values):.2f}s\n"
-                    else:
-                        stats_message += "TTFB: нет данных\n"
-
-                    if tbt_values:
-                        stats_message += f"TBT: min={min(tbt_values):.2f}s, avg={sum(tbt_values) / len(tbt_values):.2f}s, max={max(tbt_values):.2f}s\n"
-                    else:
-                        stats_message += "TBT: нет данных\n"
-
+                    for key, values in stats.items():
+                        if values:
+                            stats_message += f"{key}: min={values['min']:.2f}s, avg={values['avg']:.2f}s, max={values['max']:.2f}s\n"
+                        else:
+                            stats_message += f"{key}: нет данных\n"
                     await context.bot.send_message(chat_id=CHANNEL_ID, text=stats_message)
                 else:
                     await context.bot.send_message(chat_id=CHANNEL_ID, text=f"История для {url} пуста.")

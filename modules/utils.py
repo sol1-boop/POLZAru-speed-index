@@ -39,6 +39,22 @@ def save_config(config):
     config_file = 'config.json'
     with open(config_file, 'w', encoding='utf-8') as file:
         json.dump(config, file, ensure_ascii=False, indent=2)
+
+
+def get_telegram_settings():
+    """Return telegram token and channel id from config.json."""
+    config = load_config()
+    if 'telegram_token' not in config or 'channel_id' not in config:
+        raise KeyError("В файле config.json отсутствуют ключи 'telegram_token' или 'channel_id'.")
+    return config['telegram_token'], config['channel_id']
+
+
+def get_telegram_token():
+    return get_telegram_settings()[0]
+
+
+def get_channel_id():
+    return get_telegram_settings()[1]
 def delete_history_file(domain):
     history_dir = 'history_files'
     history_filename = f"history_{domain.replace('http://', '').replace('https://', '').replace('/', '_')}.json"
