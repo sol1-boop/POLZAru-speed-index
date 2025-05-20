@@ -6,9 +6,6 @@ from datetime import datetime
 
 alerts_api = Blueprint('alerts_api', __name__)
 
-app = Flask(__name__)
-app.register_blueprint(alerts_api)
-
 HISTORY_DIR = 'history_files'
 DOMAIN_CONFIG = 'domain.json'
 
@@ -116,4 +113,6 @@ def check_metrics_endpoint():
 
 
 if __name__ == "__main__":
+    app = Flask(__name__)
+    app.register_blueprint(alerts_api)
     app.run(host="0.0.0.0", port=5000)
