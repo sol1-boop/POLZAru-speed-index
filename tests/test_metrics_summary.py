@@ -26,3 +26,10 @@ def test_calculate_stats_for_metrics():
     assert stats['FCP']['min'] == 1
     assert stats['FCP']['max'] == 3
     assert stats['LCP']['median'] == 4
+
+
+def test_calculate_stats_for_metrics_single_value():
+    from modules.metrics import calculate_stats_for_metrics
+    stats = calculate_stats_for_metrics([1], [2], [0.1], [0.05])
+    assert stats['FCP']['percentile_75'] is None
+    assert stats['LCP']['percentile_95'] is None
