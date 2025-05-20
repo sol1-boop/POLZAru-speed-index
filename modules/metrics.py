@@ -63,3 +63,43 @@ def load_history(domain):
     else:
         logger.error(f"Файл истории {history_filepath} не найден.")
         return []
+
+
+def summarize_history(history_data):
+    """Return min/avg/max statistics for each metric in history_data."""
+
+    fcp_values, lcp_values, ttfb_values, tbt_values = [], [], [], []
+    for entry in history_data:
+        metrics = entry.get('metrics', {})
+        fcp = parse_metric(metrics.get('FCP'))
+        if fcp is not None:
+            fcp_values.append(fcp)
+
+        lcp = parse_metric(metrics.get('LCP'))
+        if lcp is not None:
+            lcp_values.append(lcp)
+
+        ttfb = parse_metric(metrics.get('TTFB'), unit='ms')
+        if ttfb is not None:
+            ttfb_values.append(ttfb / 1000)
+
+        tbt = parse_metric(metrics.get('TBT'), unit='ms')
+        if tbt is not None:
+            tbt_values.append(tbt / 1000)
+
+    def stats(values):
+        if values:
+            return {
+                'min': min(values),
+                'avg': sum(values) / len(values),
+                'max': max(values)
+            }
+        return None
+
+    return {
+        'FCP': stats(fcp_values),
+        'LCP': stats(lcp_values),
+        'TTFB': stats(ttfb_values),
+        'TBT': stats(tbt_values),
+    }
+
