@@ -130,70 +130,76 @@ async def start_track(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 # Функция для отслеживания всех доменов
 async def track_all_domains(context: ContextTypes.DEFAULT_TYPE) -> None:
     while True:
-        domains_data = context.bot_data.get('domains_data', [])
-        if not domains_data:
-            logger.error("Список доменов пуст.")
-            break
+        try:
+            domains_data = context.bot_data.get('domains_data', [])
+            if not domains_data:
+                logger.error("Список доменов пуст.")
+                break
 
-        # Получаем частоту измерений из конфигурации
-        config = load_config()
-        frequency_hours = config.get('frequency', 2)
-        context.bot_data['frequency_hours'] = frequency_hours
+            # Получаем частоту измерений из конфигурации
+            config = load_config()
+            frequency_hours = config.get('frequency', 2)
+            context.bot_data['frequency_hours'] = frequency_hours
 
-        for domain_info in domains_data:
-            url = domain_info['domain']
-            await context.bot.send_message(chat_id=CHANNEL_ID, text=f"Начинаем аудит для: {url}")
-            metrics = await get_lighthouse_metrics(url, mobile=True)
-            if not metrics:
-                await context.bot.send_message(chat_id=CHANNEL_ID, text=f"Не удалось получить результаты аудита для {url}.")
-                logger.error(f"Не удалось получить метрики для {url}")
-                continue
+            for domain_info in domains_data:
+                url = domain_info['domain']
+                await context.bot.send_message(chat_id=CHANNEL_ID, text=f"Начинаем аудит для: {url}")
+                metrics = await get_lighthouse_metrics(url, mobile=True)
+                if not metrics:
+                    await context.bot.send_message(chat_id=CHANNEL_ID, text=f"Не удалось получить результаты аудита для {url}.")
+                    logger.error(f"Не удалось получить метрики для {url}")
+                    continue
 
-            summary = {
-                "FCP": metrics.get("audits", {}).get("first-contentful-paint", {}).get("displayValue"),
-                "LCP": metrics.get("audits", {}).get("largest-contentful-paint", {}).get("displayValue"),
-                "TTFB": metrics.get("audits", {}).get("server-response-time", {}).get("displayValue"),
-                "TBT": metrics.get("audits", {}).get("total-blocking-time", {}).get("displayValue"),
-                "Speed Index": metrics.get("audits", {}).get("speed-index", {}).get("displayValue"),
-            }
-            summary_text = f"Результаты аудита для {url}:\n"
-            for key, value in summary.items():
-                summary_text += f"{key}: {value if value is not None else 'N/A'}\n"
+                summary = {
+                    "FCP": metrics.get("audits", {}).get("first-contentful-paint", {}).get("displayValue"),
+                    "LCP": metrics.get("audits", {}).get("largest-contentful-paint", {}).get("displayValue"),
+                    "TTFB": metrics.get("audits", {}).get("server-response-time", {}).get("displayValue"),
+                    "TBT": metrics.get("audits", {}).get("total-blocking-time", {}).get("displayValue"),
+                    "Speed Index": metrics.get("audits", {}).get("speed-index", {}).get("displayValue"),
+                }
+                summary_text = f"Результаты аудита для {url}:\n"
+                for key, value in summary.items():
+                    summary_text += f"{key}: {value if value is not None else 'N/A'}\n"
 
-            # Отправляем сообщение в канал
-            await context.bot.send_message(chat_id=CHANNEL_ID, text=summary_text)
+                # Отправляем сообщение в канал
+                await context.bot.send_message(chat_id=CHANNEL_ID, text=summary_text)
 
-            # Сохранение результатов в файл истории
-            history_filename = f"history_{url.replace('http://', '').replace('https://', '').replace('/', '_')}.json"
-            history_filepath = os.path.join(HISTORY_DIR, history_filename)
-            history_data = []
-
-            if os.path.exists(history_filepath):
-                try:
-                    with open(history_filepath, 'r', encoding='utf-8') as file:
-                        history_data = json.load(file)
-                except json.JSONDecodeError:
-                    logger.error(f"Ошибка чтения JSON из файла {history_filepath}. Создание нового файла.")
-                    history_data = []
-            else:
+                # Сохранение результатов в файл истории
+                history_filename = f"history_{url.replace('http://', '').replace('https://', '').replace('/', '_')}.json"
+                history_filepath = os.path.join(HISTORY_DIR, history_filename)
                 history_data = []
 
-            history_data.append({
-                'url': url,
-                'timestamp': datetime.now().isoformat(),
-                'metrics': summary
-            })
+                if os.path.exists(history_filepath):
+                    try:
+                        with open(history_filepath, 'r', encoding='utf-8') as file:
+                            history_data = json.load(file)
+                    except json.JSONDecodeError:
+                        logger.error(f"Ошибка чтения JSON из файла {history_filepath}. Создание нового файла.")
+                        history_data = []
+                else:
+                    history_data = []
 
-            with open(history_filepath, 'w', encoding='utf-8') as file:
-                json.dump(history_data, file, ensure_ascii=False, indent=2)
+                history_data.append({
+                    'url': url,
+                    'timestamp': datetime.now().isoformat(),
+                    'metrics': summary
+                })
 
-        # Запуск alerts.py после каждого цикла отслеживания
-        logger.info("Запуск alerts.py для проверки бюджетов...")
-        subprocess.run(["python", "alerts.py"])
+                with open(history_filepath, 'w', encoding='utf-8') as file:
+                    json.dump(history_data, file, ensure_ascii=False, indent=2)
 
-        # Ждём заданный интервал перед следующим запуском
-        logger.info(f"Ждём {frequency_hours} часа(ов) до следующего запуска.")
-        await asyncio.sleep(frequency_hours * 3600)
+            # Запуск alerts.py после каждого цикла отслеживания
+            logger.info("Запуск alerts.py для проверки бюджетов...")
+            subprocess.run(["python", "alerts.py"])
+
+            # Ждём заданный интервал перед следующим запуском
+            logger.info(f"Ждём {frequency_hours} часа(ов) до следующего запуска.")
+            await asyncio.sleep(frequency_hours * 3600)
+        except asyncio.CancelledError:
+            logger.info("Tracking loop cancelled.")
+            break
+        except Exception as e:
+            logger.exception("Error in tracking loop: %s", e)
 
 # Обработчик команды /stop_track
 async def stop_track(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
