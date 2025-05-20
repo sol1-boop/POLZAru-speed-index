@@ -18,7 +18,7 @@
 <p>
     <a href="#" id="settings-link">Настройки</a> |
     {% if session.get('logged_in') %}
-        <a href="{{ url_for('logout') }}">Выйти</a>
+        <a href="{{ url_for('auth_bp.logout') }}">Выйти</a>
     {% else %}
         <a href="#" id="login-link">Войти</a>
     {% endif %}
@@ -32,7 +32,7 @@
         <span class="close login-close">&times;</span>
         <h2>Вход в систему</h2>
         <div id="login-error" class="error-message" style="display: none;"></div>
-        <form method="post" action="{{ url_for('login') }}">
+        <form method="post" action="{{ url_for('auth_bp.login') }}">
             <label for="username">Логин:</label>
             <input type="text" id="username" name="username" required><br><br>
             <label for="password">Пароль:</label>
@@ -331,7 +331,7 @@ document.addEventListener('DOMContentLoaded', function() {
             event.preventDefault();
             loginModal.style.display = 'block';
         } else {
-            window.location.href = "{{ url_for('settings') }}";
+            window.location.href = "{{ url_for('auth_bp.settings') }}";
         }
     });
 
