@@ -6,6 +6,7 @@ from datetime import datetime
 import os
 import json
 import subprocess
+import sys
 from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler
 from modules.utils import load_domains, load_config
@@ -100,7 +101,7 @@ async def audit_mobile(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
     # Запуск alerts.py после каждого цикла отслеживания
     logger.info("Запуск alerts.py для проверки бюджетов...")
-    subprocess.run(["python", "alerts.py"])
+    subprocess.run([sys.executable, "alerts.py"])
 
 # Обработчик команды /start_track
 async def start_track(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -189,7 +190,7 @@ async def track_all_domains(context: ContextTypes.DEFAULT_TYPE) -> None:
 
         # Запуск alerts.py после каждого цикла отслеживания
         logger.info("Запуск alerts.py для проверки бюджетов...")
-        subprocess.run(["python", "alerts.py"])
+        subprocess.run([sys.executable, "alerts.py"])
 
         # Ждём заданный интервал перед следующим запуском
         logger.info(f"Ждём {frequency_hours} часа(ов) до следующего запуска.")
