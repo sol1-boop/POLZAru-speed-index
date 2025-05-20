@@ -15,3 +15,14 @@ def test_summarize_history():
 def test_summarize_history_empty():
     stats = summarize_history([])
     assert stats == {'FCP': None, 'LCP': None, 'TTFB': None, 'TBT': None}
+
+def test_calculate_stats_for_metrics():
+    from modules.metrics import calculate_stats_for_metrics
+    fcp = [1, 2, 3]
+    lcp = [2, 4, 6]
+    ttfb = [0.1, 0.2, 0.3]
+    tbt = [0.05, 0.1, 0.15]
+    stats = calculate_stats_for_metrics(fcp, lcp, ttfb, tbt)
+    assert stats['FCP']['min'] == 1
+    assert stats['FCP']['max'] == 3
+    assert stats['LCP']['median'] == 4

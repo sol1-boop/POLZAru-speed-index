@@ -103,3 +103,32 @@ def summarize_history(history_data):
         'TBT': stats(tbt_values),
     }
 
+
+def calculate_stats_for_metrics(fcp_values, lcp_values, ttfb_values, tbt_values):
+    import statistics
+
+    def calculate_stats(values):
+        if values:
+            values.sort()
+            return {
+                'min': round(min(values), 2),
+                'median': round(statistics.median(values), 2),
+                'percentile_75': round(statistics.quantiles(values, n=100)[74], 2),
+                'percentile_95': round(statistics.quantiles(values, n=100)[94], 2),
+                'max': round(max(values), 2)
+            }
+        else:
+            return {
+                'min': None,
+                'median': None,
+                'percentile_75': None,
+                'percentile_95': None,
+                'max': None
+            }
+
+    return {
+        'FCP': calculate_stats([v for v in fcp_values if v is not None]),
+        'LCP': calculate_stats([v for v in lcp_values if v is not None]),
+        'TTFB': calculate_stats([v for v in ttfb_values if v is not None]),
+        'TBT': calculate_stats([v for v in tbt_values if v is not None])
+    }
