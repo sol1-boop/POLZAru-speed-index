@@ -100,7 +100,10 @@ async def audit_mobile(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
     # Запуск alerts.py после каждого цикла отслеживания
     logger.info("Запуск alerts.py для проверки бюджетов...")
-    subprocess.run(["python", "alerts.py"])
+    try:
+        subprocess.run(["python", "alerts.py"], check=True)
+    except Exception as e:
+        logger.exception("Не удалось запустить alerts.py: %s", e)
 
 # Обработчик команды /start_track
 async def start_track(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -131,10 +134,16 @@ async def start_track(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 async def track_all_domains(context: ContextTypes.DEFAULT_TYPE) -> None:
     while True:
         try:
+            # Обновляем список доменов из файла при каждой итерации
+            new_domains = load_domains()
+            if new_domains:
+                context.bot_data['domains_data'] = new_domains
+
             domains_data = context.bot_data.get('domains_data', [])
             if not domains_data:
-                logger.error("Список доменов пуст.")
-                break
+                logger.error("Список доменов пуст. Пропуск цикла отслеживания.")
+                await asyncio.sleep(context.bot_data.get('frequency_hours', 2) * 3600)
+                continue
 
             # Получаем частоту измерений из конфигурации
             config = load_config()
@@ -190,7 +199,10 @@ async def track_all_domains(context: ContextTypes.DEFAULT_TYPE) -> None:
 
             # Запуск alerts.py после каждого цикла отслеживания
             logger.info("Запуск alerts.py для проверки бюджетов...")
-            subprocess.run(["python", "alerts.py"])
+            try:
+                subprocess.run(["python", "alerts.py"], check=True)
+            except Exception as e:
+                logger.exception("Не удалось запустить alerts.py: %s", e)
 
             # Ждём заданный интервал перед следующим запуском
             logger.info(f"Ждём {frequency_hours} часа(ов) до следующего запуска.")
