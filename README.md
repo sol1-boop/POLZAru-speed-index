@@ -27,3 +27,10 @@ https://t.me/+qbtXRYo72JNkNTUy
 @POLZAru_SpeedBot
 
 Более подробное описание обработки запросов доступно в файле [docs/request-flow.md](docs/request-flow.md).
+
+**Установка зависимостей**
+
+```bash
+pip install -r requirements.txt
+```
+
