@@ -34,3 +34,9 @@ https://t.me/+qbtXRYo72JNkNTUy
 pip install -r requirements.txt
 ```
 
+
+**Запуск тестов**
+
+```bash
+pytest
+```
