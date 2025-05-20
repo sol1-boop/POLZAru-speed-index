@@ -425,7 +425,7 @@ li {
 }
 
 #domainSelect:focus {
-    widht: 500px;
+    width: 500px;
     outline: none;
     border-color: var(--error-color);
     height: 40px;
