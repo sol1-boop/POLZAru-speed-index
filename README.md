@@ -26,3 +26,4 @@ https://t.me/+qbtXRYo72JNkNTUy
 Телеграм-бот:
 @POLZAru_SpeedBot
 
+Более подробное описание обработки запросов доступно в файле [docs/request-flow.md](docs/request-flow.md).
