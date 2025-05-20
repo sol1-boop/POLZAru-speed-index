@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, make_response
+from flask import Blueprint, jsonify, make_response, Flask
 import json
 import os
 import re
@@ -90,10 +90,8 @@ def check_metrics():
     return exceeded_metrics
 
 
-from flask import Flask, jsonify, make_response
-
-from flask import Flask, jsonify, make_response
-import json
+app = Flask(__name__)
+app.register_blueprint(alerts_api)
 
 @alerts_api.route("/check_metrics", methods=["GET"])
 def check_metrics_endpoint():
