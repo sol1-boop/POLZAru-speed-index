@@ -6,6 +6,9 @@ from datetime import datetime
 
 alerts_api = Blueprint('alerts_api', __name__)
 
+app = Flask(__name__)
+app.register_blueprint(alerts_api)
+
 HISTORY_DIR = 'history_files'
 DOMAIN_CONFIG = 'domain.json'
 
@@ -88,10 +91,6 @@ def check_metrics():
             })
 
     return exceeded_metrics
-
-
-app = Flask(__name__)
-app.register_blueprint(alerts_api)
 
 @alerts_api.route("/check_metrics", methods=["GET"])
 def check_metrics_endpoint():
