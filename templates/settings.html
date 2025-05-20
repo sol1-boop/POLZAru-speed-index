@@ -5,7 +5,7 @@
 
 {% block content %}
 <h1>Настройки</h1>
-<p><a href="{{ url_for('logout') }}">Выйти</a></p>
+<p><a href="{{ url_for('auth_bp.logout') }}">Выйти</a></p>
 
 <h2>Список доменов</h2>
 <ul>
@@ -13,7 +13,7 @@
         <li>
             {{ domain.domain }}
             <!-- Кнопка "Удалить домен" -->
-            <form action="{{ url_for('settings') }}" method="post" class="inline-form">
+            <form action="{{ url_for('auth_bp.settings') }}" method="post" class="inline-form">
                 <input type="hidden" name="action" value="remove">
                 <input type="hidden" name="domain" value="{{ domain.domain }}">
                 <input type="submit" value="Удалить">
@@ -21,7 +21,7 @@
             <!-- Кнопка "Сбросить историю" -->
             <button class="reset-button" data-domain="{{ domain.domain }}">Сбросить историю</button>
             <!-- Форма для обновления бюджета -->
-            <form action="{{ url_for('settings') }}" method="post" class="budget-form">
+            <form action="{{ url_for('auth_bp.settings') }}" method="post" class="budget-form">
                 <input type="hidden" name="action" value="update_budget">
                 <input type="hidden" name="domain" value="{{ domain.domain }}">
                 <label>FCP:</label>
@@ -39,14 +39,14 @@
 </ul>
 
 <h2>Добавить новый домен</h2>
-<form action="{{ url_for('settings') }}" method="post" class="add-domain-form">
+<form action="{{ url_for('auth_bp.settings') }}" method="post" class="add-domain-form">
     <input type="hidden" name="action" value="add">
     <input type="text" name="domain" placeholder="Введите домен в формате https://domain.ru" required>
     <input type="submit" value="Добавить">
 </form>
 
 <h2>Изменить частоту измерений</h2>
-<form action="{{ url_for('settings') }}" method="post" class="frequency-form">
+<form action="{{ url_for('auth_bp.settings') }}" method="post" class="frequency-form">
     <input type="hidden" name="action" value="change_frequency">
     <label for="frequency">Частота измерений (в часах):</label>
     <input type="number" id="frequency" name="frequency" value="{{ frequency }}" min="1" required>
@@ -54,7 +54,7 @@
 </form>
 
 <h2>Изменить количество выводимых значений</h2>
-<form action="{{ url_for('settings') }}" method="post" class="display-points-form">
+<form action="{{ url_for('auth_bp.settings') }}" method="post" class="display-points-form">
     <input type="hidden" name="action" value="change_display_points">
     <label for="max_display_points">Количество значений для отображения:</label>
     <input type="number" id="max_display_points" name="max_display_points" value="{{ max_display_points }}" min="1" required>
@@ -62,7 +62,7 @@
 </form>
 
 <h2>Настройки Telegram</h2>
-<form action="{{ url_for('settings') }}" method="post" class="telegram-settings-form">
+<form action="{{ url_for('auth_bp.settings') }}" method="post" class="telegram-settings-form">
     <input type="hidden" name="action" value="update_telegram_settings">
     <label for="telegram_token">Telegram Token:</label>
     <input type="text" id="telegram_token" name="telegram_token" value="{{ telegram_token }}" required>

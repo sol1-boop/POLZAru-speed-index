@@ -110,11 +110,16 @@ def calculate_stats_for_metrics(fcp_values, lcp_values, ttfb_values, tbt_values)
     def calculate_stats(values):
         if values:
             values.sort()
+            percentiles = {'percentile_75': None, 'percentile_95': None}
+            if len(values) >= 2:
+                pct = statistics.quantiles(values, n=100)
+                percentiles['percentile_75'] = round(pct[74], 2)
+                percentiles['percentile_95'] = round(pct[94], 2)
             return {
                 'min': round(min(values), 2),
                 'median': round(statistics.median(values), 2),
-                'percentile_75': round(statistics.quantiles(values, n=100)[74], 2),
-                'percentile_95': round(statistics.quantiles(values, n=100)[94], 2),
+                'percentile_75': percentiles['percentile_75'],
+                'percentile_95': percentiles['percentile_95'],
                 'max': round(max(values), 2)
             }
         else:

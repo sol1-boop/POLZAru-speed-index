@@ -8,7 +8,7 @@
 {% if error %}
     <p style="color: red;">{{ error }}</p>
 {% endif %}
-<form method="post" action="{{ url_for('login') }}">
+<form method="post" action="{{ url_for('auth_bp.login') }}">
     <label for="username">Логин:</label>
     <input type="text" id="username" name="username" required><br><br>
     <label for="password">Пароль:</label>
