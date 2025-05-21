@@ -27,6 +27,7 @@ async def test_audit_domain(tmp_path, monkeypatch):
                 "server-response-time": {"displayValue": "100 ms"},
                 "total-blocking-time": {"displayValue": "50 ms"},
                 "speed-index": {"displayValue": "1.5 s"},
+                "interactive-to-next-paint": {"displayValue": "200 ms"},
             }
         }
 

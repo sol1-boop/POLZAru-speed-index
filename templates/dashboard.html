@@ -43,6 +43,16 @@
         <p id="tbtValue"></p>
         <span id="tbtStatus" class="status-indicator"></span>
     </div>
+    <div class="metric-card" id="speedIndexCard">
+        <h3>Speed Index</h3>
+        <p id="speedIndexValue"></p>
+        <span id="speedIndexStatus" class="status-indicator"></span>
+    </div>
+    <div class="metric-card" id="inpCard">
+        <h3>INP</h3>
+        <p id="inpValue"></p>
+        <span id="inpStatus" class="status-indicator"></span>
+    </div>
 </div>
 
 <h2>Тренд</h2>
@@ -67,6 +77,16 @@
         <p id="tbtTrendValue"></p>
         <span id="tbtTrendStatus" class="status-indicator"></span>
     </div>
+    <div class="metric-card" id="speedIndexTrendCard">
+        <h3>Speed Index</h3>
+        <p id="speedIndexTrendValue"></p>
+        <span id="speedIndexTrendStatus" class="status-indicator"></span>
+    </div>
+    <div class="metric-card" id="inpTrendCard">
+        <h3>INP</h3>
+        <p id="inpTrendValue"></p>
+        <span id="inpTrendStatus" class="status-indicator"></span>
+    </div>
 </div>
 
 <div id="charts-container">
@@ -85,6 +105,14 @@
     <div class="chart-wrapper">
         <h2>TBT (Total Blocking Time)</h2>
         <canvas id="tbtChart" style="max-height: 500px;"></canvas>
+    </div>
+    <div class="chart-wrapper">
+        <h2>Speed Index</h2>
+        <canvas id="speedIndexChart" style="max-height: 500px;"></canvas>
+    </div>
+    <div class="chart-wrapper">
+        <h2>INP</h2>
+        <canvas id="inpChart" style="max-height: 500px;"></canvas>
     </div>
 </div>
 
@@ -110,7 +138,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const statsDomain = document.getElementById('statsDomain');
     const closeStatsModal = document.getElementById('closeStatsModal');
     const showStatsButton = document.getElementById('showStatsButton');
-    let fcpChart, lcpChart, ttfbChart, tbtChart;
+    let fcpChart, lcpChart, ttfbChart, tbtChart, speedIndexChart, inpChart;
 
     closeStatsModal.onclick = function() {
         statsModal.style.display = 'none';
@@ -191,10 +219,12 @@ document.addEventListener('DOMContentLoaded', function() {
         if (lcpChart) lcpChart.destroy();
         if (ttfbChart) ttfbChart.destroy();
         if (tbtChart) tbtChart.destroy();
+        if (speedIndexChart) speedIndexChart.destroy();
+        if (inpChart) inpChart.destroy();
     }
 
     function updateMetricCards(data) {
-        const metrics = ['FCP', 'LCP', 'TTFB', 'TBT'];
+        const metrics = ['FCP', 'LCP', 'TTFB', 'TBT', 'Speed Index', 'INP'];
         metrics.forEach(metric => {
             const valueElement = document.getElementById(`${metric.toLowerCase()}Value`);
             const statusElement = document.getElementById(`${metric.toLowerCase()}Status`);
@@ -274,9 +304,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     const sortedLCP = [...data.metrics.LCP].reverse();
                     const sortedTTFB = [...data.metrics.TTFB].reverse();
                     const sortedTBT = [...data.metrics.TBT].reverse();
+                    const sortedSpeedIndex = [...data.metrics['Speed Index']].reverse();
+                    const sortedINP = [...data.metrics.INP].reverse();
 
                     html += '<h3>История замеров</h3>';
-                    html += '<table><tr><th>Дата</th><th>FCP (s)</th><th>LCP (s)</th><th>TTFB (s)</th><th>TBT (s)</th></tr>';
+                    html += '<table><tr><th>Дата</th><th>FCP (s)</th><th>LCP (s)</th><th>TTFB (s)</th><th>TBT (s)</th><th>Speed Index (s)</th><th>INP (s)</th></tr>';
                     for (let i = 0; i < sortedDates.length; i++) {
                         html += `<tr>
                                     <td>${sortedDates[i]}</td>
@@ -284,6 +316,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                     <td>${sortedLCP[i] !== null ? sortedLCP[i] + 's' : 'N/A'}</td>
                                     <td>${sortedTTFB[i] !== null ? sortedTTFB[i] + 's' : 'N/A'}</td>
                                     <td>${sortedTBT[i] !== null ? sortedTBT[i] + 's' : 'N/A'}</td>
+                                    <td>${sortedSpeedIndex[i] !== null ? sortedSpeedIndex[i] + 's' : 'N/A'}</td>
+                                    <td>${sortedINP[i] !== null ? sortedINP[i] + 's' : 'N/A'}</td>
                                  </tr>`;
                     }
                     html += '</table>';
@@ -353,6 +387,28 @@ document.addEventListener('DOMContentLoaded', function() {
                     data.budget.TBT,
                     'rgba(255, 99, 132, 1)',
                     'rgba(255, 99, 132, 0.6)'
+                );
+
+                const siCtx = document.getElementById('speedIndexChart').getContext('2d');
+                speedIndexChart = createComparisonChart(
+                    siCtx,
+                    'Speed Index',
+                    { dates: data.dates, metrics: data.metrics['Speed Index'] },
+                    { dates: data.dates.slice(-data.previous_metrics['Speed Index'].length), metrics: data.previous_metrics['Speed Index'] },
+                    data.budget['Speed Index'],
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(54, 162, 235, 0.6)'
+                );
+
+                const inpCtx = document.getElementById('inpChart').getContext('2d');
+                inpChart = createComparisonChart(
+                    inpCtx,
+                    'INP',
+                    { dates: data.dates, metrics: data.metrics.INP },
+                    { dates: data.dates.slice(-data.previous_metrics.INP.length), metrics: data.previous_metrics.INP },
+                    data.budget.INP,
+                    'rgba(201, 203, 207, 1)',
+                    'rgba(201, 203, 207, 0.6)'
                 );
             })
             .catch(error => {

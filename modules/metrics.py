@@ -69,6 +69,7 @@ def summarize_history(history_data):
     """Return min/avg/max statistics for each metric in history_data."""
 
     fcp_values, lcp_values, ttfb_values, tbt_values = [], [], [], []
+    speed_index_values, inp_values = [], []
     for entry in history_data:
         metrics = entry.get('metrics', {})
         fcp = parse_metric(metrics.get('FCP'))
@@ -87,6 +88,14 @@ def summarize_history(history_data):
         if tbt is not None:
             tbt_values.append(tbt / 1000)
 
+        speed_index = parse_metric(metrics.get('Speed Index'))
+        if speed_index is not None:
+            speed_index_values.append(speed_index)
+
+        inp = parse_metric(metrics.get('INP'), unit='ms')
+        if inp is not None:
+            inp_values.append(inp / 1000)
+
     def stats(values):
         if values:
             return {
@@ -101,10 +110,19 @@ def summarize_history(history_data):
         'LCP': stats(lcp_values),
         'TTFB': stats(ttfb_values),
         'TBT': stats(tbt_values),
+        'Speed Index': stats(speed_index_values),
+        'INP': stats(inp_values),
     }
 
 
-def calculate_stats_for_metrics(fcp_values, lcp_values, ttfb_values, tbt_values):
+def calculate_stats_for_metrics(
+    fcp_values,
+    lcp_values,
+    ttfb_values,
+    tbt_values,
+    speed_index_values=None,
+    inp_values=None,
+):
     import statistics
 
     def calculate_stats(values):
@@ -131,9 +149,14 @@ def calculate_stats_for_metrics(fcp_values, lcp_values, ttfb_values, tbt_values)
                 'max': None
             }
 
+    speed_index_values = speed_index_values or []
+    inp_values = inp_values or []
+
     return {
         'FCP': calculate_stats([v for v in fcp_values if v is not None]),
         'LCP': calculate_stats([v for v in lcp_values if v is not None]),
         'TTFB': calculate_stats([v for v in ttfb_values if v is not None]),
-        'TBT': calculate_stats([v for v in tbt_values if v is not None])
+        'TBT': calculate_stats([v for v in tbt_values if v is not None]),
+        'Speed Index': calculate_stats([v for v in speed_index_values if v is not None]),
+        'INP': calculate_stats([v for v in inp_values if v is not None]),
     }

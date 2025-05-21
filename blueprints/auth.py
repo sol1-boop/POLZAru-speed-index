@@ -58,7 +58,9 @@ def settings():
                         'FCP': float(request.form.get('budget_fcp', 0)),
                         'LCP': float(request.form.get('budget_lcp', 0)),
                         'TTFB': float(request.form.get('budget_ttfb', 0)),
-                        'TBT': float(request.form.get('budget_tbt', 0))
+                        'TBT': float(request.form.get('budget_tbt', 0)),
+                        'Speed Index': float(request.form.get('budget_speed_index', 0)),
+                        'INP': float(request.form.get('budget_inp', 0)),
                     }
                     break
             save_domains(domains)
