@@ -3,18 +3,45 @@ from modules.metrics import summarize_history
 
 def test_summarize_history():
     history = [
-        {'metrics': {'FCP': '1 s', 'LCP': '2 s', 'TTFB': '100 ms', 'TBT': '50 ms'}},
-        {'metrics': {'FCP': '2 s', 'LCP': '4 s', 'TTFB': '300 ms', 'TBT': '150 ms'}},
+        {
+            'metrics': {
+                'FCP': '1 s',
+                'LCP': '2 s',
+                'TTFB': '100 ms',
+                'TBT': '50 ms',
+                'INP': '200 ms',
+                'Speed Index': '1.2 s'
+            }
+        },
+        {
+            'metrics': {
+                'FCP': '2 s',
+                'LCP': '4 s',
+                'TTFB': '300 ms',
+                'TBT': '150 ms',
+                'INP': '250 ms',
+                'Speed Index': '1.8 s'
+            }
+        },
     ]
     stats = summarize_history(history)
     assert stats['FCP']['min'] == 1
     assert stats['FCP']['max'] == 2
     assert round(stats['FCP']['avg'], 2) == 1.5
+    assert stats['INP']['max'] == 0.25
+    assert round(stats['Speed Index']['avg'], 2) == 1.5
 
 
 def test_summarize_history_empty():
     stats = summarize_history([])
-    assert stats == {'FCP': None, 'LCP': None, 'TTFB': None, 'TBT': None}
+    assert stats == {
+        'FCP': None,
+        'LCP': None,
+        'TTFB': None,
+        'TBT': None,
+        'INP': None,
+        'Speed Index': None,
+    }
 
 def test_calculate_stats_for_metrics():
     from modules.metrics import calculate_stats_for_metrics
@@ -22,14 +49,17 @@ def test_calculate_stats_for_metrics():
     lcp = [2, 4, 6]
     ttfb = [0.1, 0.2, 0.3]
     tbt = [0.05, 0.1, 0.15]
-    stats = calculate_stats_for_metrics(fcp, lcp, ttfb, tbt)
+    inp = [0.2, 0.3, 0.4]
+    speed_index = [1.0, 1.2, 1.5]
+    stats = calculate_stats_for_metrics(fcp, lcp, ttfb, tbt, inp, speed_index)
     assert stats['FCP']['min'] == 1
     assert stats['FCP']['max'] == 3
     assert stats['LCP']['median'] == 4
+    assert stats['INP']['max'] == 0.4
 
 
 def test_calculate_stats_for_metrics_single_value():
     from modules.metrics import calculate_stats_for_metrics
-    stats = calculate_stats_for_metrics([1], [2], [0.1], [0.05])
+    stats = calculate_stats_for_metrics([1], [2], [0.1], [0.05], [0.2], [1.0])
     assert stats['FCP']['percentile_75'] is None
     assert stats['LCP']['percentile_95'] is None
