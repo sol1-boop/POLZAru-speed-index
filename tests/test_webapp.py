@@ -41,6 +41,8 @@ def test_get_stats_success(client, tmp_path):
     assert rv.status_code == 200
     data = rv.get_json()
     assert data["metrics"]["FCP"] == [1.0]
+    assert "INP" in data["metrics"]
+    assert "Speed Index" in data["metrics"]
 
 
 def test_get_stats_missing_domain(client):

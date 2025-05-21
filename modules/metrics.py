@@ -104,7 +104,8 @@ def summarize_history(history_data):
     }
 
 
-def calculate_stats_for_metrics(fcp_values, lcp_values, ttfb_values, tbt_values):
+def calculate_stats_for_metrics(fcp_values, lcp_values, ttfb_values, tbt_values,
+                                inp_values=None, speed_index_values=None):
     import statistics
 
     def calculate_stats(values):
@@ -135,5 +136,9 @@ def calculate_stats_for_metrics(fcp_values, lcp_values, ttfb_values, tbt_values)
         'FCP': calculate_stats([v for v in fcp_values if v is not None]),
         'LCP': calculate_stats([v for v in lcp_values if v is not None]),
         'TTFB': calculate_stats([v for v in ttfb_values if v is not None]),
-        'TBT': calculate_stats([v for v in tbt_values if v is not None])
+        'TBT': calculate_stats([v for v in tbt_values if v is not None]),
+        'INP': calculate_stats([v for v in (inp_values or []) if v is not None]),
+        'Speed Index': calculate_stats([
+            v for v in (speed_index_values or []) if v is not None
+        ]),
     }

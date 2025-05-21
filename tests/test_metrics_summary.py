@@ -22,10 +22,14 @@ def test_calculate_stats_for_metrics():
     lcp = [2, 4, 6]
     ttfb = [0.1, 0.2, 0.3]
     tbt = [0.05, 0.1, 0.15]
-    stats = calculate_stats_for_metrics(fcp, lcp, ttfb, tbt)
+    inp = [0.2, 0.3, 0.4]
+    speed_index = [1.5, 2.0, 2.5]
+    stats = calculate_stats_for_metrics(fcp, lcp, ttfb, tbt, inp, speed_index)
     assert stats['FCP']['min'] == 1
     assert stats['FCP']['max'] == 3
     assert stats['LCP']['median'] == 4
+    assert stats['INP']['min'] == 0.2
+    assert stats['Speed Index']['max'] == 2.5
 
 
 def test_calculate_stats_for_metrics_single_value():
