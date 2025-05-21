@@ -18,13 +18,13 @@
 <p>
     <a href="#" id="settings-link">Настройки</a> |
     {% if session.get('logged_in') %}
-        <a href="{{ url_for('logout') }}">Выйти</a>
+        <a href="{{ url_for('auth_bp.logout') }}">Выйти</a>
     {% else %}
         <a href="#" id="login-link">Войти</a>
     {% endif %}
 </p>
 <button id="compare-button">Сравнить домены</button>
-<button id="compare-button" onclick="location.href='/dashboard'">Дашборд</button>
+<button id="dashboard-button" onclick="location.href='/dashboard'">Дашборд</button>
 
 <!-- Модальные окна -->
 <div id="loginModal" class="modal">
@@ -32,7 +32,7 @@
         <span class="close login-close">&times;</span>
         <h2>Вход в систему</h2>
         <div id="login-error" class="error-message" style="display: none;"></div>
-        <form method="post" action="{{ url_for('login') }}">
+        <form method="post" action="{{ url_for('auth_bp.login') }}">
             <label for="username">Логин:</label>
             <input type="text" id="username" name="username" required><br><br>
             <label for="password">Пароль:</label>
@@ -148,10 +148,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     const sortedLCP = sortedIndices.map(index => data.metrics.LCP[index]);
                     const sortedTTFB = sortedIndices.map(index => data.metrics.TTFB[index]);
                     const sortedTBT = sortedIndices.map(index => data.metrics.TBT[index]);
+                    const sortedINP = sortedIndices.map(index => data.metrics.INP[index]);
+                    const sortedSI = sortedIndices.map(index => data.metrics['Speed Index'][index]);
 
                     // Генерация HTML с использованием отсортированных данных
                     html += '<h3>История замеров</h3>';
-                    html += '<table><tr><th>Дата</th><th>FCP (s)</th><th>LCP (s)</th><th>TTFB (s)</th><th>TBT (s)</th></tr>';
+                    html += '<table><tr><th>Дата</th><th>FCP (s)</th><th>LCP (s)</th><th>TTFB (s)</th><th>TBT (s)</th><th>INP (s)</th><th>Speed Index (s)</th></tr>';
                     for (let i = 0; i < sortedDates.length; i++) {
                         html += `<tr>
                                     <td>${sortedDates[i]}</td>
@@ -159,6 +161,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                     <td>${sortedLCP[i] !== null ? sortedLCP[i] + 's' : 'N/A'}</td>
                                     <td>${sortedTTFB[i] !== null ? sortedTTFB[i] + 's' : 'N/A'}</td>
                                     <td>${sortedTBT[i] !== null ? sortedTBT[i] + 's' : 'N/A'}</td>
+                                    <td>${sortedINP[i] !== null ? sortedINP[i] + 's' : 'N/A'}</td>
+                                    <td>${sortedSI[i] !== null ? sortedSI[i] + 's' : 'N/A'}</td>
                                  </tr>`;
                     }
                     html += '</table>';
@@ -209,6 +213,20 @@ document.addEventListener('DOMContentLoaded', function() {
                         borderColor: 'rgba(255, 99, 132, 1)',
                         backgroundColor: 'rgba(255, 99, 132, 0.2)',
                         fill: true
+                    },
+                    {
+                        label: `INP - ${domain}`,
+                        data: data.metrics.INP,
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        fill: true
+                    },
+                    {
+                        label: `Speed Index - ${domain}`,
+                        data: data.metrics['Speed Index'],
+                        borderColor: 'rgba(201, 203, 207, 1)',
+                        backgroundColor: 'rgba(201, 203, 207, 0.2)',
+                        fill: true
                     }
                 ];
 
@@ -229,7 +247,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(results => {
                 chartConfig.data.labels = results[0].dates;
                 chartConfig.data.datasets = [];
-                const colors = ['rgba(75, 192, 192, 1)', 'rgba(153, 102, 255, 1)', 'rgba(255, 159, 64, 1)', 'rgba(255, 99, 132, 1)'];
+                const colors = ['rgba(75, 192, 192, 1)', 'rgba(153, 102, 255, 1)', 'rgba(255, 159, 64, 1)', 'rgba(255, 99, 132, 1)', 'rgba(54, 162, 235, 1)', 'rgba(201, 203, 207, 1)'];
 
                 results.forEach((data, index) => {
                     if (data.error) {
@@ -264,6 +282,20 @@ document.addEventListener('DOMContentLoaded', function() {
                             data: data.metrics.TBT,
                             borderColor: colors[(index + 3) % colors.length],
                             backgroundColor: colors[(index + 3) % colors.length].replace('1)', '0.2)'),
+                            fill: true
+                        },
+                        {
+                            label: `INP - ${domains[index]}`,
+                            data: data.metrics.INP,
+                            borderColor: colors[(index + 4) % colors.length],
+                            backgroundColor: colors[(index + 4) % colors.length].replace('1)', '0.2)'),
+                            fill: true
+                        },
+                        {
+                            label: `Speed Index - ${domains[index]}`,
+                            data: data.metrics['Speed Index'],
+                            borderColor: colors[(index + 5) % colors.length],
+                            backgroundColor: colors[(index + 5) % colors.length].replace('1)', '0.2)'),
                             fill: true
                         }
                     );
@@ -331,7 +363,7 @@ document.addEventListener('DOMContentLoaded', function() {
             event.preventDefault();
             loginModal.style.display = 'block';
         } else {
-            window.location.href = "{{ url_for('settings') }}";
+            window.location.href = "{{ url_for('auth_bp.settings') }}";
         }
     });
 
