@@ -76,3 +76,16 @@ def test_check_metrics_ok(client, tmp_path):
     assert rv.status_code == 200
     data = rv.get_json()
     assert data["status"] == "OK"
+
+
+def test_check_metrics_new_metrics(client, tmp_path):
+    domain = "example.com"
+    write_domain(tmp_path, domain, {"INP": 0.2, "Speed Index": 2})
+    metrics = {"INP": "250 ms", "Speed Index": "2.5 s"}
+    write_history(tmp_path, domain, metrics)
+
+    rv = client.get("/check_metrics")
+    assert rv.status_code == 404
+    data = rv.get_json()
+    assert data["status"] == "EXCEEDED"
+    assert data["details"][0]["exceeded_metrics"]["INP"]["actual"] == 0.25
