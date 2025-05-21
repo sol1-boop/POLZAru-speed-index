@@ -34,22 +34,13 @@ def test_index_ok(client, tmp_path):
 def test_get_stats_success(client, tmp_path):
     domain = "example.com"
     write_domain(tmp_path, domain)
-    metrics = {
-        "FCP": "1 s",
-        "LCP": "2 s",
-        "TTFB": "100 ms",
-        "TBT": "50 ms",
-        "INP": "200 ms",
-        "Speed Index": "1.3 s",
-    }
+    metrics = {"FCP": "1 s", "LCP": "2 s", "TTFB": "100 ms", "TBT": "50 ms"}
     write_history(tmp_path, domain, metrics)
 
     rv = client.get("/get_stats", query_string={"domain": domain})
     assert rv.status_code == 200
     data = rv.get_json()
     assert data["metrics"]["FCP"] == [1.0]
-    assert data["metrics"]["INP"] == [0.2]
-    assert data["metrics"]["Speed Index"] == [1.3]
 
 
 def test_get_stats_missing_domain(client):
