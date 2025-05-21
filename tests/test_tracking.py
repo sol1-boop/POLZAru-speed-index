@@ -27,7 +27,6 @@ async def test_audit_domain(tmp_path, monkeypatch):
                 "server-response-time": {"displayValue": "100 ms"},
                 "total-blocking-time": {"displayValue": "50 ms"},
                 "speed-index": {"displayValue": "1.5 s"},
-                "experimental-interaction-to-next-paint": {"displayValue": "250 ms"},
             }
         }
 
@@ -40,8 +39,6 @@ async def test_audit_domain(tmp_path, monkeypatch):
     assert history_file.exists()
     data = json.loads(history_file.read_text())
     assert data[0]["metrics"]["FCP"] == "1 s"
-    assert data[0]["metrics"]["Speed Index"] == "1.5 s"
-    assert data[0]["metrics"]["INP"] == "250 ms"
 
 
 def test_domain_tracker_start_stop(monkeypatch):

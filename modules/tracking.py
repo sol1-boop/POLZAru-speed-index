@@ -30,7 +30,6 @@ async def audit_domain(url, bot, channel_id=None):
         "TTFB": metrics.get("audits", {}).get("server-response-time", {}).get("displayValue"),
         "TBT": metrics.get("audits", {}).get("total-blocking-time", {}).get("displayValue"),
         "Speed Index": metrics.get("audits", {}).get("speed-index", {}).get("displayValue"),
-        "INP": metrics.get("audits", {}).get("experimental-interaction-to-next-paint", {}).get("displayValue"),
     }
     summary_text = f"Результаты аудита для {url}:\n"
     for key, value in summary.items():

@@ -41,7 +41,7 @@ def sync_get_lighthouse_metrics(url: str, mobile: bool = False) -> dict:
                 url,
                 '--output=json',
                 '--quiet',
-                '--only-audits=first-contentful-paint,largest-contentful-paint,server-response-time,total-blocking-time,speed-index,experimental-interaction-to-next-paint',
+                '--only-audits=first-contentful-paint,largest-contentful-paint,server-response-time,total-blocking-time,speed-index',
                 '--emulated-form-factor=mobile',
                 f'--chrome-flags={chrome_flags}',
                 max_wait_for_load
@@ -52,7 +52,7 @@ def sync_get_lighthouse_metrics(url: str, mobile: bool = False) -> dict:
                 url,
                 '--output=json',
                 '--quiet',
-                '--only-audits=first-contentful-paint,largest-contentful-paint,server-response-time,total-blocking-time,experimental-interaction-to-next-paint',
+                '--only-audits=first-contentful-paint,largest-contentful-paint,server-response-time,total-blocking-time',
                 f'--chrome-flags={chrome_flags}',
                 max_wait_for_load
             ]
