@@ -26,6 +26,7 @@ async def test_audit_domain(tmp_path, monkeypatch):
                 "largest-contentful-paint": {"displayValue": "2 s"},
                 "server-response-time": {"displayValue": "100 ms"},
                 "total-blocking-time": {"displayValue": "50 ms"},
+                "interaction-to-next-paint": {"displayValue": "200 ms"},
                 "speed-index": {"displayValue": "1.5 s"},
             }
         }
@@ -39,6 +40,11 @@ async def test_audit_domain(tmp_path, monkeypatch):
     assert history_file.exists()
     data = json.loads(history_file.read_text())
     assert data[0]["metrics"]["FCP"] == "1 s"
+    assert data[0]["metrics"]["INP"] == "200 ms"
+
+    # Ensure the summary message includes the new metric
+    summary_message = bot.sent[-1][1]
+    assert "INP: 200 ms" in summary_message
 
 
 def test_domain_tracker_start_stop(monkeypatch):

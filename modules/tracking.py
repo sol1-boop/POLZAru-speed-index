@@ -29,6 +29,7 @@ async def audit_domain(url, bot, channel_id=None):
         "LCP": metrics.get("audits", {}).get("largest-contentful-paint", {}).get("displayValue"),
         "TTFB": metrics.get("audits", {}).get("server-response-time", {}).get("displayValue"),
         "TBT": metrics.get("audits", {}).get("total-blocking-time", {}).get("displayValue"),
+        "INP": metrics.get("audits", {}).get("interaction-to-next-paint", {}).get("displayValue"),
         "Speed Index": metrics.get("audits", {}).get("speed-index", {}).get("displayValue"),
     }
     summary_text = f"Результаты аудита для {url}:\n"
