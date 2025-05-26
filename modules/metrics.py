@@ -118,19 +118,27 @@ def summarize_history(history_data):
 def calculate_stats_for_metrics(fcp_values, lcp_values, ttfb_values, tbt_values, inp_values=None, speed_index_values=None):
     import statistics
 
+    if inp_values is None:
+        inp_values = []
+    if speed_index_values is None:
+        speed_index_values = []
+
     def calculate_stats(values):
         if values:
             values.sort()
-            percentiles = {'percentile_75': None, 'percentile_95': None}
             if len(values) >= 2:
                 pct = statistics.quantiles(values, n=100)
-                percentiles['percentile_75'] = round(pct[74], 2)
-                percentiles['percentile_95'] = round(pct[94], 2)
+                percentile_75 = round(pct[74], 2)
+                percentile_95 = round(pct[94], 2)
+            else:
+                percentile_75 = None
+                percentile_95 = None
             return {
                 'min': round(min(values), 2),
                 'median': round(statistics.median(values), 2),
-                'percentile_75': percentiles['percentile_75'],
-                'percentile_95': percentiles['percentile_95'],
+                'percentile_75': percentile_75,
+                'percentile_95': percentile_95,
+
                 'max': round(max(values), 2)
             }
         else:
@@ -149,4 +157,5 @@ def calculate_stats_for_metrics(fcp_values, lcp_values, ttfb_values, tbt_values,
         'TBT': calculate_stats([v for v in tbt_values if v is not None]),
         'INP': calculate_stats([v for v in (inp_values or []) if v is not None]),
         'Speed Index': calculate_stats([v for v in (speed_index_values or []) if v is not None])
+
     }

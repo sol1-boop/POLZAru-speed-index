@@ -54,6 +54,7 @@ def get_stats():
         fcp_values[:], lcp_values[:], ttfb_values[:], tbt_values[:], inp_values[:], speed_index_values[:]
     )
 
+
     metrics = {
         'FCP': fcp_values,
         'LCP': lcp_values,

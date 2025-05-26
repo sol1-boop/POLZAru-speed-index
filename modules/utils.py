@@ -42,7 +42,12 @@ def save_config(config):
 
 
 def get_telegram_settings():
-    """Return telegram token and channel id from config.json."""
+    """Return telegram token and channel id from environment or config.json."""
+    token = os.getenv('TELEGRAM_TOKEN')
+    channel = os.getenv('CHANNEL_ID')
+    if token and channel:
+        return token, channel
+
     config = load_config()
     if 'telegram_token' not in config or 'channel_id' not in config:
         raise KeyError("В файле config.json отсутствуют ключи 'telegram_token' или 'channel_id'.")

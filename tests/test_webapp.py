@@ -44,6 +44,7 @@ def test_get_stats_success(client, tmp_path):
     assert data["metrics"]["INP"] == [0.2]
 
 
+
 def test_get_stats_missing_domain(client):
     rv = client.get("/get_stats")
     assert rv.status_code == 400

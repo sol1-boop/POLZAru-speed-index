@@ -24,7 +24,7 @@
     {% endif %}
 </p>
 <button id="compare-button">Сравнить домены</button>
-<button id="compare-button" onclick="location.href='/dashboard'">Дашборд</button>
+<button id="dashboard-button" onclick="location.href='/dashboard'">Дашборд</button>
 
 <!-- Модальные окна -->
 <div id="loginModal" class="modal">
@@ -150,6 +150,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const sortedTBT = sortedIndices.map(index => data.metrics.TBT[index]);
                     const sortedINP = sortedIndices.map(index => data.metrics.INP[index]);
                     const sortedSI = sortedIndices.map(index => data.metrics["Speed Index"][index]);
+
 
                     // Генерация HTML с использованием отсортированных данных
                     html += '<h3>История замеров</h3>';

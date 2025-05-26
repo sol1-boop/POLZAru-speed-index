@@ -52,6 +52,7 @@
         <h3>Speed Index</h3>
         <p id="siValue"></p>
         <span id="siStatus" class="status-indicator"></span>
+
     </div>
 </div>
 
@@ -86,6 +87,7 @@
         <h3>Speed Index</h3>
         <p id="siTrendValue"></p>
         <span id="siTrendStatus" class="status-indicator"></span>
+
     </div>
 </div>
 
@@ -113,6 +115,7 @@
     <div class="chart-wrapper">
         <h2>Speed Index</h2>
         <canvas id="siChart" style="max-height: 500px;"></canvas>
+
     </div>
 </div>
 
@@ -139,6 +142,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const closeStatsModal = document.getElementById('closeStatsModal');
     const showStatsButton = document.getElementById('showStatsButton');
     let fcpChart, lcpChart, ttfbChart, tbtChart, inpChart, siChart;
+
 
     closeStatsModal.onclick = function() {
         statsModal.style.display = 'none';
@@ -221,6 +225,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (tbtChart) tbtChart.destroy();
         if (inpChart) inpChart.destroy();
         if (siChart) siChart.destroy();
+
     }
 
     function updateMetricCards(data) {
@@ -306,6 +311,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const sortedTBT = [...data.metrics.TBT].reverse();
                     const sortedINP = [...data.metrics.INP].reverse();
                     const sortedSI = [...data.metrics["Speed Index"]].reverse();
+
 
                     html += '<h3>История замеров</h3>';
                     html += '<table><tr><th>Дата</th><th>FCP (s)</th><th>LCP (s)</th><th>TTFB (s)</th><th>TBT (s)</th><th>INP (s)</th><th>Speed Index (s)</th></tr>';
