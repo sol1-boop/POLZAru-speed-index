@@ -88,9 +88,9 @@ def summarize_history(history_data):
         if tbt is not None:
             tbt_values.append(tbt / 1000)
 
-        inp = parse_metric(metrics.get('INP'))
+        inp = parse_metric(metrics.get('INP'), unit='ms')
         if inp is not None:
-            inp_values.append(inp)
+            inp_values.append(inp / 1000)
 
         speed_index = parse_metric(metrics.get('Speed Index'))
         if speed_index is not None:
@@ -155,6 +155,7 @@ def calculate_stats_for_metrics(fcp_values, lcp_values, ttfb_values, tbt_values,
         'LCP': calculate_stats([v for v in lcp_values if v is not None]),
         'TTFB': calculate_stats([v for v in ttfb_values if v is not None]),
         'TBT': calculate_stats([v for v in tbt_values if v is not None]),
-        'INP': calculate_stats([v for v in inp_values if v is not None]),
-        'Speed Index': calculate_stats([v for v in speed_index_values if v is not None])
+        'INP': calculate_stats([v for v in (inp_values or []) if v is not None]),
+        'Speed Index': calculate_stats([v for v in (speed_index_values or []) if v is not None])
+
     }

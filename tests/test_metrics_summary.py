@@ -3,8 +3,9 @@ from modules.metrics import summarize_history
 
 def test_summarize_history():
     history = [
-        {'metrics': {'FCP': '1 s', 'LCP': '2 s', 'TTFB': '100 ms', 'TBT': '50 ms', 'INP': '100 ms', 'Speed Index': '1.5 s'}},
-        {'metrics': {'FCP': '2 s', 'LCP': '4 s', 'TTFB': '300 ms', 'TBT': '150 ms', 'INP': '200 ms', 'Speed Index': '2 s'}},
+        {'metrics': {'FCP': '1 s', 'LCP': '2 s', 'TTFB': '100 ms', 'TBT': '50 ms', 'INP': '100 ms', 'Speed Index': '1.0 s'}},
+        {'metrics': {'FCP': '2 s', 'LCP': '4 s', 'TTFB': '300 ms', 'TBT': '150 ms', 'INP': '200 ms', 'Speed Index': '2.0 s'}},
+
     ]
     stats = summarize_history(history)
     assert stats['FCP']['min'] == 1
@@ -22,8 +23,9 @@ def test_calculate_stats_for_metrics():
     lcp = [2, 4, 6]
     ttfb = [0.1, 0.2, 0.3]
     tbt = [0.05, 0.1, 0.15]
-    inp = [0.2, 0.3, 0.4]
-    si = [1.0, 1.2, 1.4]
+    inp = [0.1, 0.2, 0.3]
+    si = [1, 2, 3]
+
     stats = calculate_stats_for_metrics(fcp, lcp, ttfb, tbt, inp, si)
     assert stats['FCP']['min'] == 1
     assert stats['FCP']['max'] == 3

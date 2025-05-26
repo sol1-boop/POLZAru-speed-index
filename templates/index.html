@@ -149,7 +149,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     const sortedTTFB = sortedIndices.map(index => data.metrics.TTFB[index]);
                     const sortedTBT = sortedIndices.map(index => data.metrics.TBT[index]);
                     const sortedINP = sortedIndices.map(index => data.metrics.INP[index]);
-                    const sortedSI = sortedIndices.map(index => data.metrics['Speed Index'][index]);
+                    const sortedSI = sortedIndices.map(index => data.metrics["Speed Index"][index]);
+
 
                     // Генерация HTML с использованием отсортированных данных
                     html += '<h3>История замеров</h3>';
@@ -223,7 +224,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     },
                     {
                         label: `Speed Index - ${domain}`,
-                        data: data.metrics['Speed Index'],
+                        data: data.metrics["Speed Index"],
                         borderColor: 'rgba(201, 203, 207, 1)',
                         backgroundColor: 'rgba(201, 203, 207, 0.2)',
                         fill: true
@@ -247,7 +248,14 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(results => {
                 chartConfig.data.labels = results[0].dates;
                 chartConfig.data.datasets = [];
-                const colors = ['rgba(75, 192, 192, 1)', 'rgba(153, 102, 255, 1)', 'rgba(255, 159, 64, 1)', 'rgba(255, 99, 132, 1)', 'rgba(54, 162, 235, 1)', 'rgba(201, 203, 207, 1)'];
+                const colors = [
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(153, 102, 255, 1)',
+                    'rgba(255, 159, 64, 1)',
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(201, 203, 207, 1)'
+                ];
 
                 results.forEach((data, index) => {
                     if (data.error) {
@@ -293,7 +301,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         },
                         {
                             label: `Speed Index - ${domains[index]}`,
-                            data: data.metrics['Speed Index'],
+                            data: data.metrics["Speed Index"],
                             borderColor: colors[(index + 5) % colors.length],
                             backgroundColor: colors[(index + 5) % colors.length].replace('1)', '0.2)'),
                             fill: true

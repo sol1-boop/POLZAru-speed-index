@@ -47,10 +47,13 @@ def get_stats():
     lcp_values = [parse_metric(entry.get('metrics', {}).get('LCP')) for entry in history_data]
     ttfb_values = [parse_metric(entry.get('metrics', {}).get('TTFB'), unit='ms') / 1000 if entry.get('metrics', {}).get('TTFB') else None for entry in history_data]
     tbt_values = [parse_metric(entry.get('metrics', {}).get('TBT'), unit='ms') / 1000 if entry.get('metrics', {}).get('TBT') else None for entry in history_data]
-    inp_values = [parse_metric(entry.get('metrics', {}).get('INP')) for entry in history_data]
+    inp_values = [parse_metric(entry.get('metrics', {}).get('INP'), unit='ms') / 1000 if entry.get('metrics', {}).get('INP') else None for entry in history_data]
     speed_index_values = [parse_metric(entry.get('metrics', {}).get('Speed Index')) for entry in history_data]
 
-    stats = calculate_stats_for_metrics(fcp_values[:], lcp_values[:], ttfb_values[:], tbt_values[:], inp_values[:], speed_index_values[:])
+    stats = calculate_stats_for_metrics(
+        fcp_values[:], lcp_values[:], ttfb_values[:], tbt_values[:], inp_values[:], speed_index_values[:]
+    )
+
 
     metrics = {
         'FCP': fcp_values,

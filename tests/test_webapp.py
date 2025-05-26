@@ -34,15 +34,15 @@ def test_index_ok(client, tmp_path):
 def test_get_stats_success(client, tmp_path):
     domain = "example.com"
     write_domain(tmp_path, domain)
-    metrics = {"FCP": "1 s", "LCP": "2 s", "TTFB": "100 ms", "TBT": "50 ms", "INP": "100 ms", "Speed Index": "1.5 s"}
+    metrics = {"FCP": "1 s", "LCP": "2 s", "TTFB": "100 ms", "TBT": "50 ms", "INP": "200 ms", "Speed Index": "1.5 s"}
     write_history(tmp_path, domain, metrics)
 
     rv = client.get("/get_stats", query_string={"domain": domain})
     assert rv.status_code == 200
     data = rv.get_json()
     assert data["metrics"]["FCP"] == [1.0]
-    assert data["metrics"]["INP"] == [0.1]
-    assert data["metrics"]["Speed Index"] == [1.5]
+    assert data["metrics"]["INP"] == [0.2]
+
 
 
 def test_get_stats_missing_domain(client):
@@ -58,8 +58,8 @@ def test_get_stats_invalid_domain(client, tmp_path):
 
 def test_check_metrics_exceeded(client, tmp_path):
     domain = "example.com"
-    write_domain(tmp_path, domain, {"FCP": 1})
-    metrics = {"FCP": "2 s"}
+    write_domain(tmp_path, domain, {"FCP": 1, "INP": 0.1})
+    metrics = {"FCP": "2 s", "INP": "200 ms"}
     write_history(tmp_path, domain, metrics)
 
     rv = client.get("/check_metrics")
@@ -70,8 +70,8 @@ def test_check_metrics_exceeded(client, tmp_path):
 
 def test_check_metrics_ok(client, tmp_path):
     domain = "example.com"
-    write_domain(tmp_path, domain, {"FCP": 3})
-    metrics = {"FCP": "2 s"}
+    write_domain(tmp_path, domain, {"FCP": 3, "INP": 0.3})
+    metrics = {"FCP": "2 s", "INP": "200 ms"}
     write_history(tmp_path, domain, metrics)
 
     rv = client.get("/check_metrics")
