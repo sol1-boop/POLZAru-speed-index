@@ -34,6 +34,9 @@ https://t.me/+qbtXRYo72JNkNTUy
 pip install -r requirements.txt
 ```
 
+Создайте `config.json` на основе `config.example.json` или задайте переменные
+окружения `TELEGRAM_TOKEN` и `CHANNEL_ID` для работы телеграм-бота.
+
 
 **Запуск тестов**
 
