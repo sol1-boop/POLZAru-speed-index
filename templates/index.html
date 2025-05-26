@@ -24,7 +24,7 @@
     {% endif %}
 </p>
 <button id="compare-button">Сравнить домены</button>
-<button id="dashboard-button" onclick="location.href='/dashboard'">Дашборд</button>
+<button id="dashboard-button">Дашборд</button>
 
 <!-- Модальные окна -->
 <div id="loginModal" class="modal">
@@ -330,6 +330,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         fetchComparisonData(selectedDomains);
+    });
+
+    // Переход к дашборду
+    document.getElementById('dashboard-button').addEventListener('click', function() {
+        window.location.href = '/dashboard';
     });
 
     // Закрытие модального окна для графика
