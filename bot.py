@@ -7,7 +7,7 @@ import os
 import subprocess
 from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler
-from modules.utils import load_domains, get_telegram_settings
+from modules.utils import load_domains, get_telegram_settings, load_config
 from modules.tracking import audit_domain, DomainTracker
 from modules.metrics import summarize_history
 
@@ -37,8 +37,17 @@ async def audit_mobile(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         await context.bot.send_message(chat_id=CHANNEL_ID, text="Список доменов пуст или файл не найден.")
         return
 
+    cfg_headless = load_config().get('headless', True)
+    headless = cfg_headless
+    for arg in context.args:
+        if arg.startswith('headless='):
+            try:
+                headless = bool(int(arg.split('=')[1]))
+            except (ValueError, IndexError):
+                headless = cfg_headless
+
     for domain_info in domains_data:
-        await audit_domain(domain_info['domain'], context.bot, CHANNEL_ID)
+        await audit_domain(domain_info['domain'], context.bot, CHANNEL_ID, headless=headless)
 
     # Запуск alerts.py после каждого цикла отслеживания
     logger.info("Запуск alerts.py для проверки бюджетов...")
