@@ -31,18 +31,19 @@ async def audit_domain(url, bot, channel_id=None):
         "experimental-interaction-to-next-paint", {}
     )
 
-    def _clean_display(value):
-        if isinstance(value, str):
-            cleaned = value.replace("\xa0", "").strip()
-            if cleaned.lower() == "n/a":
-                return ""
-        return value
-
-    inp_display = _clean_display(regular_inp.get("displayValue")) or _clean_display(
-        experimental_inp.get("displayValue")
+    inp_display = (
+        regular_inp.get("displayValue")
+        or experimental_inp.get("displayValue")
     )
 
-    inp_value = inp_display
+    inp_value = None
+    if isinstance(inp_display, str):
+        normalized = inp_display.replace("\u00A0", " ").strip()
+        if normalized.lower() != "n/a":
+            inp_value = normalized
+    elif inp_display:
+        inp_value = inp_display
+
     if not inp_value:
         numeric = None
         if "numericValue" in regular_inp:
