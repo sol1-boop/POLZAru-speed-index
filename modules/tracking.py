@@ -24,13 +24,19 @@ async def audit_domain(url, bot, channel_id=None):
         logger.error("Не удалось получить метрики для %s", url)
         return None
 
+    audits = metrics.get("audits", {})
+    inp_value = (
+        audits.get("interaction-to-next-paint", {}).get("displayValue")
+        or audits.get("experimental-interaction-to-next-paint", {}).get("displayValue")
+    )
+
     summary = {
-        "FCP": metrics.get("audits", {}).get("first-contentful-paint", {}).get("displayValue"),
-        "LCP": metrics.get("audits", {}).get("largest-contentful-paint", {}).get("displayValue"),
-        "TTFB": metrics.get("audits", {}).get("server-response-time", {}).get("displayValue"),
-        "TBT": metrics.get("audits", {}).get("total-blocking-time", {}).get("displayValue"),
-        "Speed Index": metrics.get("audits", {}).get("speed-index", {}).get("displayValue"),
-        "INP": metrics.get("audits", {}).get("interaction-to-next-paint", {}).get("displayValue"),
+        "FCP": audits.get("first-contentful-paint", {}).get("displayValue"),
+        "LCP": audits.get("largest-contentful-paint", {}).get("displayValue"),
+        "TTFB": audits.get("server-response-time", {}).get("displayValue"),
+        "TBT": audits.get("total-blocking-time", {}).get("displayValue"),
+        "Speed Index": audits.get("speed-index", {}).get("displayValue"),
+        "INP": inp_value,
     }
     summary_text = f"Результаты аудита для {url}:\n"
     for key, value in summary.items():

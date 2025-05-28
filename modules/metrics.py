@@ -30,10 +30,10 @@ def parse_metric(value, unit='s'):
                     else:
                         return number
                 elif unit == 's':
-                    if 's' in value.lower() or 'сек' in value.lower():
-                        return number
-                    elif 'ms' in value.lower() or 'миллисек' in value.lower():
+                    if 'ms' in value.lower() or 'миллисек' in value.lower():
                         return number / 1000
+                    elif 's' in value.lower() or 'сек' in value.lower():
+                        return number
                     else:
                         return number
                 else:
