@@ -15,11 +15,18 @@ HISTORY_DIR = 'history_files'
 if not os.path.exists(HISTORY_DIR):
     os.makedirs(HISTORY_DIR)
 
-async def get_lighthouse_metrics(url: str, mobile: bool = False) -> dict:
+async def get_lighthouse_metrics(url: str, mobile: bool = False, headless: bool = True) -> dict:
+    """Run lighthouse audit asynchronously."""
     loop = asyncio.get_event_loop()
-    return await loop.run_in_executor(None, sync_get_lighthouse_metrics, url, mobile)
+    return await loop.run_in_executor(
+        None,
+        sync_get_lighthouse_metrics,
+        url,
+        mobile,
+        headless,
+    )
 
-def sync_get_lighthouse_metrics(url: str, mobile: bool = False) -> dict:
+def sync_get_lighthouse_metrics(url: str, mobile: bool = False, headless: bool = True) -> dict:
     try:
         if os.name == 'nt':
             default_lighthouse_path = 'lighthouse.cmd'
@@ -32,7 +39,9 @@ def sync_get_lighthouse_metrics(url: str, mobile: bool = False) -> dict:
             logger.error(f"Lighthouse не найден по пути: {lighthouse_path}")
             return {}
 
-        chrome_flags = '--no-sandbox --disable-dev-shm-usage --headless'
+        chrome_flags = '--no-sandbox --disable-dev-shm-usage'
+        if headless:
+            chrome_flags += ' --headless'
         max_wait_for_load = '--max-wait-for-load=450000'
         if mobile:
             chrome_flags += ' --window-size=412,823'

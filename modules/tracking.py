@@ -12,13 +12,13 @@ from lighthouse import get_lighthouse_metrics
 logger = logging.getLogger(__name__)
 HISTORY_DIR = 'history_files'
 
-async def audit_domain(url, bot, channel_id=None):
+async def audit_domain(url, bot, channel_id=None, headless=True):
     """Run lighthouse audit for `url` and store result."""
     if channel_id is None:
         _, channel_id = get_telegram_settings()
 
     await bot.send_message(chat_id=channel_id, text=f"Начинаем аудит для: {url}")
-    metrics = await get_lighthouse_metrics(url, mobile=True)
+    metrics = await get_lighthouse_metrics(url, mobile=True, headless=headless)
     if not metrics:
         await bot.send_message(chat_id=channel_id, text=f"Не удалось получить результаты аудита для {url}.")
         logger.error("Не удалось получить метрики для %s", url)
@@ -85,6 +85,7 @@ async def audit_domain(url, bot, channel_id=None):
 
 
 class DomainTracker:
+    """Periodic domain auditor using Lighthouse."""
     def __init__(self, bot, channel_id=None):
         self.bot = bot
         if channel_id is None:
@@ -92,7 +93,9 @@ class DomainTracker:
         self.channel_id = channel_id
         self.task = None
         self.domains = load_domains()
-        self.frequency_hours = load_config().get('frequency', 2)
+        cfg = load_config()
+        self.frequency_hours = cfg.get('frequency', 2)
+        self.headless = cfg.get('headless', True)
 
     async def _track_once(self):
         new_domains = load_domains()
@@ -102,9 +105,16 @@ class DomainTracker:
             logger.error("Список доменов пуст. Пропуск цикла отслеживания.")
             return
 
-        self.frequency_hours = load_config().get('frequency', self.frequency_hours)
+        cfg = load_config()
+        self.frequency_hours = cfg.get('frequency', self.frequency_hours)
+        self.headless = cfg.get('headless', self.headless)
         for domain_info in self.domains:
-            await audit_domain(domain_info['domain'], self.bot, self.channel_id)
+            await audit_domain(
+                domain_info['domain'],
+                self.bot,
+                self.channel_id,
+                headless=self.headless,
+            )
 
         logger.info("Запуск alerts.py для проверки бюджетов...")
         try:

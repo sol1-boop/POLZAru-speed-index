@@ -19,7 +19,7 @@ async def test_audit_domain(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     (tmp_path / "history_files").mkdir()
 
-    async def fake_metrics(url, mobile=True):
+    async def fake_metrics(url, mobile=True, headless=True):
         return {
             "audits": {
                 "first-contentful-paint": {"displayValue": "1 s"},
@@ -49,7 +49,7 @@ async def test_audit_domain_experimental_inp(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     (tmp_path / "history_files").mkdir()
 
-    async def fake_metrics(url, mobile=True):
+    async def fake_metrics(url, mobile=True, headless=True):
         return {
             "audits": {
                 "first-contentful-paint": {"displayValue": "1 s"},
@@ -75,7 +75,7 @@ async def test_audit_domain_numeric_inp(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     (tmp_path / "history_files").mkdir()
 
-    async def fake_metrics(url, mobile=True):
+    async def fake_metrics(url, mobile=True, headless=True):
         return {
             "audits": {
                 "first-contentful-paint": {"displayValue": "1 s"},
@@ -101,7 +101,7 @@ async def test_audit_domain_inp_display_na(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     (tmp_path / "history_files").mkdir()
 
-    async def fake_metrics(url, mobile=True):
+    async def fake_metrics(url, mobile=True, headless=True):
         return {
             "audits": {
                 "first-contentful-paint": {"displayValue": "1 s"},
