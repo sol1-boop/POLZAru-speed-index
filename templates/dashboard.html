@@ -230,11 +230,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function updateMetricCards(data) {
         const metrics = ['FCP', 'LCP', 'TTFB', 'TBT', 'INP', 'Speed Index'];
+        const metricIdMap = {
+            'FCP': 'fcp',
+            'LCP': 'lcp',
+            'TTFB': 'ttfb',
+            'TBT': 'tbt',
+            'INP': 'inp',
+            'Speed Index': 'si'
+        };
         metrics.forEach(metric => {
-            const valueElement = document.getElementById(`${metric.toLowerCase()}Value`);
-            const statusElement = document.getElementById(`${metric.toLowerCase()}Status`);
-            const trendValueElement = document.getElementById(`${metric.toLowerCase()}TrendValue`);
-            const trendStatusElement = document.getElementById(`${metric.toLowerCase()}TrendStatus`);
+            const idPrefix = metricIdMap[metric] || metric.toLowerCase();
+            const valueElement = document.getElementById(`${idPrefix}Value`);
+            const statusElement = document.getElementById(`${idPrefix}Status`);
+            const trendValueElement = document.getElementById(`${idPrefix}TrendValue`);
+            const trendStatusElement = document.getElementById(`${idPrefix}TrendStatus`);
             const currentValues = data.metrics[metric];
             const budgetValue = data.budget[metric] !== undefined ? data.budget[metric] : null;
 
