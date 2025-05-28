@@ -27,9 +27,22 @@ async def audit_domain(url, bot, channel_id=None):
     audits = metrics.get("audits", {})
 
     regular_inp = audits.get("interaction-to-next-paint", {})
-    experimental_inp = audits.get("experimental-interaction-to-next-paint", {})
+    experimental_inp = audits.get(
+        "experimental-interaction-to-next-paint", {}
+    )
 
-    inp_value = regular_inp.get("displayValue") or experimental_inp.get("displayValue")
+    def _clean_display(value):
+        if isinstance(value, str):
+            cleaned = value.replace("\xa0", "").strip()
+            if cleaned.lower() == "n/a":
+                return ""
+        return value
+
+    inp_display = _clean_display(regular_inp.get("displayValue")) or _clean_display(
+        experimental_inp.get("displayValue")
+    )
+
+    inp_value = inp_display
     if not inp_value:
         numeric = None
         if "numericValue" in regular_inp:
