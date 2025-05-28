@@ -25,10 +25,19 @@ async def audit_domain(url, bot, channel_id=None):
         return None
 
     audits = metrics.get("audits", {})
-    inp_value = (
-        audits.get("interaction-to-next-paint", {}).get("displayValue")
-        or audits.get("experimental-interaction-to-next-paint", {}).get("displayValue")
-    )
+
+    regular_inp = audits.get("interaction-to-next-paint", {})
+    experimental_inp = audits.get("experimental-interaction-to-next-paint", {})
+
+    inp_value = regular_inp.get("displayValue") or experimental_inp.get("displayValue")
+    if not inp_value:
+        numeric = None
+        if "numericValue" in regular_inp:
+            numeric = regular_inp.get("numericValue")
+        elif "numericValue" in experimental_inp:
+            numeric = experimental_inp.get("numericValue")
+        if numeric is not None:
+            inp_value = f"{numeric} ms"
 
     summary = {
         "FCP": audits.get("first-contentful-paint", {}).get("displayValue"),
