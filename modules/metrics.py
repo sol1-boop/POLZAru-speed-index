@@ -69,7 +69,7 @@ def summarize_history(history_data):
     """Return min/avg/max statistics for each metric in history_data."""
 
     fcp_values, lcp_values, ttfb_values, tbt_values = [], [], [], []
-    inp_values, speed_index_values = [], []
+    speed_index_values = []
     for entry in history_data:
         metrics = entry.get('metrics', {})
         fcp = parse_metric(metrics.get('FCP'))
@@ -88,9 +88,6 @@ def summarize_history(history_data):
         if tbt is not None:
             tbt_values.append(tbt / 1000)
 
-        inp = parse_metric(metrics.get('INP'), unit='ms')
-        if inp is not None:
-            inp_values.append(inp / 1000)
 
         speed_index = parse_metric(metrics.get('Speed Index'))
         if speed_index is not None:
@@ -110,16 +107,13 @@ def summarize_history(history_data):
         'LCP': stats(lcp_values),
         'TTFB': stats(ttfb_values),
         'TBT': stats(tbt_values),
-        'INP': stats(inp_values),
         'Speed Index': stats(speed_index_values),
     }
 
 
-def calculate_stats_for_metrics(fcp_values, lcp_values, ttfb_values, tbt_values, inp_values=None, speed_index_values=None):
+def calculate_stats_for_metrics(fcp_values, lcp_values, ttfb_values, tbt_values, speed_index_values=None):
     import statistics
 
-    if inp_values is None:
-        inp_values = []
     if speed_index_values is None:
         speed_index_values = []
 
@@ -155,7 +149,6 @@ def calculate_stats_for_metrics(fcp_values, lcp_values, ttfb_values, tbt_values,
         'LCP': calculate_stats([v for v in lcp_values if v is not None]),
         'TTFB': calculate_stats([v for v in ttfb_values if v is not None]),
         'TBT': calculate_stats([v for v in tbt_values if v is not None]),
-        'INP': calculate_stats([v for v in (inp_values or []) if v is not None]),
         'Speed Index': calculate_stats([v for v in (speed_index_values or []) if v is not None])
 
     }

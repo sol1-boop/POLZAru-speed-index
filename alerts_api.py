@@ -42,7 +42,7 @@ def get_latest_metrics(domain):
                     cleaned_value = re.sub(r'[^\d.,]', '', value).replace(',', '.')
                     try:
                         numeric_value = float(cleaned_value)
-                        if metric in ["TBT", "TTFB", "INP"]:
+                        if metric in ["TBT", "TTFB"]:
                             numeric_value /= 1000  # Переводим из мс в секунды
                         cleaned_data[metric] = numeric_value
                     except ValueError:

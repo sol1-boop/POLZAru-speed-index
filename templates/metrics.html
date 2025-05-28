@@ -12,7 +12,6 @@
     <canvas id="lcpChart"></canvas>
     <canvas id="ttfbChart"></canvas>
     <canvas id="tbtChart"></canvas>
-    <canvas id="inpChart"></canvas>
     <canvas id="siChart"></canvas>
     <a href="{{ url_for('index') }}">Назад к списку доменов</a>
 
@@ -22,7 +21,6 @@
         const lcpValues = {{ lcp_values|tojson }};
         const ttfbValues = {{ ttfb_values|tojson }};
         const tbtValues = {{ tbt_values|tojson }};
-        const inpValues = {{ inp_values|tojson }};
         const siValues = {{ si_values|tojson }};
 
         // Функция для создания графика
@@ -65,7 +63,6 @@
         createChart(document.getElementById('lcpChart'), 'LCP', lcpValues);
         createChart(document.getElementById('ttfbChart'), 'TTFB', ttfbValues);
         createChart(document.getElementById('tbtChart'), 'TBT', tbtValues);
-        createChart(document.getElementById('inpChart'), 'INP', inpValues);
         createChart(document.getElementById('siChart'), 'Speed Index', siValues);
     </script>
 </body>

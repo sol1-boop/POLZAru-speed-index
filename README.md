@@ -9,7 +9,8 @@ http://147.45.251.48/check_metrics (алерт для Uptime Kuma)
 **Инструкция по использованию телеграм-бота:**
 
 /audit_mobile
-Для разовой проверки доменов из domain.json
+Для разовой проверки доменов из domain.json. Опциональный аргумент
+`headless=0` позволяет запустить Chrome не в headless-режиме.
 
 /start_track
 Для мониторинга из domain.json через заданные промежутки времени (один раз в 2 ч. по умолчанию)
@@ -36,6 +37,8 @@ pip install -r requirements.txt
 
 Создайте `config.json` на основе `config.example.json` или задайте переменные
 окружения `TELEGRAM_TOKEN` и `CHANNEL_ID` для работы телеграм-бота.
+В `config.json` можно указать поле `headless` для управления запуском Chrome
+в фоновом режиме.
 
 
 **Запуск тестов**
