@@ -53,7 +53,7 @@ def get_latest_metrics(domain):
                             # Конвертируем значение в float
                             numeric_value = float(cleaned_value)
                             # Если метрика измеряется в миллисекундах, переводим её в секунды
-                            if metric in ["TBT", "TTFB", "INP"]:
+                            if metric in ["TBT", "TTFB"]:
                                 numeric_value /= 1000
                             cleaned_data[metric] = numeric_value
                         except ValueError:

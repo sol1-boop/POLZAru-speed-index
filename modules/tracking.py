@@ -26,32 +26,6 @@ async def audit_domain(url, bot, channel_id=None, headless=True):
 
     audits = metrics.get("audits", {})
 
-    regular_inp = audits.get("interaction-to-next-paint", {})
-    experimental_inp = audits.get(
-        "experimental-interaction-to-next-paint", {}
-    )
-
-    inp_display = (
-        regular_inp.get("displayValue")
-        or experimental_inp.get("displayValue")
-    )
-
-    inp_value = None
-    if isinstance(inp_display, str):
-        normalized = inp_display.replace("\u00A0", " ").strip()
-        if normalized.lower() != "n/a":
-            inp_value = normalized
-    elif inp_display:
-        inp_value = inp_display
-
-    if not inp_value:
-        numeric = None
-        if "numericValue" in regular_inp:
-            numeric = regular_inp.get("numericValue")
-        elif "numericValue" in experimental_inp:
-            numeric = experimental_inp.get("numericValue")
-        if numeric is not None:
-            inp_value = f"{numeric} ms"
 
     summary = {
         "FCP": audits.get("first-contentful-paint", {}).get("displayValue"),
@@ -59,7 +33,6 @@ async def audit_domain(url, bot, channel_id=None, headless=True):
         "TTFB": audits.get("server-response-time", {}).get("displayValue"),
         "TBT": audits.get("total-blocking-time", {}).get("displayValue"),
         "Speed Index": audits.get("speed-index", {}).get("displayValue"),
-        "INP": inp_value,
     }
     summary_text = f"Результаты аудита для {url}:\n"
     for key, value in summary.items():

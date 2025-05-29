@@ -43,11 +43,6 @@
         <p id="tbtValue"></p>
         <span id="tbtStatus" class="status-indicator"></span>
     </div>
-    <div class="metric-card" id="inpCard">
-        <h3>INP</h3>
-        <p id="inpValue"></p>
-        <span id="inpStatus" class="status-indicator"></span>
-    </div>
     <div class="metric-card" id="siCard">
         <h3>Speed Index</h3>
         <p id="siValue"></p>
@@ -78,11 +73,6 @@
         <p id="tbtTrendValue"></p>
         <span id="tbtTrendStatus" class="status-indicator"></span>
     </div>
-    <div class="metric-card" id="inpTrendCard">
-        <h3>INP</h3>
-        <p id="inpTrendValue"></p>
-        <span id="inpTrendStatus" class="status-indicator"></span>
-    </div>
     <div class="metric-card" id="siTrendCard">
         <h3>Speed Index</h3>
         <p id="siTrendValue"></p>
@@ -107,10 +97,6 @@
     <div class="chart-wrapper">
         <h2>TBT (Total Blocking Time)</h2>
         <canvas id="tbtChart" style="max-height: 500px;"></canvas>
-    </div>
-    <div class="chart-wrapper">
-        <h2>INP (Interaction to Next Paint)</h2>
-        <canvas id="inpChart" style="max-height: 500px;"></canvas>
     </div>
     <div class="chart-wrapper">
         <h2>Speed Index</h2>
@@ -141,7 +127,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const statsDomain = document.getElementById('statsDomain');
     const closeStatsModal = document.getElementById('closeStatsModal');
     const showStatsButton = document.getElementById('showStatsButton');
-    let fcpChart, lcpChart, ttfbChart, tbtChart, inpChart, siChart;
+    let fcpChart, lcpChart, ttfbChart, tbtChart, siChart;
 
 
     closeStatsModal.onclick = function() {
@@ -223,19 +209,17 @@ document.addEventListener('DOMContentLoaded', function() {
         if (lcpChart) lcpChart.destroy();
         if (ttfbChart) ttfbChart.destroy();
         if (tbtChart) tbtChart.destroy();
-        if (inpChart) inpChart.destroy();
         if (siChart) siChart.destroy();
 
     }
 
     function updateMetricCards(data) {
-        const metrics = ['FCP', 'LCP', 'TTFB', 'TBT', 'INP', 'Speed Index'];
+        const metrics = ['FCP', 'LCP', 'TTFB', 'TBT', 'Speed Index'];
         const metricIdMap = {
             'FCP': 'fcp',
             'LCP': 'lcp',
             'TTFB': 'ttfb',
             'TBT': 'tbt',
-            'INP': 'inp',
             'Speed Index': 'si'
         };
         metrics.forEach(metric => {
@@ -318,12 +302,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     const sortedLCP = [...data.metrics.LCP].reverse();
                     const sortedTTFB = [...data.metrics.TTFB].reverse();
                     const sortedTBT = [...data.metrics.TBT].reverse();
-                    const sortedINP = [...data.metrics.INP].reverse();
                     const sortedSI = [...data.metrics["Speed Index"]].reverse();
 
 
                     html += '<h3>История замеров</h3>';
-                    html += '<table><tr><th>Дата</th><th>FCP (s)</th><th>LCP (s)</th><th>TTFB (s)</th><th>TBT (s)</th><th>INP (s)</th><th>Speed Index (s)</th></tr>';
+                    html += '<table><tr><th>Дата</th><th>FCP (s)</th><th>LCP (s)</th><th>TTFB (s)</th><th>TBT (s)</th><th>Speed Index (s)</th></tr>';
                     for (let i = 0; i < sortedDates.length; i++) {
                         html += `<tr>
                                     <td>${sortedDates[i]}</td>
@@ -331,7 +314,6 @@ document.addEventListener('DOMContentLoaded', function() {
                                     <td>${sortedLCP[i] !== null ? sortedLCP[i] + 's' : 'N/A'}</td>
                                     <td>${sortedTTFB[i] !== null ? sortedTTFB[i] + 's' : 'N/A'}</td>
                                     <td>${sortedTBT[i] !== null ? sortedTBT[i] + 's' : 'N/A'}</td>
-                                    <td>${sortedINP[i] !== null ? sortedINP[i] + 's' : 'N/A'}</td>
                                     <td>${sortedSI[i] !== null ? sortedSI[i] + 's' : 'N/A'}</td>
                                  </tr>`;
                     }
@@ -404,16 +386,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     'rgba(255, 99, 132, 0.6)'
                 );
 
-                const inpCtx = document.getElementById('inpChart').getContext('2d');
-                inpChart = createComparisonChart(
-                    inpCtx,
-                    'INP',
-                    { dates: data.dates, metrics: data.metrics.INP },
-                    { dates: data.dates.slice(-data.previous_metrics.INP.length), metrics: data.previous_metrics.INP },
-                    data.budget.INP,
-                    'rgba(54, 162, 235, 1)',
-                    'rgba(54, 162, 235, 0.6)'
-                );
 
                 const siCtx = document.getElementById('siChart').getContext('2d');
                 siChart = createComparisonChart(
