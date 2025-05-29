@@ -41,9 +41,6 @@ async def test_audit_domain(tmp_path, monkeypatch):
     data = json.loads(history_file.read_text())
     assert data[0]["metrics"]["FCP"] == "1 s"
 
-
-
-
 def test_domain_tracker_start_stop(monkeypatch):
     bot = DummyBot()
     tracker = tracking.DomainTracker(bot, channel_id=1)

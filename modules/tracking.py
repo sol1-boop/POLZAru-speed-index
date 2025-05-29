@@ -58,6 +58,7 @@ async def audit_domain(url, bot, channel_id=None, headless=True):
 
 
 class DomainTracker:
+    """Periodically audit configured domains via Lighthouse."""
     def __init__(self, bot, channel_id=None):
         self.bot = bot
         if channel_id is None:
