@@ -1,8 +1,7 @@
 # bot.py
 
-import asyncio
+import json
 import logging
-from datetime import datetime
 import os
 import subprocess
 from telegram import Update
