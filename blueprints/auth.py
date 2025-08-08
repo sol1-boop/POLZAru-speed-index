@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for
+from flask import Blueprint, request, redirect, url_for, render_template
 
 from modules.utils import load_domains, save_domains, load_config, save_config
 from modules.auth import login_required, login_user, logout_user
@@ -9,18 +9,19 @@ auth_bp = Blueprint('auth_bp', __name__)
 
 @auth_bp.route('/login', methods=['POST'])
 def login():
+    """Authenticate a user and redirect to the next URL."""
     username = request.form['username']
     password = request.form['password']
     next_url = request.form.get('next') or url_for('index')
     if login_user(username, password):
         return redirect(next_url)
-    else:
-        error = 'Неправильный логин или пароль'
-        return render_template('index.html', error=error, domains=load_domains())
+    error = 'Неправильный логин или пароль'
+    return render_template('index.html', error=error, domains=load_domains())
 
 
 @auth_bp.route('/logout')
 def logout():
+    """Log out the current user and redirect to the index page."""
     logout_user()
     return redirect(url_for('index'))
 
@@ -28,6 +29,7 @@ def logout():
 @auth_bp.route('/settings', methods=['GET', 'POST'])
 @login_required
 def settings():
+    """Display and handle application settings forms."""
     domains = load_domains()
     config = load_config()
     frequency = config.get('frequency', 2)
