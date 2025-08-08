@@ -1,76 +1,8 @@
-import re
-import json
-import os
 import requests
 from modules.utils import get_telegram_settings
+from modules.budget import load_budget, get_latest_metrics
 
 TELEGRAM_TOKEN, CHANNEL_ID = get_telegram_settings()
-
-def get_budget():
-    try:
-        with open("domain.json", "r") as file:
-            data = json.load(file)
-        return data
-    except FileNotFoundError:
-        print("Ошибка: файл domain.json не найден.")
-        return []
-
-
-# Функция для загрузки последних метрик из файлов в history_files
-
-def get_latest_metrics(domain):
-    # Извлекаем только имя домена, убирая протокол (http, https) и слеши
-    domain_name = domain.replace('http://', '').replace('https://', '').replace('/', '')
-    filename = f"history_{domain_name}.json"
-    filepath = os.path.join("history_files", filename)
-
-    print(f"Пытаемся загрузить метрики из файла: {filepath}")  # Отладочное сообщение
-
-    try:
-        with open(filepath, "r", encoding="utf-8") as file:
-            data = json.load(file)
-
-        # Проверяем, что данные являются списком и содержат записи
-        if isinstance(data, list) and len(data) > 0:
-            # Берем последний элемент списка (последний замер)
-            latest_entry = data[-1]
-            raw_metrics = latest_entry.get("metrics", {})
-
-            # Проверяем, что "metrics" действительно есть и это словарь
-            if isinstance(raw_metrics, dict):
-                cleaned_data = {}
-                for metric, value in raw_metrics.items():
-                    if isinstance(value, str):
-                        # Специальная обработка для TTFB, удаление текстовой вставки
-                        if metric == "TTFB":
-                            value = value.replace("Root document took", "").strip()
-
-                        # Используем регулярное выражение для извлечения числового значения
-                        cleaned_value = re.sub(r'[^\d.,]', '', value)  # Оставляем только цифры, точку и запятую
-                        cleaned_value = cleaned_value.replace(',', '.')  # Заменяем запятую на точку
-
-                        try:
-                            # Конвертируем значение в float
-                            numeric_value = float(cleaned_value)
-                            # Если метрика измеряется в миллисекундах, переводим её в секунды
-                            if metric in ["TBT", "TTFB"]:
-                                numeric_value /= 1000
-                            cleaned_data[metric] = numeric_value
-                        except ValueError:
-                            print(f"Ошибка преобразования значения метрики '{metric}': {cleaned_value}")
-                return cleaned_data
-            else:
-                print(f"Ошибка: 'metrics' не является словарем в последней записи файла {filename}.")
-                return {}
-        else:
-            print(f"Ошибка: данные в {filename} не являются списком или список пуст.")
-            return {}
-    except FileNotFoundError:
-        print(f"Ошибка: файл {filename} не найден.")
-        return {}
-    except ValueError as e:
-        print(f"Ошибка преобразования данных в файле {filename}: {e}")
-        return {}
 
 # Функция для отправки сообщения в Телеграм
 def send_telegram_alert(message):
@@ -90,7 +22,7 @@ def send_telegram_alert(message):
 
 # Основная функция для проверки метрик и отправки алертов
 def check_and_alert():
-    budget_data = get_budget()  # Получаем бюджет из domain.json
+    budget_data = load_budget()  # Получаем бюджет из domain.json
     print("Загружен бюджет:", budget_data)  # Добавлено для отладки
 
     for domain_data in budget_data:
