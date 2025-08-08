@@ -15,6 +15,7 @@ sequenceDiagram
     participant AlertsAPI
     participant Utils
     participant Metrics
+    participant Budget
     participant HistoryFiles as "history_files/"
     participant DomainConfig as "domain.json"
 
@@ -26,10 +27,10 @@ sequenceDiagram
     WebApp-->>Browser: JSON stats
 
     Browser->>AlertsAPI: GET /check_metrics
-    AlertsAPI->>Utils: load_budget()
-    Utils->>DomainConfig: read
-    AlertsAPI->>Metrics: get_latest_metrics(domain)
-    Metrics->>HistoryFiles: read
+    AlertsAPI->>Budget: load_budget()
+    Budget->>DomainConfig: read
+    AlertsAPI->>Budget: get_latest_metrics(domain)
+    Budget->>HistoryFiles: read
     AlertsAPI-->>Browser: JSON result
 ```
 

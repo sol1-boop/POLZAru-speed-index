@@ -1,60 +1,12 @@
-import json
 import logging
-import os
 import requests
 
 from modules.utils import get_telegram_settings
-from modules.metrics import parse_metric
+from modules.budget import load_budget, get_latest_metrics
 
 logger = logging.getLogger(__name__)
 
 TELEGRAM_TOKEN, CHANNEL_ID = get_telegram_settings()
-
-
-def get_budget():
-    """Return budget configuration from domain.json."""
-    try:
-        with open("domain.json", "r", encoding="utf-8") as file:
-            data = json.load(file)
-        return data
-    except FileNotFoundError:
-        logger.error("Ошибка: файл domain.json не найден.")
-        return []
-
-
-def get_latest_metrics(domain):
-    """Return latest metrics for a domain from history files."""
-    domain_name = domain.replace('http://', '').replace('https://', '').replace('/', '')
-    filename = f"history_{domain_name}.json"
-    filepath = os.path.join("history_files", filename)
-
-    logger.debug("Пытаемся загрузить метрики из файла: %s", filepath)
-
-    try:
-        with open(filepath, "r", encoding="utf-8") as file:
-            data = json.load(file)
-
-        if isinstance(data, list) and data:
-            latest_entry = data[-1]
-            raw_metrics = latest_entry.get("metrics", {})
-
-            if isinstance(raw_metrics, dict):
-                cleaned_data = {}
-                for metric, value in raw_metrics.items():
-                    parsed = parse_metric(value)
-                    if parsed is not None:
-                        cleaned_data[metric] = parsed
-                return cleaned_data
-            logger.error("'metrics' не является словарем в последней записи файла %s.", filename)
-            return {}
-        logger.error("Данные в %s не являются списком или список пуст.", filename)
-        return {}
-    except FileNotFoundError:
-        logger.error("Ошибка: файл %s не найден.", filename)
-        return {}
-    except ValueError as e:
-        logger.error("Ошибка преобразования данных в файле %s: %s", filename, e)
-        return {}
 
 
 def send_telegram_alert(message):
@@ -74,9 +26,9 @@ def send_telegram_alert(message):
 
 
 def check_and_alert():
-    """Check metrics against budget and send alerts if needed."""
-    budget_data = get_budget()
-    logger.debug("Загружен бюджет: %s", budget_data)
+    # Получаем бюджет из domain.json через модуль budget
+    budget_data = load_budget()
+    print("Загружен бюджет:", budget_data)  # отладка (как в новой ветке)
 
     for domain_data in budget_data:
         domain = domain_data['domain']
@@ -107,4 +59,3 @@ def check_and_alert():
 
 if __name__ == "__main__":
     check_and_alert()
-
