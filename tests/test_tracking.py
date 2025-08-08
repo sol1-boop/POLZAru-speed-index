@@ -1,6 +1,5 @@
 import asyncio
 import json
-import types
 
 import pytest
 
@@ -15,7 +14,7 @@ class DummyBot:
         self.sent.append((chat_id, text))
 
 
-async def test_audit_domain(tmp_path, monkeypatch):
+def test_audit_domain(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     (tmp_path / "history_files").mkdir()
 
@@ -33,7 +32,8 @@ async def test_audit_domain(tmp_path, monkeypatch):
 
     monkeypatch.setattr(tracking, "get_lighthouse_metrics", fake_metrics)
     bot = DummyBot()
-    await tracking.audit_domain("example.com", bot, channel_id=1)
+    import asyncio
+    asyncio.run(tracking.audit_domain("example.com", bot, channel_id=1))
 
     assert len(bot.sent) >= 2
     history_file = tmp_path / "history_files" / "history_example.com.json"
