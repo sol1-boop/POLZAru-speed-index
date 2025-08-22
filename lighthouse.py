@@ -7,6 +7,9 @@ import json
 import os
 import signal
 import shutil
+import tempfile
+from pathlib import Path
+from uuid import uuid4
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -26,7 +29,36 @@ async def get_lighthouse_metrics(url: str, mobile: bool = False, headless: bool 
         headless,
     )
 
+def cleanup_temp_chrome_data() -> None:
+    """Remove stale Chrome temporary directories and caches."""
+    temp_path = Path(tempfile.gettempdir())
+    patterns = ("chrome-*", "chrome_profile_*")
+    for pattern in patterns:
+        for item in temp_path.glob(pattern):
+            if item.is_dir():
+                shutil.rmtree(item, ignore_errors=True)
+            else:
+                try:
+                    item.unlink()
+                except FileNotFoundError:
+                    pass
+
+    home = Path.home()
+    for profile in (home / ".config" / "Google" / "Chrome", home / ".config" / "chromium"):
+        if profile.exists():
+            shutil.rmtree(profile, ignore_errors=True)
+
+
+def create_temp_chrome_profile() -> str:
+    """Create a unique temporary profile directory for Chrome."""
+    profile_dir = Path(tempfile.gettempdir()) / f"chrome_profile_{uuid4().hex}"
+    profile_dir.mkdir()
+    return str(profile_dir)
+
+
 def sync_get_lighthouse_metrics(url: str, mobile: bool = False, headless: bool = True) -> dict:
+    cleanup_temp_chrome_data()
+    profile_dir = create_temp_chrome_profile()
     try:
         if os.name == 'nt':
             default_lighthouse_path = 'lighthouse.cmd'
@@ -39,9 +71,10 @@ def sync_get_lighthouse_metrics(url: str, mobile: bool = False, headless: bool =
             logger.error(f"Lighthouse не найден по пути: {lighthouse_path}")
             return {}
 
-        chrome_flags = '--no-sandbox --disable-dev-shm-usage'
+        chrome_flags = '--no-sandbox --incognito'
         if headless:
             chrome_flags += ' --headless'
+        chrome_flags += f' --user-data-dir={profile_dir}'
         max_wait_for_load = '--max-wait-for-load=450000'
         if mobile:
             chrome_flags += ' --window-size=412,823'
@@ -116,6 +149,9 @@ def sync_get_lighthouse_metrics(url: str, mobile: bool = False, headless: bool =
     except Exception as e:
         logger.exception(f"Ошибка при запуске Lighthouse для {url}: {e}")
         return {}
+    finally:
+        shutil.rmtree(profile_dir, ignore_errors=True)
+        cleanup_temp_chrome_data()
 
 async def main():
     # Ваш код для запуска аудита доменов без участия бота
