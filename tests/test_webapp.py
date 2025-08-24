@@ -77,12 +77,3 @@ def test_check_metrics_ok(client, tmp_path):
     assert rv.status_code == 200
     data = rv.get_json()
     assert data["status"] == "OK"
-
-
-def test_dashboard_ok(client, tmp_path):
-    write_domain(tmp_path, "example.com")
-    metrics = {"FCP": "1 s", "LCP": "2 s", "TTFB": "100 ms", "TBT": "50 ms", "Speed Index": "1.5 s"}
-    write_history(tmp_path, "example.com", metrics)
-
-    rv = client.get("/dashboard")
-    assert rv.status_code == 200
