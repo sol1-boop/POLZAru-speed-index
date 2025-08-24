@@ -1,6 +1,6 @@
 import json
 import pytest
-from modules.utils import get_telegram_settings
+from modules.config import get_telegram_settings
 
 
 def test_get_telegram_settings_ok(tmp_path, monkeypatch):

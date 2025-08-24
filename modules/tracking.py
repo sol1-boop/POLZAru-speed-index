@@ -6,10 +6,9 @@ from datetime import datetime
 
 from alerts import check_and_alert
 from lighthouse import get_lighthouse_metrics
+from modules.config import get_telegram_settings, load_config
 from modules.utils import (
-    get_telegram_settings,
     history_file_path,
-    load_config,
     load_domains,
     load_json,
     save_json,
