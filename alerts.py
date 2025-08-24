@@ -1,16 +1,20 @@
 import logging
 import requests
 
-from modules.utils import get_telegram_settings
 from modules.budget import load_budget, get_latest_metrics
+from modules.utils import get_telegram_settings
 
 logger = logging.getLogger(__name__)
 
-TELEGRAM_TOKEN, CHANNEL_ID = get_telegram_settings()
+TELEGRAM_TOKEN = CHANNEL_ID = None
 
 
 def send_telegram_alert(message):
     """Send `message` to the configured Telegram channel."""
+    global TELEGRAM_TOKEN, CHANNEL_ID
+    if TELEGRAM_TOKEN is None or CHANNEL_ID is None:
+        TELEGRAM_TOKEN, CHANNEL_ID = get_telegram_settings()
+
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     payload = {
         "chat_id": CHANNEL_ID,
@@ -28,7 +32,7 @@ def send_telegram_alert(message):
 def check_and_alert():
     # Получаем бюджет из domain.json через модуль budget
     budget_data = load_budget()
-    print("Загружен бюджет:", budget_data)  # отладка (как в новой ветке)
+    logger.debug("Загружен бюджет: %s", budget_data)
 
     for domain_data in budget_data:
         domain = domain_data['domain']

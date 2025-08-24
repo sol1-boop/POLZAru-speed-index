@@ -1,21 +1,16 @@
 # bot.py
 
-import json
+import asyncio
 import logging
-import os
-import subprocess
 from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler
 from modules.utils import load_domains, get_telegram_settings, load_config
 from modules.tracking import audit_domain, DomainTracker
-from modules.metrics import summarize_history
+from modules.metrics import compute_domain_stats, load_history
+from alerts import check_and_alert
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-HISTORY_DIR = 'history_files'
-if not os.path.exists(HISTORY_DIR):
-    os.makedirs(HISTORY_DIR)
 
 tracker = None  # Экземпляр DomainTracker
 
@@ -48,12 +43,12 @@ async def audit_mobile(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     for domain_info in domains_data:
         await audit_domain(domain_info['domain'], context.bot, CHANNEL_ID, headless=headless)
 
-    # Запуск alerts.py после каждого цикла отслеживания
-    logger.info("Запуск alerts.py для проверки бюджетов...")
+    # Проверка бюджетов после аудита
+    logger.info("Запуск проверки бюджетов...")
     try:
-        subprocess.run(["python", "alerts.py"], check=True)
+        await asyncio.to_thread(check_and_alert)
     except Exception as e:
-        logger.exception("Не удалось запустить alerts.py: %s", e)
+        logger.exception("Не удалось выполнить check_and_alert: %s", e)
 
 # Обработчик команды /start_track
 async def start_track(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -86,28 +81,18 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     for domain_info in domains_data:
         url = domain_info['domain']
-        history_filename = f"history_{url.replace('http://', '').replace('https://', '').replace('/', '_')}.json"
-        history_filepath = os.path.join(HISTORY_DIR, history_filename)
-
-        if os.path.exists(history_filepath):
-            try:
-                with open(history_filepath, 'r', encoding='utf-8') as file:
-                    history_data = json.load(file)
-
-                if history_data:
-                    stats = summarize_history(history_data)
-                    stats_message = f"Статистика для {url}:\n"
-                    for key, values in stats.items():
-                        if values:
-                            stats_message += f"{key}: min={values['min']:.2f}s, avg={values['avg']:.2f}s, max={values['max']:.2f}s\n"
-                        else:
-                            stats_message += f"{key}: нет данных\n"
-                    await context.bot.send_message(chat_id=CHANNEL_ID, text=stats_message)
+        history_data = load_history(url)
+        if history_data:
+            result = compute_domain_stats(history_data)
+            stats_message = f"Статистика для {url}:\n"
+            for key, values in result['stats'].items():
+                if values['min'] is not None:
+                    stats_message += (
+                        f"{key}: min={values['min']:.2f}s, median={values['median']:.2f}s, max={values['max']:.2f}s\n"
+                    )
                 else:
-                    await context.bot.send_message(chat_id=CHANNEL_ID, text=f"История для {url} пуста.")
-            except json.JSONDecodeError:
-                logger.error(f"Ошибка чтения JSON из файла {history_filepath}. Пропуск файла.")
-                continue
+                    stats_message += f"{key}: нет данных\n"
+            await context.bot.send_message(chat_id=CHANNEL_ID, text=stats_message)
         else:
             await context.bot.send_message(chat_id=CHANNEL_ID, text=f"История для {url} не найдена.")
 

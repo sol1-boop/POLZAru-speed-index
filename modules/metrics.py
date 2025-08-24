@@ -1,68 +1,63 @@
 # modules/metrics.py
 
 import logging
+import os
+import re
+
+from modules.utils import history_file_path, load_json
 
 logger = logging.getLogger(__name__)
 
-def parse_metric(value, unit='s'):
+
+def parse_metric(value, unit="s"):
+    """Return numeric value of Lighthouse metric *value* in given *unit*."""
     if value:
         try:
             # Удаляем неразрывные пробелы и дополнительные пробелы
-            value = value.replace('\u00A0', ' ').strip()
+            value = value.replace("\u00A0", " ").strip()
             # Удаляем дополнительный текст из TTFB
-            if 'Root document took' in value:
-                value = value.replace('Root document took', '').strip()
+            if "Root document took" in value:
+                value = value.replace("Root document took", "").strip()
             # Извлекаем числовое значение с помощью регулярного выражения
-            import re
-            match = re.search(r'([\d,\.]+)', value)
+            match = re.search(r"([\d,\.]+)", value)
             if match:
                 number_str = match.group(1)
                 # Удаляем разделители тысяч (запятые)
-                number_str = number_str.replace(',', '')
+                number_str = number_str.replace(",", "")
                 # Преобразуем строку в число
                 number = float(number_str)
                 # Приводим к нужной единице измерения
-                if unit == 'ms':
-                    if 'ms' in value.lower() or 'миллисек' in value.lower():
+                if unit == "ms":
+                    if "ms" in value.lower() or "миллисек" in value.lower():
                         return number
-                    elif 's' in value.lower() or 'сек' in value.lower():
+                    if "s" in value.lower() or "сек" in value.lower():
                         return number * 1000
-                    else:
-                        return number
-                elif unit == 's':
-                    if 'ms' in value.lower() or 'миллисек' in value.lower():
-                        return number / 1000
-                    elif 's' in value.lower() or 'сек' in value.lower():
-                        return number
-                    else:
-                        return number
-                else:
                     return number
-            else:
-                logger.error(f"Не удалось извлечь числовое значение из метрики: {value}")
+                if unit == "s":
+                    if "ms" in value.lower() or "миллисек" in value.lower():
+                        return number / 1000
+                    if "s" in value.lower() or "сек" in value.lower():
+                        return number
+                    return number
+                return number
+            logger.error("Не удалось извлечь числовое значение из метрики: %s", value)
         except ValueError as e:
-            logger.error(f"Ошибка при преобразовании метрики '{value}': {e}")
+            logger.error("Ошибка при преобразовании метрики '%s': %s", value, e)
     else:
-        logger.error(f"Пустое значение метрики: {value}")
+        logger.error("Пустое значение метрики: %s", value)
     return None
-def load_history(domain):
-    import os
-    import json
-    history_dir = 'history_files'
-    history_filename = f"history_{domain.replace('http://', '').replace('https://', '').replace('/', '_')}.json"
-    history_filepath = os.path.join(history_dir, history_filename)
 
+
+def load_history(domain):
+    history_filepath = history_file_path(domain)
+    history_data = load_json(history_filepath, [])
+    if history_data:
+        return history_data
     if os.path.exists(history_filepath):
-        try:
-            with open(history_filepath, 'r', encoding='utf-8') as file:
-                history_data = json.load(file)
-            return history_data
-        except json.JSONDecodeError:
-            logger.error(f"Ошибка чтения JSON из файла {history_filepath}. Пропуск файла.")
-            return []
+        logger.error("Ошибка чтения JSON из файла %s. Пропуск файла.", history_filepath)
     else:
-        logger.error(f"Файл истории {history_filepath} не найден.")
-        return []
+        logger.error("Файл истории %s не найден.", history_filepath)
+    return []
 
 
 def summarize_history(history_data):
@@ -152,3 +147,41 @@ def calculate_stats_for_metrics(fcp_values, lcp_values, ttfb_values, tbt_values,
         'Speed Index': calculate_stats([v for v in (speed_index_values or []) if v is not None])
 
     }
+
+
+def compute_domain_stats(history_data):
+    """Extract metrics lists and statistics from *history_data*."""
+
+    dates = [entry.get("timestamp") for entry in history_data]
+    fcp_values = [parse_metric(entry.get("metrics", {}).get("FCP")) for entry in history_data]
+    lcp_values = [parse_metric(entry.get("metrics", {}).get("LCP")) for entry in history_data]
+    ttfb_values = [
+        parse_metric(entry.get("metrics", {}).get("TTFB"), unit="s")
+        for entry in history_data
+    ]
+    tbt_values = [
+        parse_metric(entry.get("metrics", {}).get("TBT"), unit="s")
+        for entry in history_data
+    ]
+    speed_index_values = [
+        parse_metric(entry.get("metrics", {}).get("Speed Index"))
+        for entry in history_data
+    ]
+
+    stats = calculate_stats_for_metrics(
+        fcp_values[:],
+        lcp_values[:],
+        ttfb_values[:],
+        tbt_values[:],
+        speed_index_values[:],
+    )
+
+    metrics = {
+        "FCP": fcp_values,
+        "LCP": lcp_values,
+        "TTFB": ttfb_values,
+        "TBT": tbt_values,
+        "Speed Index": speed_index_values,
+    }
+
+    return {"dates": dates, "metrics": metrics, "stats": stats}
