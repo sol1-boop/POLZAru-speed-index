@@ -21,30 +21,6 @@ def index():
     return render_template('index.html', domains=domains)
 
 
-@app.route('/metrics')
-def metrics_view():
-    """Render combined metrics chart for the specified domain."""
-    url = request.args.get('url')
-    if not url:
-        return "Домен не указан", 400
-
-    history_data = load_history(url)
-    if not history_data:
-        return "Файл истории не найден", 404
-
-    result = compute_domain_stats(history_data)
-    return render_template(
-        'metrics.html',
-        url=url,
-        timestamps=result['dates'],
-        fcp_values=result['metrics']['FCP'],
-        lcp_values=result['metrics']['LCP'],
-        ttfb_values=result['metrics']['TTFB'],
-        tbt_values=result['metrics']['TBT'],
-        si_values=result['metrics']['Speed Index'],
-    )
-
-
 @app.route('/get_stats', methods=['GET'])
 def get_stats():
     domain = request.args.get('domain')
