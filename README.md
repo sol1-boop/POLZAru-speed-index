@@ -43,6 +43,22 @@ pip install -r requirements.txt
 В `config.json` можно указать поле `headless` для управления запуском Chrome
 в фоновом режиме.
 
+**Запуск приложения**
+
+```bash
+python webapp.py
+```
+
+Веб-интерфейс будет доступен по адресу `http://localhost:5000` по умолчанию.
+
+**Запуск телеграм-бота**
+
+```bash
+python bot.py
+```
+
+Токены `telegram_token` и `channel_id` задаются в `config.json` или через переменные окружения `TELEGRAM_TOKEN` и `CHANNEL_ID`.
+
 Lighthouse рассчитывает метрику INP на основе реальных пользовательских
 действий: кликов, нажатий клавиш и других взаимодействий с элементами.
 
