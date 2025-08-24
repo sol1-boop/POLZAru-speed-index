@@ -3,114 +3,109 @@
 
 {% block title %}Дашборд{% endblock %}
 
-{% block head %}
-    <!-- Подключаем файл стилей -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/panel_style.css') }}">
-{% endblock %}
+{% block head %}{% endblock %}
 
 {% block content %}
-<h1>Дашборд метрик сайта</h1>
-<p>Выберите домен для отображения метрик:</p>
-<div class="controls-container">
-    <select id="domainSelect">
+<h1 class="text-2xl font-bold mb-4">Дашборд метрик сайта</h1>
+<p class="mb-2">Выберите домен для отображения метрик:</p>
+<div class="flex items-center gap-4 mb-6">
+    <select id="domainSelect" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5">
         {% for domain in domains %}
             <option value="{{ domain.domain }}">{{ domain.domain }}</option>
         {% endfor %}
     </select>
-    <button class="stats-button" id="showStatsButton">Статистика</button>
+    <button id="showStatsButton"
+            class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5">
+        Статистика
+    </button>
 </div>
 
-<h2>Последний замер</h2>
-<div id="key-metrics">
-    <div class="metric-card" id="fcpCard">
-        <h3>FCP</h3>
+<h2 class="text-xl font-semibold mb-4">Последний замер</h2>
+<div id="key-metrics" class="flex flex-wrap gap-5 p-5 border border-gray-200 rounded bg-gray-50 justify-around mb-8">
+    <div class="border border-gray-200 rounded-lg bg-white w-56 p-4 flex flex-col items-center text-center shadow" id="fcpCard">
+        <h3 class="font-semibold mb-2">FCP</h3>
         <p id="fcpValue"></p>
-        <span id="fcpStatus" class="status-indicator"></span>
+        <span id="fcpStatus" class="text-2xl"></span>
     </div>
-    <div class="metric-card" id="lcpCard">
-        <h3>LCP</h3>
+    <div class="border border-gray-200 rounded-lg bg-white w-56 p-4 flex flex-col items-center text-center shadow" id="lcpCard">
+        <h3 class="font-semibold mb-2">LCP</h3>
         <p id="lcpValue"></p>
-        <span id="lcpStatus" class="status-indicator"></span>
+        <span id="lcpStatus" class="text-2xl"></span>
     </div>
-    <div class="metric-card" id="ttfbCard">
-        <h3>TTFB</h3>
+    <div class="border border-gray-200 rounded-lg bg-white w-56 p-4 flex flex-col items-center text-center shadow" id="ttfbCard">
+        <h3 class="font-semibold mb-2">TTFB</h3>
         <p id="ttfbValue"></p>
-        <span id="ttfbStatus" class="status-indicator"></span>
+        <span id="ttfbStatus" class="text-2xl"></span>
     </div>
-    <div class="metric-card" id="tbtCard">
-        <h3>TBT</h3>
+    <div class="border border-gray-200 rounded-lg bg-white w-56 p-4 flex flex-col items-center text-center shadow" id="tbtCard">
+        <h3 class="font-semibold mb-2">TBT</h3>
         <p id="tbtValue"></p>
-        <span id="tbtStatus" class="status-indicator"></span>
+        <span id="tbtStatus" class="text-2xl"></span>
     </div>
-    <div class="metric-card" id="siCard">
-        <h3>Speed Index</h3>
+    <div class="border border-gray-200 rounded-lg bg-white w-56 p-4 flex flex-col items-center text-center shadow" id="siCard">
+        <h3 class="font-semibold mb-2">Speed Index</h3>
         <p id="siValue"></p>
-        <span id="siStatus" class="status-indicator"></span>
-
+        <span id="siStatus" class="text-2xl"></span>
     </div>
 </div>
 
-<h2>Тренд</h2>
-<div id="trend-metrics">
-    <div class="metric-card" id="fcpTrendCard">
-        <h3>FCP</h3>
+<h2 class="text-xl font-semibold mb-4">Тренд</h2>
+<div id="trend-metrics" class="flex flex-wrap gap-5 p-5 border border-gray-200 rounded bg-gray-50 justify-around mb-8">
+    <div class="border border-gray-200 rounded-lg bg-white w-56 p-4 flex flex-col items-center text-center shadow" id="fcpTrendCard">
+        <h3 class="font-semibold mb-2">FCP</h3>
         <p id="fcpTrendValue"></p>
-        <span id="fcpTrendStatus" class="status-indicator"></span>
+        <span id="fcpTrendStatus" class="text-2xl"></span>
     </div>
-    <div class="metric-card" id="lcpTrendCard">
-        <h3>LCP</h3>
+    <div class="border border-gray-200 rounded-lg bg-white w-56 p-4 flex flex-col items-center text-center shadow" id="lcpTrendCard">
+        <h3 class="font-semibold mb-2">LCP</h3>
         <p id="lcpTrendValue"></p>
-        <span id="lcpTrendStatus" class="status-indicator"></span>
+        <span id="lcpTrendStatus" class="text-2xl"></span>
     </div>
-    <div class="metric-card" id="ttfbTrendCard">
-        <h3>TTFB</h3>
+    <div class="border border-gray-200 rounded-lg bg-white w-56 p-4 flex flex-col items-center text-center shadow" id="ttfbTrendCard">
+        <h3 class="font-semibold mb-2">TTFB</h3>
         <p id="ttfbTrendValue"></p>
-        <span id="ttfbTrendStatus" class="status-indicator"></span>
+        <span id="ttfbTrendStatus" class="text-2xl"></span>
     </div>
-    <div class="metric-card" id="tbtTrendCard">
-        <h3>TBT</h3>
+    <div class="border border-gray-200 rounded-lg bg-white w-56 p-4 flex flex-col items-center text-center shadow" id="tbtTrendCard">
+        <h3 class="font-semibold mb-2">TBT</h3>
         <p id="tbtTrendValue"></p>
-        <span id="tbtTrendStatus" class="status-indicator"></span>
+        <span id="tbtTrendStatus" class="text-2xl"></span>
     </div>
-    <div class="metric-card" id="siTrendCard">
-        <h3>Speed Index</h3>
+    <div class="border border-gray-200 rounded-lg bg-white w-56 p-4 flex flex-col items-center text-center shadow" id="siTrendCard">
+        <h3 class="font-semibold mb-2">Speed Index</h3>
         <p id="siTrendValue"></p>
-        <span id="siTrendStatus" class="status-indicator"></span>
-
+        <span id="siTrendStatus" class="text-2xl"></span>
     </div>
 </div>
 
-<div id="charts-container">
-    <div class="chart-wrapper">
-        <h2>FCP (First Contentful Paint)</h2>
-        <canvas id="fcpChart" style="max-height: 500px;"></canvas>
+<div id="charts-container" class="space-y-10">
+    <div class="mb-10">
+        <h2 class="text-xl font-semibold mb-4">FCP (First Contentful Paint)</h2>
+        <canvas id="fcpChart" class="max-h-[500px]"></canvas>
     </div>
-    <div class="chart-wrapper">
-        <h2>LCP (Largest Contentful Paint)</h2>
-        <canvas id="lcpChart" style="max-height: 500px;"></canvas>
+    <div class="mb-10">
+        <h2 class="text-xl font-semibold mb-4">LCP (Largest Contentful Paint)</h2>
+        <canvas id="lcpChart" class="max-h-[500px]"></canvas>
     </div>
-    <div class="chart-wrapper">
-        <h2>TTFB (Time to First Byte)</h2>
-        <canvas id="ttfbChart" style="max-height: 500px;"></canvas>
+    <div class="mb-10">
+        <h2 class="text-xl font-semibold mb-4">TTFB (Time to First Byte)</h2>
+        <canvas id="ttfbChart" class="max-h-[500px]"></canvas>
     </div>
-    <div class="chart-wrapper">
-        <h2>TBT (Total Blocking Time)</h2>
-        <canvas id="tbtChart" style="max-height: 500px;"></canvas>
+    <div class="mb-10">
+        <h2 class="text-xl font-semibold mb-4">TBT (Total Blocking Time)</h2>
+        <canvas id="tbtChart" class="max-h-[500px]"></canvas>
     </div>
-    <div class="chart-wrapper">
-        <h2>Speed Index</h2>
-        <canvas id="siChart" style="max-height: 500px;"></canvas>
-
+    <div class="mb-10">
+        <h2 class="text-xl font-semibold mb-4">Speed Index</h2>
+        <canvas id="siChart" class="max-h-[500px]"></canvas>
     </div>
 </div>
 
-<!-- Добавленное модальное окно для отображения статистики -->
-<div id="stats-modal" class="modal">
-    <span class="close" id="closeStatsModal">&times;</span>
-                <h2>Статистика для <span id="statsDomain"></span></h2>
-    <div class="modal-content">
-        <div id="statsContent"></div>
+<div id="stats-modal" class="fixed inset-0 hidden items-center justify-center bg-gray-900 bg-opacity-50">
+    <div class="relative bg-white p-6 rounded-lg shadow w-full max-w-4xl">
+        <button id="closeStatsModal" class="absolute top-2 right-2 text-gray-500">&times;</button>
+        <h2 class="text-xl font-semibold mb-4">Статистика для <span id="statsDomain"></span></h2>
+        <div id="statsContent" class="overflow-auto max-h-[70vh]"></div>
     </div>
 </div>
 
@@ -131,7 +126,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
     closeStatsModal.onclick = function() {
-        statsModal.style.display = 'none';
+        statsModal.classList.add('hidden');
     }
 
     showStatsButton.onclick = function() {
@@ -237,14 +232,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 const budgetValueText = budgetValue !== null ? budgetValue.toFixed(2) : 'N/A';
 
                 valueElement.innerText = `Текущий: ${currentValueText}, Бюджет: ${budgetValueText}`;
+                valueElement.classList.remove('text-gray-500');
 
                 if (currentValue <= budgetValue) {
-                    valueElement.classList.remove('over-budget');
-                    valueElement.classList.add('within-budget');
+                    valueElement.classList.remove('text-red-600');
+                    valueElement.classList.add('text-green-600');
                     statusElement.innerHTML = '✅';
                 } else {
-                    valueElement.classList.remove('within-budget');
-                    valueElement.classList.add('over-budget');
+                    valueElement.classList.remove('text-green-600');
+                    valueElement.classList.add('text-red-600');
                     statusElement.innerHTML = '⚠️';
                 }
 
@@ -256,21 +252,23 @@ document.addEventListener('DOMContentLoaded', function() {
                     trendValueElement.innerText = trendText;
 
                     if (trend > 0) {
-                        trendValueElement.classList.add('worsened');
+                        trendValueElement.classList.remove('text-blue-600');
+                        trendValueElement.classList.add('text-orange-500');
                         trendStatusElement.innerHTML = '⬇️';
                     } else {
-                        trendValueElement.classList.add('improved');
+                        trendValueElement.classList.remove('text-orange-500');
+                        trendValueElement.classList.add('text-blue-600');
                         trendStatusElement.innerHTML = '⬆️';
                     }
                 } else {
                     trendValueElement.innerText = 'Недостаточно данных';
-                    trendValueElement.classList.remove('improved', 'worsened');
+                    trendValueElement.classList.remove('text-blue-600', 'text-orange-500');
                     trendStatusElement.innerHTML = '❓';
                 }
             } else {
                 valueElement.innerText = 'Нет данных';
-                valueElement.classList.remove('within-budget', 'over-budget');
-                valueElement.classList.add('no-data');
+                valueElement.classList.remove('text-green-600', 'text-red-600');
+                valueElement.classList.add('text-gray-500');
                 statusElement.innerHTML = '❓';
             }
         });
@@ -283,15 +281,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (data.error) {
                     statsContent.innerHTML = `<p>${data.error}</p>`;
                 } else {
-                    let html = '<table><tr><th>Метрика</th><th>Мин.</th><th>50%</th><th>75%</th><th>95%</th><th>Макс.</th></tr>';
+                    let html = '<table class="table-auto w-full text-sm text-left"><tr>' +
+                               '<th class="px-2 py-1">Метрика</th>' +
+                               '<th class="px-2 py-1">Мин.</th>' +
+                               '<th class="px-2 py-1">50%</th>' +
+                               '<th class="px-2 py-1">75%</th>' +
+                               '<th class="px-2 py-1">95%</th>' +
+                               '<th class="px-2 py-1">Макс.</th></tr>';
                     for (let metric in data.stats) {
                         html += `<tr>
-                                    <td>${metric}</td>
-                                    <td>${data.stats[metric].min !== null ? data.stats[metric].min + 's' : 'N/A'}</td>
-                                    <td>${data.stats[metric].median !== null ? data.stats[metric].median + 's' : 'N/A'}</td>
-                                    <td>${data.stats[metric].percentile_75 !== null ? data.stats[metric].percentile_75 + 's' : 'N/A'}</td>
-                                    <td>${data.stats[metric].percentile_95 !== null ? data.stats[metric].percentile_95 + 's' : 'N/A'}</td>
-                                    <td>${data.stats[metric].max !== null ? data.stats[metric].max + 's' : 'N/A'}</td>
+                                    <td class="px-2 py-1">${metric}</td>
+                                    <td class="px-2 py-1">${data.stats[metric].min !== null ? data.stats[metric].min + 's' : 'N/A'}</td>
+                                    <td class="px-2 py-1">${data.stats[metric].median !== null ? data.stats[metric].median + 's' : 'N/A'}</td>
+                                    <td class="px-2 py-1">${data.stats[metric].percentile_75 !== null ? data.stats[metric].percentile_75 + 's' : 'N/A'}</td>
+                                    <td class="px-2 py-1">${data.stats[metric].percentile_95 !== null ? data.stats[metric].percentile_95 + 's' : 'N/A'}</td>
+                                    <td class="px-2 py-1">${data.stats[metric].max !== null ? data.stats[metric].max + 's' : 'N/A'}</td>
                                  </tr>`;
                     }
                     html += '</table>';
@@ -305,16 +309,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     const sortedSI = [...data.metrics["Speed Index"]].reverse();
 
 
-                    html += '<h3>История замеров</h3>';
-                    html += '<table><tr><th>Дата</th><th>FCP (s)</th><th>LCP (s)</th><th>TTFB (s)</th><th>TBT (s)</th><th>Speed Index (s)</th></tr>';
+                    html += '<h3 class="mt-4 font-semibold">История замеров</h3>';
+                    html += '<table class="table-auto w-full text-sm text-left"><tr><th class="px-2 py-1">Дата</th><th class="px-2 py-1">FCP (s)</th><th class="px-2 py-1">LCP (s)</th><th class="px-2 py-1">TTFB (s)</th><th class="px-2 py-1">TBT (s)</th><th class="px-2 py-1">Speed Index (s)</th></tr>';
                     for (let i = 0; i < sortedDates.length; i++) {
                         html += `<tr>
-                                    <td>${sortedDates[i]}</td>
-                                    <td>${sortedFCP[i] !== null ? sortedFCP[i] + 's' : 'N/A'}</td>
-                                    <td>${sortedLCP[i] !== null ? sortedLCP[i] + 's' : 'N/A'}</td>
-                                    <td>${sortedTTFB[i] !== null ? sortedTTFB[i] + 's' : 'N/A'}</td>
-                                    <td>${sortedTBT[i] !== null ? sortedTBT[i] + 's' : 'N/A'}</td>
-                                    <td>${sortedSI[i] !== null ? sortedSI[i] + 's' : 'N/A'}</td>
+                                    <td class="px-2 py-1">${sortedDates[i]}</td>
+                                    <td class="px-2 py-1">${sortedFCP[i] !== null ? sortedFCP[i] + 's' : 'N/A'}</td>
+                                    <td class="px-2 py-1">${sortedLCP[i] !== null ? sortedLCP[i] + 's' : 'N/A'}</td>
+                                    <td class="px-2 py-1">${sortedTTFB[i] !== null ? sortedTTFB[i] + 's' : 'N/A'}</td>
+                                    <td class="px-2 py-1">${sortedTBT[i] !== null ? sortedTBT[i] + 's' : 'N/A'}</td>
+                                    <td class="px-2 py-1">${sortedSI[i] !== null ? sortedSI[i] + 's' : 'N/A'}</td>
                                  </tr>`;
                     }
                     html += '</table>';
@@ -322,7 +326,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     statsContent.innerHTML = html;
                 }
                 statsDomain.textContent = domain;
-                statsModal.style.display = 'block';
+                statsModal.classList.remove('hidden');
             });
     }
 
