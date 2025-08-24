@@ -3,95 +3,418 @@
 
 {% block title %}Дашборд{% endblock %}
 
+{% block head %}{% endblock %}
+
 {% block content %}
-<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-    <div class="bg-white p-4 rounded shadow">
-        <h3 class="text-sm text-gray-500">Average Score</h3>
-        <p class="text-2xl font-bold">{{ '%.2f'|format(average_score) if average_score else 'N/A' }}</p>
+<h1 class="text-2xl font-bold mb-4">Дашборд метрик сайта</h1>
+<p class="mb-2">Выберите домен для отображения метрик:</p>
+<div class="flex items-center gap-4 mb-6">
+    <select id="domainSelect" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5">
+        {% for domain in domains %}
+            <option value="{{ domain.domain }}">{{ domain.domain }}</option>
+        {% endfor %}
+    </select>
+    <button id="showStatsButton"
+            class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5">
+        Статистика
+    </button>
+</div>
+
+<h2 class="text-xl font-semibold mb-4">Последний замер</h2>
+<div id="key-metrics" class="flex flex-wrap gap-5 p-5 border border-gray-200 rounded bg-gray-50 justify-around mb-8">
+    <div class="border border-gray-200 rounded-lg bg-white w-56 p-4 flex flex-col items-center text-center shadow" id="fcpCard">
+        <h3 class="font-semibold mb-2">FCP</h3>
+        <p id="fcpValue"></p>
+        <span id="fcpStatus" class="text-2xl"></span>
     </div>
-    <div class="bg-white p-4 rounded shadow">
-        <h3 class="text-sm text-gray-500">Total Runs</h3>
-        <p class="text-2xl font-bold">{{ total_runs }}</p>
+    <div class="border border-gray-200 rounded-lg bg-white w-56 p-4 flex flex-col items-center text-center shadow" id="lcpCard">
+        <h3 class="font-semibold mb-2">LCP</h3>
+        <p id="lcpValue"></p>
+        <span id="lcpStatus" class="text-2xl"></span>
     </div>
-    <div class="bg-white p-4 rounded shadow">
-        <h3 class="text-sm text-gray-500">Issues Found</h3>
-        <p class="text-2xl font-bold">{{ issues_found }}</p>
+    <div class="border border-gray-200 rounded-lg bg-white w-56 p-4 flex flex-col items-center text-center shadow" id="ttfbCard">
+        <h3 class="font-semibold mb-2">TTFB</h3>
+        <p id="ttfbValue"></p>
+        <span id="ttfbStatus" class="text-2xl"></span>
+    </div>
+    <div class="border border-gray-200 rounded-lg bg-white w-56 p-4 flex flex-col items-center text-center shadow" id="tbtCard">
+        <h3 class="font-semibold mb-2">TBT</h3>
+        <p id="tbtValue"></p>
+        <span id="tbtStatus" class="text-2xl"></span>
+    </div>
+    <div class="border border-gray-200 rounded-lg bg-white w-56 p-4 flex flex-col items-center text-center shadow" id="siCard">
+        <h3 class="font-semibold mb-2">Speed Index</h3>
+        <p id="siValue"></p>
+        <span id="siStatus" class="text-2xl"></span>
     </div>
 </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-    <div class="bg-white p-4 rounded shadow">
-        <h2 class="text-lg font-semibold mb-2">Performance Trends</h2>
-        <canvas id="trendChart"></canvas>
+<h2 class="text-xl font-semibold mb-4">Тренд</h2>
+<div id="trend-metrics" class="flex flex-wrap gap-5 p-5 border border-gray-200 rounded bg-gray-50 justify-around mb-8">
+    <div class="border border-gray-200 rounded-lg bg-white w-56 p-4 flex flex-col items-center text-center shadow" id="fcpTrendCard">
+        <h3 class="font-semibold mb-2">FCP</h3>
+        <p id="fcpTrendValue"></p>
+        <span id="fcpTrendStatus" class="text-2xl"></span>
     </div>
-    <div class="bg-white p-4 rounded shadow">
-        <h2 class="text-lg font-semibold mb-2">Speed Score Distribution</h2>
-        <canvas id="distributionChart"></canvas>
+    <div class="border border-gray-200 rounded-lg bg-white w-56 p-4 flex flex-col items-center text-center shadow" id="lcpTrendCard">
+        <h3 class="font-semibold mb-2">LCP</h3>
+        <p id="lcpTrendValue"></p>
+        <span id="lcpTrendStatus" class="text-2xl"></span>
+    </div>
+    <div class="border border-gray-200 rounded-lg bg-white w-56 p-4 flex flex-col items-center text-center shadow" id="ttfbTrendCard">
+        <h3 class="font-semibold mb-2">TTFB</h3>
+        <p id="ttfbTrendValue"></p>
+        <span id="ttfbTrendStatus" class="text-2xl"></span>
+    </div>
+    <div class="border border-gray-200 rounded-lg bg-white w-56 p-4 flex flex-col items-center text-center shadow" id="tbtTrendCard">
+        <h3 class="font-semibold mb-2">TBT</h3>
+        <p id="tbtTrendValue"></p>
+        <span id="tbtTrendStatus" class="text-2xl"></span>
+    </div>
+    <div class="border border-gray-200 rounded-lg bg-white w-56 p-4 flex flex-col items-center text-center shadow" id="siTrendCard">
+        <h3 class="font-semibold mb-2">Speed Index</h3>
+        <p id="siTrendValue"></p>
+        <span id="siTrendStatus" class="text-2xl"></span>
     </div>
 </div>
 
-<div class="bg-white p-4 rounded shadow">
-    <h2 class="text-lg font-semibold mb-4">Monitored Websites</h2>
-    <div class="overflow-x-auto">
-        <table class="min-w-full text-sm text-left">
-            <thead class="bg-gray-50">
-                <tr>
-                    <th class="px-4 py-2">Domain</th>
-                    <th class="px-4 py-2">Speed Index</th>
-                    <th class="px-4 py-2">LCP</th>
-                    <th class="px-4 py-2">Last Test</th>
-                    <th class="px-4 py-2">Status</th>
-                </tr>
-            </thead>
-            <tbody>
-            {% for info in domains_info %}
-                <tr class="border-t">
-                    <td class="px-4 py-2">{{ info.domain }}</td>
-                    <td class="px-4 py-2">{{ info.speed_score if info.speed_score is not none else 'N/A' }}</td>
-                    <td class="px-4 py-2">{{ info.load_time if info.load_time is not none else 'N/A' }}</td>
-                    <td class="px-4 py-2">{{ info.last_test }}</td>
-                    <td class="px-4 py-2">{{ info.status }}</td>
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
+<div id="charts-container" class="space-y-10">
+    <div class="mb-10">
+        <h2 class="text-xl font-semibold mb-4">FCP (First Contentful Paint)</h2>
+        <canvas id="fcpChart" class="max-h-[500px]"></canvas>
+    </div>
+    <div class="mb-10">
+        <h2 class="text-xl font-semibold mb-4">LCP (Largest Contentful Paint)</h2>
+        <canvas id="lcpChart" class="max-h-[500px]"></canvas>
+    </div>
+    <div class="mb-10">
+        <h2 class="text-xl font-semibold mb-4">TTFB (Time to First Byte)</h2>
+        <canvas id="ttfbChart" class="max-h-[500px]"></canvas>
+    </div>
+    <div class="mb-10">
+        <h2 class="text-xl font-semibold mb-4">TBT (Total Blocking Time)</h2>
+        <canvas id="tbtChart" class="max-h-[500px]"></canvas>
+    </div>
+    <div class="mb-10">
+        <h2 class="text-xl font-semibold mb-4">Speed Index</h2>
+        <canvas id="siChart" class="max-h-[500px]"></canvas>
     </div>
 </div>
+
+<div id="stats-modal" class="fixed inset-0 hidden items-center justify-center bg-gray-900 bg-opacity-50">
+    <div class="relative bg-white p-6 rounded-lg shadow w-full max-w-4xl">
+        <button id="closeStatsModal" class="absolute top-2 right-2 text-gray-500">&times;</button>
+        <h2 class="text-xl font-semibold mb-4">Статистика для <span id="statsDomain"></span></h2>
+        <div id="statsContent" class="overflow-auto max-h-[70vh]"></div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-const trendCtx = document.getElementById('trendChart').getContext('2d');
-const trendData = {{ performance_trends|tojson }};
-if (trendData) {
-    new Chart(trendCtx, {
-        type: 'line',
-        data: {
-            labels: trendData.labels,
-            datasets: [{
-                label: 'Speed Index',
-                data: trendData.scores,
-                borderColor: 'rgb(54, 162, 235)',
-                backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                fill: true
-            }]
-        }
-    });
-}
 
-const distributionCtx = document.getElementById('distributionChart').getContext('2d');
-const distributionData = {{ speed_distribution|tojson }};
-new Chart(distributionCtx, {
-    type: 'doughnut',
-    data: {
-        labels: Object.keys(distributionData),
-        datasets: [{
-            data: Object.values(distributionData),
-            backgroundColor: ['#10B981', '#FBBF24', '#EF4444']
-        }]
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const domainSelect = document.getElementById('domainSelect');
+    const statsModal = document.getElementById('stats-modal');
+    const statsContent = document.getElementById('statsContent');
+    const statsDomain = document.getElementById('statsDomain');
+    const closeStatsModal = document.getElementById('closeStatsModal');
+    const showStatsButton = document.getElementById('showStatsButton');
+    let fcpChart, lcpChart, ttfbChart, tbtChart, siChart;
+
+
+    closeStatsModal.onclick = function() {
+        statsModal.classList.add('hidden');
     }
+
+    showStatsButton.onclick = function() {
+        fetchStats(domainSelect.value);
+    }
+
+    function createDataset(label, data, borderColor, fill = true, borderDash = [], borderWidth = 1, tension = 0.1) {
+        return {
+            label: label,
+            data: data,
+            borderColor: borderColor,
+            backgroundColor: fill ? borderColor.replace('1)', '0.2)') : undefined,
+            fill: fill,
+            borderDash: borderDash,
+            borderWidth: borderWidth,
+            tension: tension
+        };
+    }
+
+    function createComparisonChart(ctx, label, currentData, previousData, budgetValue, borderColorCurrent, borderColorPrevious) {
+        const datasets = [
+            createDataset(`${label} - Текущий период`, currentData.metrics, borderColorCurrent, true),
+            previousData.metrics ? createDataset(`${label} (Предыдущий месяц)`, previousData.metrics, borderColorPrevious, false, [10, 5]) : null,
+            budgetValue ? createDataset('Бюджет', Array(currentData.dates.length).fill(budgetValue), 'red', false, [5, 5]) : null
+        ].filter(Boolean);
+
+        return new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: currentData.dates,
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: true },
+                    tooltip: {
+                        enabled: true,
+                        callbacks: {
+                            title: function(tooltipItems) {
+                                return `Дата: ${tooltipItems[0].label}`;
+                            },
+                            label: function(tooltipItem) {
+                                const currentValue = currentData.metrics[tooltipItem.dataIndex].toFixed(2);
+                                const previousValue = previousData.metrics[tooltipItem.dataIndex]
+                                    ? previousData.metrics[tooltipItem.dataIndex].toFixed(2)
+                                    : 'N/A';
+                                const budget = budgetValue !== undefined ? budgetValue.toFixed(2) : 'N/A';
+
+                                return [
+                                    `${label}:`,
+                                    `  - Текущий: ${currentValue}`,
+                                    `  - Предыдущий: ${previousValue}`,
+                                    `  - Бюджет: ${budget}`
+                                ];
+                            },
+                            afterLabel: function() {
+                                return '';
+                            }
+                        },
+                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                        titleFont: { size: 14, weight: 'bold' },
+                        bodyFont: { size: 18 },
+                        padding: 10
+                    }
+                },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+    }
+
+    function destroyCharts() {
+        if (fcpChart) fcpChart.destroy();
+        if (lcpChart) lcpChart.destroy();
+        if (ttfbChart) ttfbChart.destroy();
+        if (tbtChart) tbtChart.destroy();
+        if (siChart) siChart.destroy();
+
+    }
+
+    function updateMetricCards(data) {
+        const metrics = ['FCP', 'LCP', 'TTFB', 'TBT', 'Speed Index'];
+        const metricIdMap = {
+            'FCP': 'fcp',
+            'LCP': 'lcp',
+            'TTFB': 'ttfb',
+            'TBT': 'tbt',
+            'Speed Index': 'si'
+        };
+        metrics.forEach(metric => {
+            const idPrefix = metricIdMap[metric] || metric.toLowerCase();
+            const valueElement = document.getElementById(`${idPrefix}Value`);
+            const statusElement = document.getElementById(`${idPrefix}Status`);
+            const trendValueElement = document.getElementById(`${idPrefix}TrendValue`);
+            const trendStatusElement = document.getElementById(`${idPrefix}TrendStatus`);
+            const currentValues = data.metrics[metric];
+            const budgetValue = data.budget[metric] !== undefined ? data.budget[metric] : null;
+
+            if (currentValues && currentValues.length > 0) {
+                const currentValue = currentValues[currentValues.length - 1];
+                const currentValueText = currentValue !== null ? currentValue.toFixed(2) : 'N/A';
+                const budgetValueText = budgetValue !== null ? budgetValue.toFixed(2) : 'N/A';
+
+                valueElement.innerText = `Текущий: ${currentValueText}, Бюджет: ${budgetValueText}`;
+                valueElement.classList.remove('text-gray-500');
+
+                if (currentValue <= budgetValue) {
+                    valueElement.classList.remove('text-red-600');
+                    valueElement.classList.add('text-green-600');
+                    statusElement.innerHTML = '✅';
+                } else {
+                    valueElement.classList.remove('text-green-600');
+                    valueElement.classList.add('text-red-600');
+                    statusElement.innerHTML = '⚠️';
+                }
+
+                // Вычисляем тренды за неделю - 84 замера (неделя)
+                if (currentValues.length >= 84) {
+                    const pastValue = currentValues[currentValues.length - 84];
+                    const trend = ((currentValue - pastValue) / pastValue) * 100;
+                    const trendText = trend > 0 ? `Ухудшение на ${trend.toFixed(2)}%` : `Улучшение на ${Math.abs(trend).toFixed(2)}%`;
+                    trendValueElement.innerText = trendText;
+
+                    if (trend > 0) {
+                        trendValueElement.classList.remove('text-blue-600');
+                        trendValueElement.classList.add('text-orange-500');
+                        trendStatusElement.innerHTML = '⬇️';
+                    } else {
+                        trendValueElement.classList.remove('text-orange-500');
+                        trendValueElement.classList.add('text-blue-600');
+                        trendStatusElement.innerHTML = '⬆️';
+                    }
+                } else {
+                    trendValueElement.innerText = 'Недостаточно данных';
+                    trendValueElement.classList.remove('text-blue-600', 'text-orange-500');
+                    trendStatusElement.innerHTML = '❓';
+                }
+            } else {
+                valueElement.innerText = 'Нет данных';
+                valueElement.classList.remove('text-green-600', 'text-red-600');
+                valueElement.classList.add('text-gray-500');
+                statusElement.innerHTML = '❓';
+            }
+        });
+    }
+
+    function fetchStats(domain) {
+        fetch(`/get_stats?domain=${encodeURIComponent(domain)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    statsContent.innerHTML = `<p>${data.error}</p>`;
+                } else {
+                    let html = '<table class="table-auto w-full text-sm text-left"><tr>' +
+                               '<th class="px-2 py-1">Метрика</th>' +
+                               '<th class="px-2 py-1">Мин.</th>' +
+                               '<th class="px-2 py-1">50%</th>' +
+                               '<th class="px-2 py-1">75%</th>' +
+                               '<th class="px-2 py-1">95%</th>' +
+                               '<th class="px-2 py-1">Макс.</th></tr>';
+                    for (let metric in data.stats) {
+                        html += `<tr>
+                                    <td class="px-2 py-1">${metric}</td>
+                                    <td class="px-2 py-1">${data.stats[metric].min !== null ? data.stats[metric].min + 's' : 'N/A'}</td>
+                                    <td class="px-2 py-1">${data.stats[metric].median !== null ? data.stats[metric].median + 's' : 'N/A'}</td>
+                                    <td class="px-2 py-1">${data.stats[metric].percentile_75 !== null ? data.stats[metric].percentile_75 + 's' : 'N/A'}</td>
+                                    <td class="px-2 py-1">${data.stats[metric].percentile_95 !== null ? data.stats[metric].percentile_95 + 's' : 'N/A'}</td>
+                                    <td class="px-2 py-1">${data.stats[metric].max !== null ? data.stats[metric].max + 's' : 'N/A'}</td>
+                                 </tr>`;
+                    }
+                    html += '</table>';
+
+                    // Сортируем данные по дате (от последних к первым)
+                    const sortedDates = [...data.dates].reverse();
+                    const sortedFCP = [...data.metrics.FCP].reverse();
+                    const sortedLCP = [...data.metrics.LCP].reverse();
+                    const sortedTTFB = [...data.metrics.TTFB].reverse();
+                    const sortedTBT = [...data.metrics.TBT].reverse();
+                    const sortedSI = [...data.metrics["Speed Index"]].reverse();
+
+
+                    html += '<h3 class="mt-4 font-semibold">История замеров</h3>';
+                    html += '<table class="table-auto w-full text-sm text-left"><tr><th class="px-2 py-1">Дата</th><th class="px-2 py-1">FCP (s)</th><th class="px-2 py-1">LCP (s)</th><th class="px-2 py-1">TTFB (s)</th><th class="px-2 py-1">TBT (s)</th><th class="px-2 py-1">Speed Index (s)</th></tr>';
+                    for (let i = 0; i < sortedDates.length; i++) {
+                        html += `<tr>
+                                    <td class="px-2 py-1">${sortedDates[i]}</td>
+                                    <td class="px-2 py-1">${sortedFCP[i] !== null ? sortedFCP[i] + 's' : 'N/A'}</td>
+                                    <td class="px-2 py-1">${sortedLCP[i] !== null ? sortedLCP[i] + 's' : 'N/A'}</td>
+                                    <td class="px-2 py-1">${sortedTTFB[i] !== null ? sortedTTFB[i] + 's' : 'N/A'}</td>
+                                    <td class="px-2 py-1">${sortedTBT[i] !== null ? sortedTBT[i] + 's' : 'N/A'}</td>
+                                    <td class="px-2 py-1">${sortedSI[i] !== null ? sortedSI[i] + 's' : 'N/A'}</td>
+                                 </tr>`;
+                    }
+                    html += '</table>';
+
+                    statsContent.innerHTML = html;
+                }
+                statsDomain.textContent = domain;
+                statsModal.classList.remove('hidden');
+            });
+    }
+
+    function fetchAndRenderCharts(domain) {
+        fetch(`/get_stats?domain=${encodeURIComponent(domain)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                    return;
+                }
+
+                // Update metric cards
+                updateMetricCards(data);
+
+                // Destroy existing charts if they exist
+                destroyCharts();
+
+                // Создаем новые графики
+                const fcpCtx = document.getElementById('fcpChart').getContext('2d');
+                fcpChart = createComparisonChart(
+                    fcpCtx,
+                    'FCP',
+                    { dates: data.dates, metrics: data.metrics.FCP },
+                    { dates: data.dates.slice(-data.previous_metrics.FCP.length), metrics: data.previous_metrics.FCP },
+                    data.budget.FCP,
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(75, 192, 192, 0.6)'
+                );
+
+                const lcpCtx = document.getElementById('lcpChart').getContext('2d');
+                lcpChart = createComparisonChart(
+                    lcpCtx,
+                    'LCP',
+                    { dates: data.dates, metrics: data.metrics.LCP },
+                    { dates: data.dates.slice(-data.previous_metrics.LCP.length), metrics: data.previous_metrics.LCP },
+                    data.budget.LCP,
+                    'rgba(153, 102, 255, 1)',
+                    'rgba(153, 102, 255, 0.6)'
+                );
+
+                const ttfbCtx = document.getElementById('ttfbChart').getContext('2d');
+                ttfbChart = createComparisonChart(
+                    ttfbCtx,
+                    'TTFB',
+                    { dates: data.dates, metrics: data.metrics.TTFB },
+                    { dates: data.dates.slice(-data.previous_metrics.TTFB.length), metrics: data.previous_metrics.TTFB },
+                    data.budget.TTFB,
+                    'rgba(255, 159, 64, 1)',
+                    'rgba(255, 159, 64, 0.6)'
+                );
+
+                const tbtCtx = document.getElementById('tbtChart').getContext('2d');
+                tbtChart = createComparisonChart(
+                    tbtCtx,
+                    'TBT',
+                    { dates: data.dates, metrics: data.metrics.TBT },
+                    { dates: data.dates.slice(-data.previous_metrics.TBT.length), metrics: data.previous_metrics.TBT },
+                    data.budget.TBT,
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(255, 99, 132, 0.6)'
+                );
+
+
+                const siCtx = document.getElementById('siChart').getContext('2d');
+                siChart = createComparisonChart(
+                    siCtx,
+                    'Speed Index',
+                    { dates: data.dates, metrics: data.metrics["Speed Index"] },
+                    { dates: data.dates.slice(-data.previous_metrics["Speed Index"].length), metrics: data.previous_metrics["Speed Index"] },
+                    data.budget['Speed Index'],
+                    'rgba(201, 203, 207, 1)',
+                    'rgba(201, 203, 207, 0.6)'
+                );
+            })
+            .catch(error => {
+                alert('Ошибка при загрузке данных.');
+                console.error(error);
+            });
+    }
+
+    // Initial load for the first domain in the select list
+    fetchAndRenderCharts(domainSelect.value);
+
+    // Event listener for domain change
+    domainSelect.addEventListener('change', function() {
+        fetchAndRenderCharts(this.value);
+    });
 });
 </script>
 {% endblock %}
-
