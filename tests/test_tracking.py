@@ -50,10 +50,18 @@ def test_domain_tracker_start_stop(monkeypatch):
     monkeypatch.setattr(tracking.DomainTracker, "_run", dummy_run)
 
     class DummyTask:
+        def __init__(self, coro):
+            self.coro = coro
+            self.cancelled = False
+
         def cancel(self):
             self.cancelled = True
+            self.coro.close()
 
-    monkeypatch.setattr(asyncio, "create_task", lambda coro: DummyTask())
+    def dummy_create_task(coro):
+        return DummyTask(coro)
+
+    monkeypatch.setattr(asyncio, "create_task", dummy_create_task)
 
     tracker.start()
     assert tracker.task is not None
