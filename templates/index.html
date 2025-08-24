@@ -29,70 +29,103 @@
 </div>
 
 <!-- Модальные окна -->
-<div id="loginModal" class="fixed inset-0 hidden items-center justify-center bg-gray-900 bg-opacity-50" role="dialog" aria-modal="true">
-    <div class="relative bg-white p-6 rounded shadow-lg w-full max-w-md">
-        <button class="login-close absolute top-2 right-2 text-gray-500">&times;</button>
-        <h2 class="text-xl font-semibold mb-4">Вход в систему</h2>
-        <div id="login-error" class="error-message hidden text-red-600 mb-2"></div>
-        <form method="post" action="{{ url_for('auth_bp.login') }}" class="space-y-4">
-            <div>
-                <label for="username" class="block mb-1">Логин:</label>
-                <input type="text" id="username" name="username" required class="w-full border p-2 rounded">
+<div id="loginModal" tabindex="-1" aria-hidden="true"
+     class="fixed top-0 left-0 right-0 z-50 hidden w-full p-4 overflow-x-hidden overflow-y-auto md:inset-0 h-[calc(100%-1rem)] max-h-full justify-center items-center">
+    <div class="relative w-full max-w-md max-h-full">
+        <div class="relative bg-white rounded-lg shadow">
+            <button type="button" data-modal-hide="loginModal"
+                    class="absolute top-3 right-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                <span class="sr-only">Close modal</span>
+            </button>
+            <div class="px-6 py-6 lg:px-8">
+                <h2 class="text-xl font-semibold mb-4">Вход в систему</h2>
+                <div id="login-error" class="error-message hidden text-red-600 mb-2"></div>
+                <form method="post" action="{{ url_for('auth_bp.login') }}" class="space-y-4">
+                    <div>
+                        <label for="username" class="block mb-1">Логин:</label>
+                        <input type="text" id="username" name="username" required class="w-full border p-2 rounded">
+                    </div>
+                    <div>
+                        <label for="password" class="block mb-1">Пароль:</label>
+                        <input type="password" id="password" name="password" required class="w-full border p-2 rounded">
+                    </div>
+                    <input type="hidden" name="next" value="{{ request.path }}">
+                    <input type="submit" value="Войти" class="bg-blue-500 text-white px-4 py-2 rounded w-full">
+                </form>
             </div>
-            <div>
-                <label for="password" class="block mb-1">Пароль:</label>
-                <input type="password" id="password" name="password" required class="w-full border p-2 rounded">
-            </div>
-            <input type="hidden" name="next" value="{{ request.path }}">
-            <input type="submit" value="Войти" class="bg-blue-500 text-white px-4 py-2 rounded w-full">
-        </form>
+        </div>
     </div>
 </div>
 
 <!-- Модальное окно статистики -->
-<div id="statsModal" class="fixed inset-0 hidden items-center justify-center bg-gray-900 bg-opacity-50" role="dialog" aria-modal="true">
-    <div class="relative bg-white p-6 rounded shadow-lg w-full max-w-2xl">
-        <button class="stats-close absolute top-2 right-2 text-gray-500">&times;</button>
-        <h2 class="text-xl font-semibold mb-4">Статистика для <span id="stats-domain"></span></h2>
-        <div id="stats-content"></div>
+<div id="statsModal" tabindex="-1" aria-hidden="true"
+     class="fixed top-0 left-0 right-0 z-50 hidden w-full p-4 overflow-x-hidden overflow-y-auto md:inset-0 h-[calc(100%-1rem)] max-h-full justify-center items-center">
+    <div class="relative w-full max-w-2xl max-h-full">
+        <div class="relative bg-white rounded-lg shadow">
+            <div class="flex items-center justify-between p-4 border-b rounded-t">
+                <h2 class="text-xl font-semibold">Статистика для <span id="stats-domain"></span></h2>
+                <button type="button" data-modal-hide="statsModal"
+                        class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                    <span class="sr-only">Close modal</span>
+                </button>
+            </div>
+            <div class="p-4" id="stats-content"></div>
+        </div>
     </div>
 </div>
 
 <!-- Модальное окно для графика -->
-<div id="chartModal" class="fixed inset-0 hidden items-center justify-center bg-gray-900 bg-opacity-50" role="dialog" aria-modal="true">
-    <div class="relative bg-white p-6 rounded shadow-lg w-full max-w-4xl">
-        <button class="chart-close absolute top-2 right-2 text-gray-500">&times;</button>
-        <h2 class="text-xl font-semibold mb-4">График для <span id="chart-domain"></span></h2>
-        <div class="mb-4">
-            <label for="chartType" class="block mb-1">Тип графика:</label>
-            <select id="chartType" class="border rounded p-2">
-                <option value="line">Линейный</option>
-                <option value="bar">Столбчатый</option>
-            </select>
+<div id="chartModal" tabindex="-1" aria-hidden="true"
+     class="fixed top-0 left-0 right-0 z-50 hidden w-full p-4 overflow-x-hidden overflow-y-auto md:inset-0 h-[calc(100%-1rem)] max-h-full justify-center items-center">
+    <div class="relative w-full max-w-4xl max-h-full">
+        <div class="relative bg-white rounded-lg shadow">
+            <div class="flex items-center justify-between p-4 border-b rounded-t">
+                <h2 class="text-xl font-semibold">График для <span id="chart-domain"></span></h2>
+                <button type="button" data-modal-hide="chartModal"
+                        class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                    <span class="sr-only">Close modal</span>
+                </button>
+            </div>
+            <div class="p-4">
+                <div class="mb-4">
+                    <label for="chartType" class="block mb-1">Тип графика:</label>
+                    <select id="chartType" class="border rounded p-2">
+                        <option value="line">Линейный</option>
+                        <option value="bar">Столбчатый</option>
+                    </select>
+                </div>
+                <canvas id="metricsChart" class="w-full h-64"></canvas>
+                <div id="comparison-table" class="mt-4"></div>
+            </div>
         </div>
-        <canvas id="metricsChart" class="w-full"></canvas>
     </div>
 </div>
 
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/script.js') }}"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     let metricsChart;
-    const chartModal = document.getElementById('chartModal');
-    const statsModal = document.getElementById('statsModal');
+    const chartModalEl = document.getElementById('chartModal');
+    const statsModalEl = document.getElementById('statsModal');
+    const loginModalEl = document.getElementById('loginModal');
+
+    const chartModal = new Modal(chartModalEl);
+    const statsModal = new Modal(statsModalEl);
+    const loginModal = new Modal(loginModalEl);
+
     const ctx = document.getElementById('metricsChart').getContext('2d');
-    const chartClose = document.querySelector('.chart-close');
-    const statsClose = document.querySelector('.stats-close');
     const statsDomain = document.getElementById('stats-domain');
     const statsContent = document.getElementById('stats-content');
     const chartDomain = document.getElementById('chart-domain');
+    const comparisonTable = document.getElementById('comparison-table');
 
-    // Настройки для отображения графиков
     const chartConfig = {
         type: 'line',
         data: {
@@ -119,7 +152,36 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    // Функция для отображения статистики одного домена
+    function buildStatsTable(stats) {
+        let html = '<h3 class="mb-2 text-lg font-semibold">Статистика</h3>';
+        html += '<div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-500 border border-gray-200"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-4 py-2">Метрика</th><th class="px-4 py-2">Мин.</th><th class="px-4 py-2">50%</th><th class="px-4 py-2">75%</th><th class="px-4 py-2">95%</th><th class="px-4 py-2">Макс.</th></tr></thead><tbody>';
+        for (let metric in stats) {
+            html += `<tr class="bg-white border-b"><th scope="row" class="px-4 py-2 font-medium text-gray-900">${metric}</th>` +
+                    `<td class="px-4 py-2">${stats[metric].min !== null ? stats[metric].min + 's' : 'N/A'}</td>` +
+                    `<td class="px-4 py-2">${stats[metric].median !== null ? stats[metric].median + 's' : 'N/A'}</td>` +
+                    `<td class="px-4 py-2">${stats[metric].percentile_75 !== null ? stats[metric].percentile_75 + 's' : 'N/A'}</td>` +
+                    `<td class="px-4 py-2">${stats[metric].percentile_95 !== null ? stats[metric].percentile_95 + 's' : 'N/A'}</td>` +
+                    `<td class="px-4 py-2">${stats[metric].max !== null ? stats[metric].max + 's' : 'N/A'}</td></tr>`;
+        }
+        html += '</tbody></table></div>';
+        return html;
+    }
+
+    function buildHistoryTable(dates, metrics) {
+        let html = '<h3 class="mt-4 mb-2 text-lg font-semibold">История замеров</h3>';
+        html += '<div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-500 border border-gray-200"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-4 py-2">Дата</th><th class="px-4 py-2">FCP (s)</th><th class="px-4 py-2">LCP (s)</th><th class="px-4 py-2">TTFB (s)</th><th class="px-4 py-2">TBT (s)</th><th class="px-4 py-2">Speed Index (s)</th></tr></thead><tbody>';
+        for (let i = 0; i < dates.length; i++) {
+            html += `<tr class="bg-white border-b"><th scope="row" class="px-4 py-2 font-medium text-gray-900">${dates[i]}</th>` +
+                    `<td class="px-4 py-2">${metrics.FCP[i] !== null ? metrics.FCP[i] + 's' : 'N/A'}</td>` +
+                    `<td class="px-4 py-2">${metrics.LCP[i] !== null ? metrics.LCP[i] + 's' : 'N/A'}</td>` +
+                    `<td class="px-4 py-2">${metrics.TTFB[i] !== null ? metrics.TTFB[i] + 's' : 'N/A'}</td>` +
+                    `<td class="px-4 py-2">${metrics.TBT[i] !== null ? metrics.TBT[i] + 's' : 'N/A'}</td>` +
+                    `<td class="px-4 py-2">${metrics["Speed Index"][i] !== null ? metrics["Speed Index"][i] + 's' : 'N/A'}</td></tr>`;
+        }
+        html += '</tbody></table></div>';
+        return html;
+    }
+
     function fetchStats(domain) {
         fetch(`/get_stats?domain=${encodeURIComponent(domain)}`)
             .then(response => response.json())
@@ -127,57 +189,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (data.error) {
                     statsContent.innerHTML = `<p>${data.error}</p>`;
                 } else {
-                    let html = ''; // Сброс истории замеров перед каждым новым запросом
-                    html += '<h3>Статистика</h3>';
-                    html += '<table><tr><th>Метрика</th><th>Мин.</th><th>50%</th><th>75%</th><th>95%</th><th>Макс.</th></tr>';
-                    for (let metric in data.stats) {
-                        html += `<tr>
-                                    <td>${metric}</td>
-                                    <td>${data.stats[metric].min !== null ? data.stats[metric].min + 's' : 'N/A'}</td>
-                                    <td>${data.stats[metric].median !== null ? data.stats[metric].median + 's' : 'N/A'}</td>
-                                    <td>${data.stats[metric].percentile_75 !== null ? data.stats[metric].percentile_75 + 's' : 'N/A'}</td>
-                                    <td>${data.stats[metric].percentile_95 !== null ? data.stats[metric].percentile_95 + 's' : 'N/A'}</td>
-                                    <td>${data.stats[metric].max !== null ? data.stats[metric].max + 's' : 'N/A'}</td>
-                                 </tr>`;
-                    }
-                    html += '</table>';
-
-                    // История замеров
-                    // Сортируем данные по дате в порядке убывания
                     const sortedIndices = [...data.dates.keys()].sort((a, b) => new Date(data.dates[b]) - new Date(data.dates[a]));
-
-                    // Создаем отсортированные массивы для дат и метрик
-                    const sortedDates = sortedIndices.map(index => data.dates[index]);
-                    const sortedFCP = sortedIndices.map(index => data.metrics.FCP[index]);
-                    const sortedLCP = sortedIndices.map(index => data.metrics.LCP[index]);
-                    const sortedTTFB = sortedIndices.map(index => data.metrics.TTFB[index]);
-                    const sortedTBT = sortedIndices.map(index => data.metrics.TBT[index]);
-                    const sortedSI = sortedIndices.map(index => data.metrics["Speed Index"][index]);
-
-
-                    // Генерация HTML с использованием отсортированных данных
-                    html += '<h3>История замеров</h3>';
-                    html += '<table><tr><th>Дата</th><th>FCP (s)</th><th>LCP (s)</th><th>TTFB (s)</th><th>TBT (s)</th><th>Speed Index (s)</th></tr>';
-                    for (let i = 0; i < sortedDates.length; i++) {
-                        html += `<tr>
-                                    <td>${sortedDates[i]}</td>
-                                    <td>${sortedFCP[i] !== null ? sortedFCP[i] + 's' : 'N/A'}</td>
-                                    <td>${sortedLCP[i] !== null ? sortedLCP[i] + 's' : 'N/A'}</td>
-                                    <td>${sortedTTFB[i] !== null ? sortedTTFB[i] + 's' : 'N/A'}</td>
-                                    <td>${sortedTBT[i] !== null ? sortedTBT[i] + 's' : 'N/A'}</td>
-                                    <td>${sortedSI[i] !== null ? sortedSI[i] + 's' : 'N/A'}</td>
-                                 </tr>`;
-                    }
-                    html += '</table>';
-
+                    const sortedDates = sortedIndices.map(i => data.dates[i]);
+                    const sortedMetrics = {
+                        FCP: sortedIndices.map(i => data.metrics.FCP[i]),
+                        LCP: sortedIndices.map(i => data.metrics.LCP[i]),
+                        TTFB: sortedIndices.map(i => data.metrics.TTFB[i]),
+                        TBT: sortedIndices.map(i => data.metrics.TBT[i]),
+                        "Speed Index": sortedIndices.map(i => data.metrics["Speed Index"][i])
+                    };
+                    let html = buildStatsTable(data.stats);
+                    html += buildHistoryTable(sortedDates, sortedMetrics);
                     statsContent.innerHTML = html;
                 }
                 statsDomain.textContent = domain;
-                showModal(statsModal);
+                statsModal.show();
             });
     }
 
-    // Функция для отображения графика одного домена
     function fetchData(domain) {
         fetch(`/get_stats?domain=${encodeURIComponent(domain)}`)
             .then(response => response.json())
@@ -186,59 +215,26 @@ document.addEventListener('DOMContentLoaded', function() {
                     alert(data.error);
                     return;
                 }
-
+                comparisonTable.innerHTML = '';
                 chartConfig.data.labels = data.dates;
                 chartConfig.data.datasets = [
-                    {
-                        label: `FCP - ${domain}`,
-                        data: data.metrics.FCP,
-                        borderColor: 'rgba(75, 192, 192, 1)',
-                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                        fill: true
-                    },
-                    {
-                        label: `LCP - ${domain}`,
-                        data: data.metrics.LCP,
-                        borderColor: 'rgba(153, 102, 255, 1)',
-                        backgroundColor: 'rgba(153, 102, 255, 0.2)',
-                        fill: true
-                    },
-                    {
-                        label: `TTFB - ${domain}`,
-                        data: data.metrics.TTFB,
-                        borderColor: 'rgba(255, 159, 64, 1)',
-                        backgroundColor: 'rgba(255, 159, 64, 0.2)',
-                        fill: true
-                    },
-                    {
-                        label: `TBT - ${domain}`,
-                        data: data.metrics.TBT,
-                        borderColor: 'rgba(255, 99, 132, 1)',
-                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                        fill: true
-                    },
-                    {
-                        label: `Speed Index - ${domain}`,
-                        data: data.metrics["Speed Index"],
-                        borderColor: 'rgba(201, 203, 207, 1)',
-                        backgroundColor: 'rgba(201, 203, 207, 0.2)',
-                        fill: true
-                    }
+                    { label: `FCP - ${domain}`, data: data.metrics.FCP, borderColor: 'rgba(75, 192, 192, 1)', backgroundColor: 'rgba(75, 192, 192, 0.2)', fill: true },
+                    { label: `LCP - ${domain}`, data: data.metrics.LCP, borderColor: 'rgba(153, 102, 255, 1)', backgroundColor: 'rgba(153, 102, 255, 0.2)', fill: true },
+                    { label: `TTFB - ${domain}`, data: data.metrics.TTFB, borderColor: 'rgba(255, 159, 64, 1)', backgroundColor: 'rgba(255, 159, 64, 0.2)', fill: true },
+                    { label: `TBT - ${domain}`, data: data.metrics.TBT, borderColor: 'rgba(255, 99, 132, 1)', backgroundColor: 'rgba(255, 99, 132, 0.2)', fill: true },
+                    { label: `Speed Index - ${domain}`, data: data.metrics["Speed Index"], borderColor: 'rgba(201, 203, 207, 1)', backgroundColor: 'rgba(201, 203, 207, 0.2)', fill: true }
                 ];
-
                 if (metricsChart) metricsChart.destroy();
                 metricsChart = new Chart(ctx, chartConfig);
                 chartDomain.textContent = domain;
-                showModal(chartModal);
+                chartModal.show();
             });
     }
 
-        // Функция для сравнения графиков выбранных доменов
     function fetchComparisonData(domains) {
         const requests = domains.map(domain =>
             fetch(`/get_stats?domain=${encodeURIComponent(domain)}`).then(response => response.json())
         );
-
         Promise.all(requests)
             .then(results => {
                 chartConfig.data.labels = results[0].dates;
@@ -250,90 +246,55 @@ document.addEventListener('DOMContentLoaded', function() {
                     'rgba(255, 99, 132, 1)',
                     'rgba(201, 203, 207, 1)'
                 ];
-
+                let tableHTML = '<div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-500 border border-gray-200"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-4 py-2">Домен</th><th class="px-4 py-2">FCP 50%</th><th class="px-4 py-2">LCP 50%</th><th class="px-4 py-2">TTFB 50%</th><th class="px-4 py-2">TBT 50%</th><th class="px-4 py-2">Speed Index 50%</th></tr></thead><tbody>';
                 results.forEach((data, index) => {
                     if (data.error) {
                         alert(`Ошибка для домена ${domains[index]}: ${data.error}`);
                         return;
                     }
-
                     chartConfig.data.datasets.push(
-                        {
-                            label: `FCP - ${domains[index]}`,
-                            data: data.metrics.FCP,
-                            borderColor: colors[index % colors.length],
-                            backgroundColor: colors[index % colors.length].replace('1)', '0.2)'),
-                            fill: true
-                        },
-                        {
-                            label: `LCP - ${domains[index]}`,
-                            data: data.metrics.LCP,
-                            borderColor: colors[(index + 1) % colors.length],
-                            backgroundColor: colors[(index + 1) % colors.length].replace('1)', '0.2)'),
-                            fill: true
-                        },
-                        {
-                            label: `TTFB - ${domains[index]}`,
-                            data: data.metrics.TTFB,
-                            borderColor: colors[(index + 2) % colors.length],
-                            backgroundColor: colors[(index + 2) % colors.length].replace('1)', '0.2)'),
-                            fill: true
-                        },
-                        {
-                            label: `TBT - ${domains[index]}`,
-                            data: data.metrics.TBT,
-                            borderColor: colors[(index + 3) % colors.length],
-                            backgroundColor: colors[(index + 3) % colors.length].replace('1)', '0.2)'),
-                            fill: true
-                        },
-                        {
-                            label: `Speed Index - ${domains[index]}`,
-                            data: data.metrics["Speed Index"],
-                            borderColor: colors[(index + 4) % colors.length],
-                            backgroundColor: colors[(index + 4) % colors.length].replace('1)', '0.2)'),
-                            fill: true
-                        }
+                        { label: `FCP - ${domains[index]}`, data: data.metrics.FCP, borderColor: colors[index % colors.length], backgroundColor: colors[index % colors.length].replace('1)', '0.2)'), fill: true },
+                        { label: `LCP - ${domains[index]}`, data: data.metrics.LCP, borderColor: colors[(index + 1) % colors.length], backgroundColor: colors[(index + 1) % colors.length].replace('1)', '0.2)'), fill: true },
+                        { label: `TTFB - ${domains[index]}`, data: data.metrics.TTFB, borderColor: colors[(index + 2) % colors.length], backgroundColor: colors[(index + 2) % colors.length].replace('1)', '0.2)'), fill: true },
+                        { label: `TBT - ${domains[index]}`, data: data.metrics.TBT, borderColor: colors[(index + 3) % colors.length], backgroundColor: colors[(index + 3) % colors.length].replace('1)', '0.2)'), fill: true },
+                        { label: `Speed Index - ${domains[index]}`, data: data.metrics["Speed Index"], borderColor: colors[(index + 4) % colors.length], backgroundColor: colors[(index + 4) % colors.length].replace('1)', '0.2)'), fill: true }
                     );
+                    tableHTML += `<tr class="bg-white border-b"><th scope="row" class="px-4 py-2 font-medium text-gray-900">${domains[index]}</th>` +
+                                 `<td class="px-4 py-2">${data.stats.FCP.median !== null ? data.stats.FCP.median + 's' : 'N/A'}</td>` +
+                                 `<td class="px-4 py-2">${data.stats.LCP.median !== null ? data.stats.LCP.median + 's' : 'N/A'}</td>` +
+                                 `<td class="px-4 py-2">${data.stats.TTFB.median !== null ? data.stats.TTFB.median + 's' : 'N/A'}</td>` +
+                                 `<td class="px-4 py-2">${data.stats.TBT.median !== null ? data.stats.TBT.median + 's' : 'N/A'}</td>` +
+                                 `<td class="px-4 py-2">${data.stats["Speed Index"].median !== null ? data.stats["Speed Index"].median + 's' : 'N/A'}</td></tr>`;
                 });
-
+                tableHTML += '</tbody></table></div>';
+                comparisonTable.innerHTML = tableHTML;
                 if (metricsChart) metricsChart.destroy();
                 metricsChart = new Chart(ctx, chartConfig);
                 chartDomain.textContent = domains.join(', ');
-                showModal(chartModal);
+                chartModal.show();
             })
-            .catch(error => {
+            .catch(() => {
                 alert('Ошибка при загрузке данных для сравнения.');
             });
     }
 
-    // Обработчик кнопки "Сравнить выбранные домены"
     document.getElementById('compare-button').addEventListener('click', function() {
         const selectedDomains = Array.from(document.querySelectorAll('.compare-checkbox:checked'))
             .map(checkbox => checkbox.value);
-
         if (selectedDomains.length < 2) {
             alert('Выберите минимум два домена для сравнения.');
             return;
         }
-
         fetchComparisonData(selectedDomains);
     });
 
-    // Переход к дашборду
     document.getElementById('dashboard-button').addEventListener('click', function() {
         window.location.href = '/dashboard';
     });
 
-    // Закрытие модального окна для графика
-    chartClose.onclick = function() {
-        chartModal.style.display = 'none';
-    };
-
-    // Обработчики для кнопок "Статистика" и "График"
     document.querySelectorAll('.stats-button').forEach(button => {
         button.addEventListener('click', function() {
             const domain = button.getAttribute('data-domain');
-            statsDomain.textContent = domain;
             fetchStats(domain);
         });
     });
@@ -341,27 +302,18 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.chart-button').forEach(button => {
         button.addEventListener('click', function() {
             const domain = button.getAttribute('data-domain');
-            chartDomain.textContent = domain;
             fetchData(domain);
         });
     });
 
-    // Закрытие модального окна статистики
-    statsClose.onclick = function() {
-        statsModal.style.display = 'none';
-    };
-
-    // Обработчики для модальных окон авторизации и настроек
     const loggedIn = {{ 'true' if session.get('logged_in') else 'false' }};
     const settingsLink = document.getElementById('settings-link');
     const loginLink = document.getElementById('login-link');
-    const loginModal = document.getElementById('loginModal');
-    const loginClose = document.querySelector('.login-close');
 
     settingsLink.addEventListener('click', function(event) {
         if (!loggedIn) {
             event.preventDefault();
-            showModal(loginModal);
+            loginModal.show();
         } else {
             window.location.href = "{{ url_for('auth_bp.settings') }}";
         }
@@ -370,22 +322,17 @@ document.addEventListener('DOMContentLoaded', function() {
     if (loginLink) {
         loginLink.addEventListener('click', function(event) {
             event.preventDefault();
-            showModal(loginModal);
+            loginModal.show();
         });
     }
 
-    loginClose.onclick = function() {
-        loginModal.style.display = 'none';
-    };
-
-    // Закрытие модальных окон при клике вне их
     window.onclick = function(event) {
-        if (event.target == loginModal) {
-            loginModal.style.display = 'none';
-        } else if (event.target == statsModal) {
-            statsModal.style.display = 'none';
-        } else if (event.target == chartModal) {
-            chartModal.style.display = 'none';
+        if (event.target === loginModalEl) {
+            loginModal.hide();
+        } else if (event.target === statsModalEl) {
+            statsModal.hide();
+        } else if (event.target === chartModalEl) {
+            chartModal.hide();
         }
     };
 });
