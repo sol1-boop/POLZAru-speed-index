@@ -224,10 +224,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     { label: `TBT - ${domain}`, data: data.metrics.TBT, borderColor: 'rgba(255, 99, 132, 1)', backgroundColor: 'rgba(255, 99, 132, 0.2)', fill: true },
                     { label: `Speed Index - ${domain}`, data: data.metrics["Speed Index"], borderColor: 'rgba(201, 203, 207, 1)', backgroundColor: 'rgba(201, 203, 207, 0.2)', fill: true }
                 ];
-                if (metricsChart) metricsChart.destroy();
-                metricsChart = new Chart(ctx, chartConfig);
                 chartDomain.textContent = domain;
                 chartModal.show();
+                requestAnimationFrame(() => {
+                    if (metricsChart) metricsChart.destroy();
+                    metricsChart = new Chart(ctx, chartConfig);
+                });
             });
     }
 
@@ -268,10 +270,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
                 tableHTML += '</tbody></table></div>';
                 comparisonTable.innerHTML = tableHTML;
-                if (metricsChart) metricsChart.destroy();
-                metricsChart = new Chart(ctx, chartConfig);
                 chartDomain.textContent = domains.join(', ');
                 chartModal.show();
+                requestAnimationFrame(() => {
+                    if (metricsChart) metricsChart.destroy();
+                    metricsChart = new Chart(ctx, chartConfig);
+                });
             })
             .catch(() => {
                 alert('Ошибка при загрузке данных для сравнения.');

@@ -7,17 +7,27 @@
 
 {% block content %}
 <h1 class="text-2xl font-bold mb-4">Дашборд метрик сайта</h1>
-<p class="mb-2">Выберите домен для отображения метрик:</p>
-<div class="flex items-center gap-4 mb-6">
-    <select id="domainSelect" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5">
+<h2 class="text-xl font-semibold mb-4">Список доменов</h2>
+<div class="overflow-x-auto mb-6">
+    <table class="w-full text-sm text-left text-gray-500 border border-gray-200">
+        <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+            <tr>
+                <th class="px-4 py-2">Домен</th>
+                <th class="px-4 py-2">Действия</th>
+            </tr>
+        </thead>
+        <tbody>
         {% for domain in domains %}
-            <option value="{{ domain.domain }}">{{ domain.domain }}</option>
+            <tr class="bg-white border-b">
+                <td class="px-4 py-2">{{ domain.domain }}</td>
+                <td class="px-4 py-2 space-x-2">
+                    <button class="stats-button bg-blue-500 text-white px-2 py-1 rounded" data-domain="{{ domain.domain }}">Статистика</button>
+                    <button class="chart-button bg-green-500 text-white px-2 py-1 rounded" data-domain="{{ domain.domain }}">График</button>
+                </td>
+            </tr>
         {% endfor %}
-    </select>
-    <button id="showStatsButton"
-            class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5">
-        Статистика
-    </button>
+        </tbody>
+    </table>
 </div>
 
 <h2 class="text-xl font-semibold mb-4">Последний замер</h2>
@@ -116,21 +126,15 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const domainSelect = document.getElementById('domainSelect');
     const statsModal = document.getElementById('stats-modal');
     const statsContent = document.getElementById('statsContent');
     const statsDomain = document.getElementById('statsDomain');
     const closeStatsModal = document.getElementById('closeStatsModal');
-    const showStatsButton = document.getElementById('showStatsButton');
     let fcpChart, lcpChart, ttfbChart, tbtChart, siChart;
 
 
     closeStatsModal.onclick = function() {
         statsModal.classList.add('hidden');
-    }
-
-    showStatsButton.onclick = function() {
-        fetchStats(domainSelect.value);
     }
 
     function createDataset(label, data, borderColor, fill = true, borderDash = [], borderWidth = 1, tension = 0.1) {
@@ -408,12 +412,23 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
 
-    // Initial load for the first domain in the select list
-    fetchAndRenderCharts(domainSelect.value);
+    // Initial load for the first domain in the table
+    const initialButton = document.querySelector('.chart-button');
+    if (initialButton) {
+        fetchAndRenderCharts(initialButton.getAttribute('data-domain'));
+    }
 
-    // Event listener for domain change
-    domainSelect.addEventListener('change', function() {
-        fetchAndRenderCharts(this.value);
+    // Event listeners for table buttons
+    document.querySelectorAll('.chart-button').forEach(button => {
+        button.addEventListener('click', () => {
+            fetchAndRenderCharts(button.getAttribute('data-domain'));
+        });
+    });
+
+    document.querySelectorAll('.stats-button').forEach(button => {
+        button.addEventListener('click', () => {
+            fetchStats(button.getAttribute('data-domain'));
+        });
     });
 });
 </script>
