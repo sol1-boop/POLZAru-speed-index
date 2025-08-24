@@ -16,5 +16,5 @@
 - The PR description must contain **Summary** and **Testing** sections explaining the changes and test results.
 
 ## Architecture
-- The main application logic resides in `webapp.py`, `alerts_api.py` and the modules under `modules/`.
+- The main application logic resides in `webapp.py`, the blueprints in `blueprints/`, and the modules under `modules/`.
 - For more details on request handling, see [docs/request-flow.md](docs/request-flow.md).

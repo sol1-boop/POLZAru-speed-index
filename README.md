@@ -32,6 +32,14 @@ Lighthouse измеряет показатель INP на основе реал�
 
 Более подробное описание обработки запросов доступно в файле [docs/request-flow.md](docs/request-flow.md).
 
+### Структура
+
+- `webapp.py` — точка входа и регистрация blueprints.
+- `blueprints/alerts.py` — HTTP API с эндпоинтом `/check_metrics`.
+- `blueprints/auth.py` — маршруты авторизации.
+- `modules/config.py` — загрузка и сохранение конфигурации.
+- `modules/utils.py` — общие утилиты и работа с файлами истории.
+
 **Установка зависимостей**
 
 ```bash

@@ -4,7 +4,8 @@ import asyncio
 import logging
 from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler
-from modules.utils import load_domains, get_telegram_settings, load_config
+from modules.utils import load_domains
+from modules.config import get_telegram_settings, load_config
 from modules.tracking import audit_domain, DomainTracker
 from modules.metrics import compute_domain_stats, load_history
 from alerts import check_and_alert

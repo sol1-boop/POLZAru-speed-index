@@ -1,6 +1,7 @@
 from flask import Blueprint, request, redirect, url_for, render_template
 
-from modules.utils import load_domains, save_domains, load_config, save_config
+from modules.utils import load_domains, save_domains
+from modules.config import load_config, save_config
 from modules.auth import login_required, login_user, logout_user
 
 

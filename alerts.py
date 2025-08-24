@@ -1,8 +1,8 @@
 import logging
 import requests
 
-from modules.budget import load_budget, get_latest_metrics
-from modules.utils import get_telegram_settings
+from modules.alerts import check_exceedances
+from modules.config import get_telegram_settings
 
 logger = logging.getLogger(__name__)
 
@@ -30,35 +30,18 @@ def send_telegram_alert(message):
 
 
 def check_and_alert():
-    # Получаем бюджет из domain.json через модуль budget
-    budget_data = load_budget()
-    logger.debug("Загружен бюджет: %s", budget_data)
+    exceeded = check_exceedances()
+    if not exceeded:
+        logger.info("Превышений бюджета не обнаружено.")
+        return
 
-    for domain_data in budget_data:
-        domain = domain_data['domain']
-        budget_metrics = domain_data.get('budget', {})
-        logger.debug("Проверка домена: %s", domain)
-
-        latest_metrics = get_latest_metrics(domain)
-        logger.debug("Последние метрики: %s", latest_metrics)
-
-        if not latest_metrics:
-            logger.warning("Метрики для %s не найдены, пропуск.", domain)
-            continue
-
+    for item in exceeded:
+        domain = item["domain"]
         alert_message = f"⚠️ <b>Алерт для {domain}</b> ⚠️\n\n"
-        alert_triggered = False
-
-        for metric, threshold in budget_metrics.items():
-            if metric in latest_metrics and latest_metrics[metric] > threshold:
-                alert_message += f"{metric}: {latest_metrics[metric]} (бюджет: {threshold})\n"
-                alert_triggered = True
-
-        if alert_triggered:
-            logger.info("Отправка уведомления: %s", alert_message)
-            send_telegram_alert(alert_message)
-        else:
-            logger.info("Для %s превышений бюджета не обнаружено.", domain)
+        for metric, data in item["exceeded_metrics"].items():
+            alert_message += f"{metric}: {data['actual']} (бюджет: {data['budget']})\n"
+        logger.info("Отправка уведомления: %s", alert_message)
+        send_telegram_alert(alert_message)
 
 
 if __name__ == "__main__":

@@ -1,8 +1,8 @@
-# modules/utils.py
+"""General utility helpers for working with JSON and history files."""
 
-import os
 import json
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -37,37 +37,11 @@ def save_domains(domains):
     save_json("domain.json", domains)
 
 
-def load_config():
-    return load_json("config.json", {})
-
-
-def save_config(config):
-    save_json("config.json", config)
-
-def get_telegram_settings():
-    """Return telegram token and channel id from environment or config.json."""
-    token = os.getenv('TELEGRAM_TOKEN')
-    channel = os.getenv('CHANNEL_ID')
-    if token and channel:
-        return token, channel
-
-    config = load_config()
-    if 'telegram_token' not in config or 'channel_id' not in config:
-        raise KeyError("В файле config.json отсутствуют ключи 'telegram_token' или 'channel_id'.")
-    return config['telegram_token'], config['channel_id']
-
-
-def get_telegram_token():
-    return get_telegram_settings()[0]
-
-
-def get_channel_id():
-    return get_telegram_settings()[1]
-
-
 def history_file_path(domain, history_dir="history_files"):
     """Return path to history file for *domain* within *history_dir*."""
-    filename = f"history_{domain.replace('http://', '').replace('https://', '').replace('/', '_')}.json"
+    filename = (
+        f"history_{domain.replace('http://', '').replace('https://', '').replace('/', '_')}.json"
+    )
     return os.path.join(history_dir, filename)
 
 
@@ -79,8 +53,9 @@ def delete_history_file(domain):
             os.remove(history_filepath)
             logger.info("Файл истории %s удалён.", history_filepath)
             return True
-        except Exception as e:
+        except Exception as e:  # pragma: no cover - log path
             logger.error("Ошибка при удалении файла истории %s: %s", history_filepath, e)
             return False
     logger.warning("Файл истории %s не найден.", history_filepath)
     return True  # Считаем, что файл уже удалён
+

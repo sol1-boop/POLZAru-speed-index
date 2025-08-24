@@ -1,16 +1,17 @@
 # app.py
 from flask import Flask, render_template, request, jsonify
-from modules.utils import load_domains, delete_history_file, load_config
+from modules.utils import load_domains, delete_history_file
+from modules.config import load_config
 from modules.auth import login_required
 from modules.metrics import load_history, compute_domain_stats
 from blueprints.auth import auth_bp
-from alerts_api import alerts_api
+from blueprints.alerts import alerts_bp
 import logging
 
 logging.basicConfig(level=logging.DEBUG)
 
 app = Flask(__name__)
-app.register_blueprint(alerts_api)
+app.register_blueprint(alerts_bp)
 app.register_blueprint(auth_bp)
 app.secret_key = 'your_secret_key'  # Замените на ваш секретный ключ
 
