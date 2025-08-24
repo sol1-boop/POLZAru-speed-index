@@ -4,77 +4,94 @@
 {% block title %}Настройки{% endblock %}
 
 {% block content %}
-<h1>Настройки</h1>
-<p><a href="{{ url_for('auth_bp.logout') }}">Выйти</a></p>
+<h1 class="text-2xl font-bold mb-4">Настройки</h1>
+<p class="mb-6"><a href="{{ url_for('auth_bp.logout') }}" class="text-blue-600 hover:underline">Выйти</a></p>
 
-<h2>Список доменов</h2>
-<ul>
-    {% for domain in domains %}
-        <li>
-            {{ domain.domain }}
-            <!-- Кнопка "Удалить домен" -->
-            <form action="{{ url_for('auth_bp.settings') }}" method="post" class="inline-form">
-                <input type="hidden" name="action" value="remove">
-                <input type="hidden" name="domain" value="{{ domain.domain }}">
-                <input type="submit" value="Удалить">
-            </form>
-            <!-- Кнопка "Сбросить историю" -->
-            <button class="reset-button" data-domain="{{ domain.domain }}">Сбросить историю</button>
-            <!-- Форма для обновления бюджета -->
-            <form action="{{ url_for('auth_bp.settings') }}" method="post" class="budget-form">
+<h2 class="text-xl font-semibold mb-4">Список доменов</h2>
+    <ul class="space-y-6">
+        {% for domain in domains %}
+            <li class="p-6 bg-white border border-gray-200 rounded-lg shadow">
+                <div class="flex items-center justify-between">
+                    <span class="font-medium">{{ domain.domain }}</span>
+                    <div class="flex space-x-2">
+                        <form action="{{ url_for('auth_bp.settings') }}" method="post" class="inline">
+                            <input type="hidden" name="action" value="remove">
+                            <input type="hidden" name="domain" value="{{ domain.domain }}">
+                            <button type="submit" class="text-white bg-red-600 hover:bg-red-700 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center">Удалить</button>
+                        </form>
+                        <button type="button" class="reset-button text-gray-900 bg-yellow-400 hover:bg-yellow-500 focus:ring-4 focus:outline-none focus:ring-yellow-300 font-medium rounded-lg text-sm px-5 py-2.5" data-domain="{{ domain.domain }}">Сбросить историю</button>
+                    </div>
+                </div>
+                <form action="{{ url_for('auth_bp.settings') }}" method="post" class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <input type="hidden" name="action" value="update_budget">
                 <input type="hidden" name="domain" value="{{ domain.domain }}">
-                <label>FCP:</label>
-                <input type="number" step="0.1" name="budget_fcp" value="{{ domain.budget.FCP }}">
-                <label>LCP:</label>
-                <input type="number" step="0.1" name="budget_lcp" value="{{ domain.budget.LCP }}">
-                <label>TTFB:</label>
-                <input type="number" step="0.1" name="budget_ttfb" value="{{ domain.budget.TTFB }}">
-                <label>TBT:</label>
-                <input type="number" step="0.1" name="budget_tbt" value="{{ domain.budget.TBT }}">
-                <label>Speed Index:</label>
-                <input type="number" step="0.1" name="budget_speed_index" value="{{ domain.budget['Speed Index'] }}">
-                <input type="submit" value="Сохранить бюджет">
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-gray-900">FCP:</label>
+                    <input type="number" step="0.1" name="budget_fcp" value="{{ domain.budget.FCP }}" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                </div>
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-gray-900">LCP:</label>
+                    <input type="number" step="0.1" name="budget_lcp" value="{{ domain.budget.LCP }}" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                </div>
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-gray-900">TTFB:</label>
+                    <input type="number" step="0.1" name="budget_ttfb" value="{{ domain.budget.TTFB }}" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                </div>
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-gray-900">TBT:</label>
+                    <input type="number" step="0.1" name="budget_tbt" value="{{ domain.budget.TBT }}" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                </div>
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-gray-900">Speed Index:</label>
+                    <input type="number" step="0.1" name="budget_speed_index" value="{{ domain.budget['Speed Index'] }}" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                </div>
+                <div class="sm:col-span-2 lg:col-span-3">
+                    <button type="submit" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5">Сохранить бюджет</button>
+                </div>
             </form>
         </li>
     {% endfor %}
 </ul>
 
-<h2>Добавить новый домен</h2>
-<form action="{{ url_for('auth_bp.settings') }}" method="post" class="add-domain-form">
+<h2 class="text-xl font-semibold mt-10 mb-4">Добавить новый домен</h2>
+<form action="{{ url_for('auth_bp.settings') }}" method="post" class="max-w-xl p-6 bg-white border border-gray-200 rounded-lg shadow flex flex-col sm:flex-row gap-4">
     <input type="hidden" name="action" value="add">
-    <input type="text" name="domain" placeholder="Введите домен в формате https://domain.ru" required>
-    <input type="submit" value="Добавить">
+    <input type="text" name="domain" placeholder="Введите домен в формате https://domain.ru" required class="flex-grow bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5">
+    <button type="submit" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5">Добавить</button>
 </form>
 
-<h2>Изменить частоту измерений</h2>
-<form action="{{ url_for('auth_bp.settings') }}" method="post" class="frequency-form">
+<h2 class="text-xl font-semibold mt-10 mb-4">Изменить частоту измерений</h2>
+<form action="{{ url_for('auth_bp.settings') }}" method="post" class="max-w-xl p-6 bg-white border border-gray-200 rounded-lg shadow flex flex-col sm:flex-row items-center gap-4">
     <input type="hidden" name="action" value="change_frequency">
-    <label for="frequency">Частота измерений (в часах):</label>
-    <input type="number" id="frequency" name="frequency" value="{{ frequency }}" min="1" required>
-    <input type="submit" value="Сохранить">
+    <label for="frequency" class="block sm:w-64 mb-2 text-sm font-medium text-gray-900">Частота измерений (в часах):</label>
+    <input type="number" id="frequency" name="frequency" value="{{ frequency }}" min="1" required class="flex-grow bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5">
+    <button type="submit" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5">Сохранить</button>
 </form>
 
-<h2>Изменить количество выводимых значений</h2>
-<form action="{{ url_for('auth_bp.settings') }}" method="post" class="display-points-form">
+<h2 class="text-xl font-semibold mt-10 mb-4">Изменить количество выводимых значений</h2>
+<form action="{{ url_for('auth_bp.settings') }}" method="post" class="max-w-xl p-6 bg-white border border-gray-200 rounded-lg shadow flex flex-col sm:flex-row items-center gap-4">
     <input type="hidden" name="action" value="change_display_points">
-    <label for="max_display_points">Количество значений для отображения:</label>
-    <input type="number" id="max_display_points" name="max_display_points" value="{{ max_display_points }}" min="1" required>
-    <input type="submit" value="Сохранить">
+    <label for="max_display_points" class="block sm:w-64 mb-2 text-sm font-medium text-gray-900">Количество значений для отображения:</label>
+    <input type="number" id="max_display_points" name="max_display_points" value="{{ max_display_points }}" min="1" required class="flex-grow bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5">
+    <button type="submit" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5">Сохранить</button>
 </form>
 
-<h2>Настройки Telegram</h2>
-<form action="{{ url_for('auth_bp.settings') }}" method="post" class="telegram-settings-form">
+<h2 class="text-xl font-semibold mt-10 mb-4">Настройки Telegram</h2>
+<form action="{{ url_for('auth_bp.settings') }}" method="post" class="max-w-xl p-6 bg-white border border-gray-200 rounded-lg shadow space-y-4">
     <input type="hidden" name="action" value="update_telegram_settings">
-    <label for="telegram_token">Telegram Token:</label>
-    <input type="text" id="telegram_token" name="telegram_token" value="{{ telegram_token }}" required>
-    <label for="channel_id">Channel ID:</label>
-    <input type="text" id="channel_id" name="channel_id" value="{{ channel_id }}" required>
-    <input type="submit" value="Сохранить">
+    <div>
+        <label for="telegram_token" class="block mb-2 text-sm font-medium text-gray-900">Telegram Token:</label>
+        <input type="text" id="telegram_token" name="telegram_token" value="{{ telegram_token }}" required class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+    </div>
+    <div>
+        <label for="channel_id" class="block mb-2 text-sm font-medium text-gray-900">Channel ID:</label>
+        <input type="text" id="channel_id" name="channel_id" value="{{ channel_id }}" required class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+    </div>
+    <button type="submit" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5">Сохранить</button>
 </form>
 
 
-<p><a href="{{ url_for('index') }}">Назад к списку доменов</a></p>
+<p class="mt-10"><a href="{{ url_for('index') }}" class="text-blue-600 hover:underline">Назад к списку доменов</a></p>
 {% endblock %}
 
 {% block scripts %}
