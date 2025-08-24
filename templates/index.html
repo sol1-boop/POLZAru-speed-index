@@ -4,70 +4,73 @@
 {% block title %}Домены{% endblock %}
 
 {% block content %}
-<h1>Список доменов</h1>
-<ul class="domain-list">
+<h1 class="text-2xl font-bold mb-4">Список доменов</h1>
+<ul class="space-y-2 mb-6">
     {% for domain in domains %}
-        <li>
-            <input type="checkbox" class="compare-checkbox" value="{{ domain.domain }}">
-            {{ domain.domain }}
-            <button class="stats-button" data-domain="{{ domain.domain }}">Статистика</button>
-            <button class="chart-button" data-domain="{{ domain.domain }}">График</button>
+        <li class="flex items-center space-x-2">
+            <input type="checkbox" class="compare-checkbox h-4 w-4" value="{{ domain.domain }}">
+            <span>{{ domain.domain }}</span>
+            <button class="stats-button bg-blue-500 text-white px-2 py-1 rounded" data-domain="{{ domain.domain }}">Статистика</button>
+            <button class="chart-button bg-green-500 text-white px-2 py-1 rounded" data-domain="{{ domain.domain }}">График</button>
         </li>
     {% endfor %}
 </ul>
-<p>
-    <a href="#" id="settings-link">Настройки</a> |
+<p class="mb-4">
+    <a href="#" id="settings-link" class="text-blue-600 hover:underline">Настройки</a> |
     {% if session.get('logged_in') %}
-        <a href="{{ url_for('auth_bp.logout') }}">Выйти</a>
+        <a href="{{ url_for('auth_bp.logout') }}" class="text-blue-600 hover:underline">Выйти</a>
     {% else %}
-        <a href="#" id="login-link">Войти</a>
+        <a href="#" id="login-link" class="text-blue-600 hover:underline">Войти</a>
     {% endif %}
 </p>
-<button id="compare-button">Сравнить домены</button>
-<button id="dashboard-button">Дашборд</button>
+<div class="space-x-2 mb-6">
+    <button id="compare-button" class="bg-indigo-500 text-white px-4 py-2 rounded">Сравнить домены</button>
+    <button id="dashboard-button" class="bg-gray-700 text-white px-4 py-2 rounded">Дашборд</button>
+</div>
 
 <!-- Модальные окна -->
-<div id="loginModal" class="modal" role="dialog" aria-modal="true">
-    <div class="modal-content">
-        <span class="close login-close">&times;</span>
-        <h2>Вход в систему</h2>
-        <div id="login-error" class="error-message" style="display: none;"></div>
-        <form method="post" action="{{ url_for('auth_bp.login') }}">
-            <label for="username">Логин:</label>
-            <input type="text" id="username" name="username" required><br><br>
-            <label for="password">Пароль:</label>
-            <input type="password" id="password" name="password" required><br><br>
+<div id="loginModal" class="fixed inset-0 hidden items-center justify-center bg-gray-900 bg-opacity-50" role="dialog" aria-modal="true">
+    <div class="relative bg-white p-6 rounded shadow-lg w-full max-w-md">
+        <button class="login-close absolute top-2 right-2 text-gray-500">&times;</button>
+        <h2 class="text-xl font-semibold mb-4">Вход в систему</h2>
+        <div id="login-error" class="error-message hidden text-red-600 mb-2"></div>
+        <form method="post" action="{{ url_for('auth_bp.login') }}" class="space-y-4">
+            <div>
+                <label for="username" class="block mb-1">Логин:</label>
+                <input type="text" id="username" name="username" required class="w-full border p-2 rounded">
+            </div>
+            <div>
+                <label for="password" class="block mb-1">Пароль:</label>
+                <input type="password" id="password" name="password" required class="w-full border p-2 rounded">
+            </div>
             <input type="hidden" name="next" value="{{ request.path }}">
-            <input type="submit" value="Войти">
+            <input type="submit" value="Войти" class="bg-blue-500 text-white px-4 py-2 rounded w-full">
         </form>
     </div>
 </div>
 
 <!-- Модальное окно статистики -->
-<div id="statsModal" class="modal" role="dialog" aria-modal="true">
-    <h2>Статистика для <span id="stats-domain"></span></h2>
-    <span class="close stats-close">&times;</span>
-    <div class="modal-content">
+<div id="statsModal" class="fixed inset-0 hidden items-center justify-center bg-gray-900 bg-opacity-50" role="dialog" aria-modal="true">
+    <div class="relative bg-white p-6 rounded shadow-lg w-full max-w-2xl">
+        <button class="stats-close absolute top-2 right-2 text-gray-500">&times;</button>
+        <h2 class="text-xl font-semibold mb-4">Статистика для <span id="stats-domain"></span></h2>
         <div id="stats-content"></div>
     </div>
 </div>
 
 <!-- Модальное окно для графика -->
-<div id="chartModal" class="modal" role="dialog" aria-modal="true">
-    <span class="close chart-close">&times;</span>
-    <h2>График для <span id="chart-domain"></span></h2>
-    <div class="modal-content">
-
-        <!-- Настройки графика -->
-        <div>
-            <label for="chartType">Тип графика:</label>
-            <select id="chartType">
+<div id="chartModal" class="fixed inset-0 hidden items-center justify-center bg-gray-900 bg-opacity-50" role="dialog" aria-modal="true">
+    <div class="relative bg-white p-6 rounded shadow-lg w-full max-w-4xl">
+        <button class="chart-close absolute top-2 right-2 text-gray-500">&times;</button>
+        <h2 class="text-xl font-semibold mb-4">График для <span id="chart-domain"></span></h2>
+        <div class="mb-4">
+            <label for="chartType" class="block mb-1">Тип графика:</label>
+            <select id="chartType" class="border rounded p-2">
                 <option value="line">Линейный</option>
                 <option value="bar">Столбчатый</option>
             </select>
         </div>
-
-        <canvas id="metricsChart"></canvas>
+        <canvas id="metricsChart" class="w-full"></canvas>
     </div>
 </div>
 

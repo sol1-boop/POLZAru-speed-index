@@ -4,7 +4,7 @@
 // and close the modal when the Escape key is pressed.
 document.addEventListener('DOMContentLoaded', () => {
   window.showModal = function (modal) {
-    modal.style.display = 'block';
+    modal.style.display = 'flex';
     const focusable = modal.querySelector(
       'input, button, select, textarea, [tabindex]:not([tabindex="-1"])'
     );
