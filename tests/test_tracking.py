@@ -1,9 +1,9 @@
 import asyncio
 import json
-
 import pytest
 
 from modules import tracking
+from modules.utils import history_file_path
 
 
 class DummyBot:
@@ -36,7 +36,7 @@ def test_audit_domain(tmp_path, monkeypatch):
     asyncio.run(tracking.audit_domain("example.com", bot, channel_id=1))
 
     assert len(bot.sent) >= 2
-    history_file = tmp_path / "history_files" / "history_example.com.json"
+    history_file = tmp_path / history_file_path("example.com")
     assert history_file.exists()
     data = json.loads(history_file.read_text())
     assert data[0]["metrics"]["FCP"] == "1 s"

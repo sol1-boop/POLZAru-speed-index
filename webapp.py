@@ -2,7 +2,7 @@
 from flask import Flask, render_template, request, jsonify
 from modules.utils import load_domains, delete_history_file, load_config
 from modules.auth import login_required
-from modules.metrics import load_history, parse_metric, calculate_stats_for_metrics
+from modules.metrics import load_history, compute_domain_stats
 from blueprints.auth import auth_bp
 from alerts_api import alerts_api
 import logging
@@ -42,38 +42,15 @@ def get_stats():
 
     history_data = history_data[-max_display_points:]
 
-    dates = [entry.get('timestamp') for entry in history_data]
-    fcp_values = [parse_metric(entry.get('metrics', {}).get('FCP')) for entry in history_data]
-    lcp_values = [parse_metric(entry.get('metrics', {}).get('LCP')) for entry in history_data]
-    ttfb_values = [parse_metric(entry.get('metrics', {}).get('TTFB'), unit='ms') / 1000 if entry.get('metrics', {}).get('TTFB') else None for entry in history_data]
-    tbt_values = [parse_metric(entry.get('metrics', {}).get('TBT'), unit='ms') / 1000 if entry.get('metrics', {}).get('TBT') else None for entry in history_data]
-    speed_index_values = [parse_metric(entry.get('metrics', {}).get('Speed Index')) for entry in history_data]
-
-    stats = calculate_stats_for_metrics(
-        fcp_values[:], lcp_values[:], ttfb_values[:], tbt_values[:], speed_index_values[:]
-    )
-
-
-    metrics = {
-        'FCP': fcp_values,
-        'LCP': lcp_values,
-        'TTFB': ttfb_values,
-        'TBT': tbt_values,
-        'Speed Index': speed_index_values
-    }
-
-    # Добавление данных для предыдущих периодов (опционально)
-    previous_metrics = {key: [] for key in metrics.keys()}
-    if len(history_data) > max_display_points:
-        for metric in metrics.keys():
-            previous_metrics[metric] = metrics[metric][:max_display_points]
+    result = compute_domain_stats(history_data)
+    metrics = result['metrics']
 
     data = {
-        'dates': dates,
+        'dates': result['dates'],
         'metrics': metrics,
         'budget': budget,
-        'stats': stats,
-        'previous_metrics': previous_metrics
+        'stats': result['stats'],
+        'previous_metrics': {key: [] for key in metrics.keys()},
     }
 
     return jsonify(data)

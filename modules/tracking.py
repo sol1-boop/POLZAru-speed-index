@@ -1,16 +1,21 @@
 import asyncio
 import json
 import os
-import subprocess
 import logging
-
 from datetime import datetime
 
-from modules.utils import load_domains, load_config, get_telegram_settings
+from alerts import check_and_alert
 from lighthouse import get_lighthouse_metrics
+from modules.utils import (
+    get_telegram_settings,
+    history_file_path,
+    load_config,
+    load_domains,
+    load_json,
+    save_json,
+)
 
 logger = logging.getLogger(__name__)
-HISTORY_DIR = 'history_files'
 
 async def audit_domain(url, bot, channel_id=None, headless=True):
     """Run lighthouse audit for `url` and store result."""
@@ -39,20 +44,12 @@ async def audit_domain(url, bot, channel_id=None, headless=True):
         summary_text += f"{key}: {value if value is not None else 'N/A'}\n"
     await bot.send_message(chat_id=channel_id, text=summary_text)
 
-    history_filename = f"history_{url.replace('http://', '').replace('https://', '').replace('/', '_')}.json"
-    history_filepath = os.path.join(HISTORY_DIR, history_filename)
+    history_filepath = history_file_path(url)
+    os.makedirs(os.path.dirname(history_filepath), exist_ok=True)
 
-    history_data = []
-    if os.path.exists(history_filepath):
-        try:
-            with open(history_filepath, 'r', encoding='utf-8') as file:
-                history_data = json.load(file)
-        except json.JSONDecodeError:
-            logger.error("Ошибка чтения JSON из файла %s. Создание нового файла.", history_filepath)
-
+    history_data = load_json(history_filepath, [])
     history_data.append({'url': url, 'timestamp': datetime.now().isoformat(), 'metrics': summary})
-    with open(history_filepath, 'w', encoding='utf-8') as file:
-        json.dump(history_data, file, ensure_ascii=False, indent=2)
+    save_json(history_filepath, history_data)
 
     return summary
 
@@ -89,11 +86,11 @@ class DomainTracker:
                 headless=self.headless,
             )
 
-        logger.info("Запуск alerts.py для проверки бюджетов...")
+        logger.info("Запуск проверки бюджетов...")
         try:
-            subprocess.run(["python", "alerts.py"], check=True)
+            await asyncio.to_thread(check_and_alert)
         except Exception as e:
-            logger.exception("Не удалось запустить alerts.py: %s", e)
+            logger.exception("Не удалось выполнить check_and_alert: %s", e)
 
     async def _run(self):
         try:
