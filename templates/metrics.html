@@ -1,18 +1,17 @@
 <!-- templates/metrics.html -->
 {% extends 'base.html' %}
 
-{% block title %}График для {{ url }}{% endblock %}
+{% block title %}Метрики для {{ url }}{% endblock %}
 
 {% block content %}
-<h1 class="text-2xl font-bold mb-4">График для {{ url }}</h1>
-<div class="mb-4">
-    <label for="chartType" class="mr-2">Тип графика:</label>
-    <select id="chartType" class="border rounded p-1">
-        <option value="line">Линейный</option>
-        <option value="bar">Столбчатый</option>
-    </select>
+<h1 class="text-2xl font-bold mb-4">Метрики для {{ url }}</h1>
+<div class="space-y-6">
+    <canvas id="fcpChart" class="w-full"></canvas>
+    <canvas id="lcpChart" class="w-full"></canvas>
+    <canvas id="ttfbChart" class="w-full"></canvas>
+    <canvas id="tbtChart" class="w-full"></canvas>
+    <canvas id="siChart" class="w-full"></canvas>
 </div>
-<canvas id="metricsChart" class="w-full max-h-[500px]"></canvas>
 <p class="mt-6"><a href="{{ url_for('index') }}" class="text-blue-600 hover:underline">Назад к списку доменов</a></p>
 {% endblock %}
 
@@ -26,67 +25,30 @@
     const tbtValues = {{ tbt_values|tojson }};
     const siValues = {{ si_values|tojson }};
 
-    const datasets = [
-        {
-            label: 'FCP',
-            data: fcpValues,
-            borderColor: 'rgba(54, 162, 235, 1)',
-            backgroundColor: 'rgba(54, 162, 235, 0.2)',
-            fill: false
-        },
-        {
-            label: 'LCP',
-            data: lcpValues,
-            borderColor: 'rgba(153, 102, 255, 1)',
-            backgroundColor: 'rgba(153, 102, 255, 0.2)',
-            fill: false
-        },
-        {
-            label: 'TTFB',
-            data: ttfbValues,
-            borderColor: 'rgba(255, 159, 64, 1)',
-            backgroundColor: 'rgba(255, 159, 64, 0.2)',
-            fill: false
-        },
-        {
-            label: 'TBT',
-            data: tbtValues,
-            borderColor: 'rgba(255, 99, 132, 1)',
-            backgroundColor: 'rgba(255, 99, 132, 0.2)',
-            fill: false
-        },
-        {
-            label: 'Speed Index',
-            data: siValues,
-            borderColor: 'rgba(201, 203, 207, 1)',
-            backgroundColor: 'rgba(201, 203, 207, 0.2)',
-            fill: false
-        }
-    ];
-
-    const ctx = document.getElementById('metricsChart');
-    let currentChart = null;
-
-    function renderChart(type) {
-        if (currentChart) {
-            currentChart.destroy();
-        }
-        currentChart = new Chart(ctx, {
-            type: type,
+    function createChart(ctx, label, data) {
+        new Chart(ctx, {
+            type: 'line',
             data: {
                 labels: timestamps,
-                datasets: datasets
+                datasets: [{
+                    label: label,
+                    data: data,
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    fill: false,
+                    tension: 0.1
+                }]
             },
             options: {
-                responsive: true,
                 scales: {
                     x: {
+                        display: true,
                         title: {
                             display: true,
                             text: 'Время'
                         }
                     },
                     y: {
+                        display: true,
                         title: {
                             display: true,
                             text: 'Значение (секунды)'
@@ -97,11 +59,10 @@
         });
     }
 
-    const chartTypeSelect = document.getElementById('chartType');
-    chartTypeSelect.addEventListener('change', function() {
-        renderChart(this.value);
-    });
-
-    renderChart(chartTypeSelect.value);
+    createChart(document.getElementById('fcpChart'), 'FCP', fcpValues);
+    createChart(document.getElementById('lcpChart'), 'LCP', lcpValues);
+    createChart(document.getElementById('ttfbChart'), 'TTFB', ttfbValues);
+    createChart(document.getElementById('tbtChart'), 'TBT', tbtValues);
+    createChart(document.getElementById('siChart'), 'Speed Index', siValues);
 </script>
 {% endblock %}
