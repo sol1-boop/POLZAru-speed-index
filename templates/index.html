@@ -90,15 +90,17 @@
                 </button>
             </div>
             <div class="p-4">
-                <div class="mb-4">
-                    <label for="chartType" class="block mb-1">Тип графика:</label>
-                    <select id="chartType" class="border rounded p-2">
+                <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+                    <label for="chartType" class="text-sm font-medium text-gray-700">Тип графика:</label>
+                    <select id="chartType" class="border rounded p-2 w-full sm:w-48">
                         <option value="line">Линейный</option>
                         <option value="bar">Столбчатый</option>
                     </select>
                 </div>
-                <canvas id="metricsChart" class="w-full h-64"></canvas>
-                <div id="comparison-table" class="mt-4"></div>
+                <div class="relative w-full h-96">
+                    <canvas id="metricsChart" class="absolute inset-0 w-full h-full"></canvas>
+                </div>
+                <div id="comparison-table" class="mt-4 overflow-x-auto"></div>
             </div>
         </div>
     </div>
