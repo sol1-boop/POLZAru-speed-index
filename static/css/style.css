@@ -421,9 +421,9 @@ button:hover,
 
 /* Canvas внутри модального окна */
 #metricsChart {
-    width: 100% !important; /* Занимает всю ширину */
-    height: auto; /* Автоматическая высота */
-    max-height: 500px; /* Ограничиваем максимальную высоту для избежания скролла */
+    width: 100% !important; /* Занимает всю доступную ширину */
+    height: 100% !important; /* Растягивается на высоту контейнера */
+    max-height: none;
     box-sizing: border-box; /* Учитываем отступы */
     background-color: var(--background-color);
 }
