@@ -3,6 +3,7 @@ from flask import Blueprint, request, redirect, url_for, render_template
 from modules.utils import load_domains, save_domains
 from modules.config import load_config, save_config
 from modules.auth import login_required, login_user, logout_user
+from modules.metrics import build_domain_overview
 
 
 auth_bp = Blueprint('auth_bp', __name__)
@@ -17,7 +18,14 @@ def login():
     if login_user(username, password):
         return redirect(next_url)
     error = 'Неправильный логин или пароль'
-    return render_template('index.html', error=error, domains=load_domains())
+    domains = load_domains()
+    overview = build_domain_overview(domains)
+    return render_template(
+        'index.html',
+        error=error,
+        domains=domains,
+        domain_overview=overview,
+    )
 
 
 @auth_bp.route('/logout')

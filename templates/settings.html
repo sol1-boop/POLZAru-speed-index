@@ -97,7 +97,20 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Обработчики для кнопок "Сбросить историю"
+    const toastContainer = document.getElementById('toast-container');
+    function showToast(message, type = 'info') {
+        const colors = {
+            info: 'bg-slate-900 text-white',
+            success: 'bg-emerald-600 text-white',
+            error: 'bg-red-600 text-white'
+        };
+        const toast = document.createElement('div');
+        toast.className = `flex items-start gap-3 rounded-lg px-4 py-3 shadow-lg ${colors[type] || colors.info}`;
+        toast.innerHTML = `<span class="mt-0.5 text-lg">${type === 'success' ? '✅' : type === 'error' ? '⛔' : 'ℹ️'}</span><div class="text-sm">${message}</div>`;
+        toastContainer.appendChild(toast);
+        setTimeout(function() { toast.remove(); }, 5000);
+    }
+
     var resetButtons = document.querySelectorAll('.reset-button');
 
     resetButtons.forEach(function(button) {
@@ -117,13 +130,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 })
                 .then(function(data) {
                     if (data.success) {
-                        alert('История для домена ' + domain + ' успешно сброшена.');
+                        showToast('История для домена ' + domain + ' успешно сброшена.', 'success');
                     } else {
-                        alert('Ошибка: ' + data.error);
+                        showToast('Ошибка: ' + data.error, 'error');
                     }
                 })
-                .catch(function(error) {
-                    alert('Ошибка при сбросе истории.');
+                .catch(function() {
+                    showToast('Ошибка при сбросе истории.', 'error');
                 });
             }
         });
