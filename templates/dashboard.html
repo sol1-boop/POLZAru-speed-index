@@ -65,41 +65,51 @@
                 </div>
             </div>
             <p class="text-sm text-gray-500 dark:text-gray-400">Используйте легенду, чтобы скрывать/показывать серии. Для анализа скачков добавляйте заметки справа.</p>
-            <div class="mt-6 h-[28rem] space-y-8 overflow-y-auto pr-1" id="charts-container">
+            <div class="mt-6 max-h-[28rem] space-y-8 overflow-y-auto pr-1" id="charts-container">
                 <div class="chart-block">
                     <div class="flex items-center justify-between">
                         <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-50">FCP</h3>
                         <span id="fcpAnnotation" class="text-xs text-gray-500 dark:text-gray-400">—</span>
                     </div>
-                    <canvas id="fcpChart" class="h-56"></canvas>
+                    <div class="chart-canvas-wrapper relative min-h-[16rem]">
+                        <canvas id="fcpChart" class="h-full w-full"></canvas>
+                    </div>
                 </div>
                 <div class="chart-block">
                     <div class="flex items-center justify-between">
                         <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-50">LCP</h3>
                         <span id="lcpAnnotation" class="text-xs text-gray-500 dark:text-gray-400">—</span>
                     </div>
-                    <canvas id="lcpChart" class="h-56"></canvas>
+                    <div class="chart-canvas-wrapper relative min-h-[16rem]">
+                        <canvas id="lcpChart" class="h-full w-full"></canvas>
+                    </div>
                 </div>
                 <div class="chart-block">
                     <div class="flex items-center justify-between">
                         <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-50">TTFB</h3>
                         <span id="ttfbAnnotation" class="text-xs text-gray-500 dark:text-gray-400">—</span>
                     </div>
-                    <canvas id="ttfbChart" class="h-56"></canvas>
+                    <div class="chart-canvas-wrapper relative min-h-[16rem]">
+                        <canvas id="ttfbChart" class="h-full w-full"></canvas>
+                    </div>
                 </div>
                 <div class="chart-block">
                     <div class="flex items-center justify-between">
                         <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-50">TBT</h3>
                         <span id="tbtAnnotation" class="text-xs text-gray-500 dark:text-gray-400">—</span>
                     </div>
-                    <canvas id="tbtChart" class="h-56"></canvas>
+                    <div class="chart-canvas-wrapper relative min-h-[16rem]">
+                        <canvas id="tbtChart" class="h-full w-full"></canvas>
+                    </div>
                 </div>
                 <div class="chart-block">
                     <div class="flex items-center justify-between">
                         <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-50">Speed Index</h3>
                         <span id="siAnnotation" class="text-xs text-gray-500 dark:text-gray-400">—</span>
                     </div>
-                    <canvas id="siChart" class="h-56"></canvas>
+                    <div class="chart-canvas-wrapper relative min-h-[16rem]">
+                        <canvas id="siChart" class="h-full w-full"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
@@ -307,7 +317,8 @@ document.addEventListener('DOMContentLoaded', () => {
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false,
+                maintainAspectRatio: true,
+                aspectRatio: 2.2,
                 interaction: { mode: 'index', intersect: false },
                 plugins: {
                     legend: { position: 'top', labels: { usePointStyle: true } },
