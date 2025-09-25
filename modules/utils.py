@@ -100,18 +100,35 @@ def _legacy_history_filename(domain: str) -> str:
     )
 
 
+def _find_existing_history_file(directory: Path, sanitized_name: str) -> Path | None:
+    """Return an existing history file in *directory* matching *sanitized_name*."""
+
+    if not directory.exists():
+        return None
+
+    for candidate in directory.glob("history_*.json"):
+        base_name = candidate.stem[len("history_"):]
+        if _sanitize_history_name(base_name) == sanitized_name:
+            return candidate
+    return None
+
+
 def history_file_path(domain, history_dir="history_files"):
     """Return path to history file for *domain* within *history_dir*."""
 
-    history_directory = Path(history_dir)
+    history_directory = resolve_data_path(Path(history_dir))
     sanitized_name = _sanitize_history_name(domain)
-    sanitized_path = resolve_data_path(history_directory / f"history_{sanitized_name}.json")
+    sanitized_path = history_directory / f"history_{sanitized_name}.json"
     if sanitized_path.exists():
         return str(sanitized_path)
 
-    legacy_path = resolve_data_path(history_directory / _legacy_history_filename(domain))
+    legacy_path = history_directory / _legacy_history_filename(domain)
     if legacy_path.exists():
         return str(legacy_path)
+
+    discovered_path = _find_existing_history_file(history_directory, sanitized_name)
+    if discovered_path is not None:
+        return str(discovered_path)
 
     return str(sanitized_path)
 

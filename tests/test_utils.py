@@ -70,3 +70,16 @@ def test_history_file_path_legacy_fallback(tmp_path, monkeypatch):
     resolved = history_file_path("https://example.com/path?param=1")
 
     assert resolved == str(legacy_path)
+
+
+def test_history_file_path_discovers_equivalent_patterns(tmp_path, monkeypatch):
+    monkeypatch.setenv("POLZA_DATA_DIR", str(tmp_path))
+
+    history_dir = tmp_path / "history_files"
+    history_dir.mkdir()
+    existing = history_dir / "history_example.com_path_q=1&ref=a.json"
+    existing.write_text("[]", encoding="utf-8")
+
+    resolved = history_file_path("https://example.com/path?q=1&ref=a")
+
+    assert resolved == str(existing)
