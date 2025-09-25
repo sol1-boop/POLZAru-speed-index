@@ -482,11 +482,34 @@ document.addEventListener('DOMContentLoaded', function() {
         return html;
     }
 
+    function formatHistoryDate(dateString) {
+        if (typeof dateString !== 'string') {
+            return dateString;
+        }
+        const match = dateString.match(/^(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2})(?::\d{2}(?:[.,]\d+)?)?/);
+        if (!match) {
+            const parsed = new Date(dateString);
+            if (Number.isNaN(parsed.getTime())) {
+                return dateString;
+            }
+            const pad = value => String(value).padStart(2, '0');
+            const hours = pad(parsed.getHours());
+            const minutes = pad(parsed.getMinutes());
+            const day = pad(parsed.getDate());
+            const month = pad(parsed.getMonth() + 1);
+            const year = parsed.getFullYear();
+            return `${hours}:${minutes} ${day}.${month}.${year}`;
+        }
+        const [, year, month, day, hours, minutes] = match;
+        return `${hours}:${minutes} ${day}.${month}.${year}`;
+    }
+
     function buildHistoryTable(dates, metrics) {
         let html = '<h3 class="mt-4 mb-3 text-lg font-semibold text-gray-900 dark:text-gray-50">История замеров</h3>';
         html += '<div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-600 dark:text-gray-200"><thead class="text-xs uppercase text-gray-500 dark:text-gray-400"><tr><th class="px-3 py-2">Дата</th><th class="px-3 py-2">FCP</th><th class="px-3 py-2">LCP</th><th class="px-3 py-2">TTFB</th><th class="px-3 py-2">TBT</th><th class="px-3 py-2">Speed Index</th></tr></thead><tbody class="divide-y divide-gray-100 dark:divide-gray-800">';
         for (let i = 0; i < dates.length; i++) {
-            html += `<tr><th class="whitespace-nowrap px-3 py-2 text-gray-900 dark:text-gray-100">${dates[i]}</th>` +
+            const formattedDate = formatHistoryDate(dates[i]);
+            html += `<tr><th class="whitespace-nowrap px-3 py-2 text-gray-900 dark:text-gray-100">${formattedDate}</th>` +
                     `<td class="px-3 py-2">${metrics.FCP[i] !== null ? metrics.FCP[i] + 'с' : '—'}</td>` +
                     `<td class="px-3 py-2">${metrics.LCP[i] !== null ? metrics.LCP[i] + 'с' : '—'}</td>` +
                     `<td class="px-3 py-2">${metrics.TTFB[i] !== null ? metrics.TTFB[i] + 'с' : '—'}</td>` +
@@ -563,12 +586,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function renderChart(chartData, label, customDatasets = null, customLabels = null) {
         const filtered = applyTimeRange(chartData.dates, chartData.metrics);
-        chartConfig.data.labels = customLabels || filtered.dates;
+        const baseLabels = customLabels || filtered.dates;
+        const formattedLabels = Array.isArray(baseLabels)
+            ? baseLabels.map(formatHistoryDate)
+            : [];
+        chartConfig.data.labels = formattedLabels;
         chartConfig.data.datasets = customDatasets || buildDatasets({
             dates: filtered.dates,
             metrics: filtered.metrics,
             stats: chartData.stats,
         }, label);
+        if (!chartConfig.options.plugins.tooltip.callbacks) {
+            chartConfig.options.plugins.tooltip.callbacks = {};
+        }
+        chartConfig.options.plugins.tooltip.callbacks.title = items => {
+            if (!items || !items.length) return '';
+            const index = items[0].dataIndex;
+            return formattedLabels[index] ?? '';
+        };
         chartConfig.options.plugins.tooltip.callbacks.label = function(context) {
             const datasetLabel = context.dataset.label || '';
             const value = context.parsed.y;
@@ -782,9 +817,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     titleFont: { size: 14, weight: '600' },
                     bodyFont: { size: 13 },
                     padding: 12,
+                    callbacks: {},
                 }
             },
             scales: {
+                x: {
+                    ticks: {
+                        maxRotation: 45,
+                        autoSkipPadding: 12,
+                    }
+                },
                 y: {
                     beginAtZero: false,
                     ticks: {
