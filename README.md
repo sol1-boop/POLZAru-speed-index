@@ -40,7 +40,20 @@ Lighthouse измеряет показатель INP на основе реал�
 - `modules/config.py` — загрузка и сохранение конфигурации.
 - `modules/utils.py` — общие утилиты и работа с файлами истории.
 
-**Установка зависимостей**
+**Системные зависимости**
+
+Для запуска Lighthouse требуется установленный браузер Chrome или Chromium и Node.js с глобально установленным CLI Lighthouse. На Ubuntu или Debian их можно установить командами:
+
+```bash
+sudo apt-get update && sudo apt-get install -y chromium
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt-get install -y nodejs
+sudo npm install -g lighthouse
+```
+
+> Вместо Chromium можно использовать пакет `google-chrome-stable`, если он доступен в вашей системе.
+
+**Установка Python-зависимостей**
 
 ```bash
 pip install -r requirements.txt
