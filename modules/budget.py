@@ -2,7 +2,7 @@ import json
 import os
 
 from modules.metrics import parse_metric
-from modules.utils import history_file_path
+from modules.utils import history_file_path, resolve_data_path
 
 HISTORY_DIR = "history_files"
 DOMAIN_CONFIG = "domain.json"
@@ -10,8 +10,10 @@ DOMAIN_CONFIG = "domain.json"
 
 def load_budget(config_path: str = DOMAIN_CONFIG):
     """Читает файл с бюджетом метрик."""
+
+    path = resolve_data_path(config_path)
     try:
-        with open(config_path, "r", encoding="utf-8") as file:
+        with path.open("r", encoding="utf-8") as file:
             return json.load(file)
     except FileNotFoundError:
         print("Ошибка: файл domain.json не найден.")
