@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 from uuid import uuid4
 
@@ -58,6 +59,10 @@ def test_history_file_path_sanitizes_special_characters(tmp_path, monkeypatch):
     assert all(char not in path.name for char in "?&=+")
 
 
+@pytest.mark.skipif(
+    os.name == "nt",
+    reason="Legacy history filenames may contain characters unsupported on Windows",
+)
 def test_history_file_path_legacy_fallback(tmp_path, monkeypatch):
     monkeypatch.setenv("POLZA_DATA_DIR", str(tmp_path))
 
