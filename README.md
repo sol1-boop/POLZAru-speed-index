@@ -62,7 +62,10 @@ pip install -r requirements.txt
 Создайте `config.json` на основе `config.example.json` или задайте переменные
 окружения `TELEGRAM_TOKEN` и `CHANNEL_ID` для работы телеграм-бота.
 В `config.json` можно указать поле `headless` для управления запуском Chrome
-в фоновом режиме.
+в фоновом режиме. При необходимости переопределите путь к Lighthouse через
+переменную окружения `LIGHTHOUSE_PATH` или поля `lighthouse_path` /
+`lighthouse_cmd` в `config.json` (например, `/usr/local/bin/lighthouse` или
+`npx lighthouse`).
 
 **Запуск приложения**
 
