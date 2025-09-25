@@ -23,11 +23,12 @@ def get_storage_dir() -> Path:
 
     env_dir = os.getenv("POLZA_DATA_DIR")
     if env_dir:
-        return Path(env_dir)
+        return Path(env_dir).expanduser().resolve()
 
     cwd = Path.cwd()
-    if _has_storage_hint(cwd):
-        return cwd
+    for directory in (cwd, *cwd.parents):
+        if _has_storage_hint(directory):
+            return directory
 
     project_dir = Path(__file__).resolve().parent.parent
     return project_dir
