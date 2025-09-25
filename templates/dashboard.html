@@ -280,6 +280,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function createChartConfig(label, data, previous, budget, colors, median) {
+        const formattedDates = Array.isArray(data.dates)
+            ? data.dates.map(formatHistoryDate)
+            : [];
         const datasets = [];
         if (data.metrics.length) {
             datasets.push({
@@ -312,7 +315,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return {
             type: 'line',
             data: {
-                labels: data.dates,
+                labels: formattedDates,
                 datasets,
             },
             options: {
@@ -324,6 +327,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     legend: { position: 'top', labels: { usePointStyle: true } },
                     tooltip: {
                         callbacks: {
+                            title: items => (items.length ? formattedDates[items[0].dataIndex] ?? '' : ''),
                             label: context => `${context.dataset.label}: ${context.parsed.y?.toFixed(2) ?? '—'} с`
                         }
                     }

@@ -586,12 +586,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function renderChart(chartData, label, customDatasets = null, customLabels = null) {
         const filtered = applyTimeRange(chartData.dates, chartData.metrics);
-        chartConfig.data.labels = customLabels || filtered.dates;
+        const baseLabels = customLabels || filtered.dates;
+        const formattedLabels = Array.isArray(baseLabels)
+            ? baseLabels.map(formatHistoryDate)
+            : [];
+        chartConfig.data.labels = formattedLabels;
         chartConfig.data.datasets = customDatasets || buildDatasets({
             dates: filtered.dates,
             metrics: filtered.metrics,
             stats: chartData.stats,
         }, label);
+        if (!chartConfig.options.plugins.tooltip.callbacks) {
+            chartConfig.options.plugins.tooltip.callbacks = {};
+        }
+        chartConfig.options.plugins.tooltip.callbacks.title = items => {
+            if (!items || !items.length) return '';
+            const index = items[0].dataIndex;
+            return formattedLabels[index] ?? '';
+        };
         chartConfig.options.plugins.tooltip.callbacks.label = function(context) {
             const datasetLabel = context.dataset.label || '';
             const value = context.parsed.y;
@@ -805,9 +817,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     titleFont: { size: 14, weight: '600' },
                     bodyFont: { size: 13 },
                     padding: 12,
+                    callbacks: {},
                 }
             },
             scales: {
+                x: {
+                    ticks: {
+                        maxRotation: 45,
+                        autoSkipPadding: 12,
+                    }
+                },
                 y: {
                     beginAtZero: false,
                     ticks: {
