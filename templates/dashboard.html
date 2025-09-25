@@ -274,6 +274,36 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    function buildStatsTable(stats) {
+        let html = '<h3 class="mb-2 text-lg font-semibold">Статистика</h3>';
+        html += '<div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-500 border border-gray-200"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-4 py-2">Метрика</th><th class="px-4 py-2">Мин.</th><th class="px-4 py-2">50%</th><th class="px-4 py-2">75%</th><th class="px-4 py-2">95%</th><th class="px-4 py-2">Макс.</th></tr></thead><tbody>';
+        for (let metric in stats) {
+            html += `<tr class="bg-white border-b"><th scope="row" class="px-4 py-2 font-medium text-gray-900">${metric}</th>` +
+                    `<td class="px-4 py-2">${stats[metric].min !== null ? stats[metric].min + 's' : 'N/A'}</td>` +
+                    `<td class="px-4 py-2">${stats[metric].median !== null ? stats[metric].median + 's' : 'N/A'}</td>` +
+                    `<td class="px-4 py-2">${stats[metric].percentile_75 !== null ? stats[metric].percentile_75 + 's' : 'N/A'}</td>` +
+                    `<td class="px-4 py-2">${stats[metric].percentile_95 !== null ? stats[metric].percentile_95 + 's' : 'N/A'}</td>` +
+                    `<td class="px-4 py-2">${stats[metric].max !== null ? stats[metric].max + 's' : 'N/A'}</td></tr>`;
+        }
+        html += '</tbody></table></div>';
+        return html;
+    }
+
+    function buildHistoryTable(dates, metrics) {
+        let html = '<h3 class="mt-4 mb-2 text-lg font-semibold">История замеров</h3>';
+        html += '<div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-500 border border-gray-200"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-4 py-2">Дата</th><th class="px-4 py-2">FCP (s)</th><th class="px-4 py-2">LCP (s)</th><th class="px-4 py-2">TTFB (s)</th><th class="px-4 py-2">TBT (s)</th><th class="px-4 py-2">Speed Index (s)</th></tr></thead><tbody>';
+        for (let i = 0; i < dates.length; i++) {
+            html += `<tr class="bg-white border-b"><th scope="row" class="px-4 py-2 font-medium text-gray-900">${dates[i]}</th>` +
+                    `<td class="px-4 py-2">${metrics.FCP[i] !== null ? metrics.FCP[i] + 's' : 'N/A'}</td>` +
+                    `<td class="px-4 py-2">${metrics.LCP[i] !== null ? metrics.LCP[i] + 's' : 'N/A'}</td>` +
+                    `<td class="px-4 py-2">${metrics.TTFB[i] !== null ? metrics.TTFB[i] + 's' : 'N/A'}</td>` +
+                    `<td class="px-4 py-2">${metrics.TBT[i] !== null ? metrics.TBT[i] + 's' : 'N/A'}</td>` +
+                    `<td class="px-4 py-2">${metrics["Speed Index"][i] !== null ? metrics["Speed Index"][i] + 's' : 'N/A'}</td></tr>`;
+        }
+        html += '</tbody></table></div>';
+        return html;
+    }
+
     function fetchStats(domain) {
         fetch(`/get_stats?domain=${encodeURIComponent(domain)}`)
             .then(response => response.json())
@@ -281,48 +311,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (data.error) {
                     statsContent.innerHTML = `<p>${data.error}</p>`;
                 } else {
-                    let html = '<table class="table-auto w-full text-sm text-left"><tr>' +
-                               '<th class="px-2 py-1">Метрика</th>' +
-                               '<th class="px-2 py-1">Мин.</th>' +
-                               '<th class="px-2 py-1">50%</th>' +
-                               '<th class="px-2 py-1">75%</th>' +
-                               '<th class="px-2 py-1">95%</th>' +
-                               '<th class="px-2 py-1">Макс.</th></tr>';
-                    for (let metric in data.stats) {
-                        html += `<tr>
-                                    <td class="px-2 py-1">${metric}</td>
-                                    <td class="px-2 py-1">${data.stats[metric].min !== null ? data.stats[metric].min + 's' : 'N/A'}</td>
-                                    <td class="px-2 py-1">${data.stats[metric].median !== null ? data.stats[metric].median + 's' : 'N/A'}</td>
-                                    <td class="px-2 py-1">${data.stats[metric].percentile_75 !== null ? data.stats[metric].percentile_75 + 's' : 'N/A'}</td>
-                                    <td class="px-2 py-1">${data.stats[metric].percentile_95 !== null ? data.stats[metric].percentile_95 + 's' : 'N/A'}</td>
-                                    <td class="px-2 py-1">${data.stats[metric].max !== null ? data.stats[metric].max + 's' : 'N/A'}</td>
-                                 </tr>`;
-                    }
-                    html += '</table>';
+                    const sortedIndices = [...data.dates.keys()].sort((a, b) => new Date(data.dates[b]) - new Date(data.dates[a]));
+                    const sortedDates = sortedIndices.map(i => data.dates[i]);
+                    const sortedMetrics = {
+                        FCP: sortedIndices.map(i => data.metrics.FCP[i]),
+                        LCP: sortedIndices.map(i => data.metrics.LCP[i]),
+                        TTFB: sortedIndices.map(i => data.metrics.TTFB[i]),
+                        TBT: sortedIndices.map(i => data.metrics.TBT[i]),
+                        "Speed Index": sortedIndices.map(i => data.metrics["Speed Index"][i])
+                    };
 
-                    // Сортируем данные по дате (от последних к первым)
-                    const sortedDates = [...data.dates].reverse();
-                    const sortedFCP = [...data.metrics.FCP].reverse();
-                    const sortedLCP = [...data.metrics.LCP].reverse();
-                    const sortedTTFB = [...data.metrics.TTFB].reverse();
-                    const sortedTBT = [...data.metrics.TBT].reverse();
-                    const sortedSI = [...data.metrics["Speed Index"]].reverse();
-
-
-                    html += '<h3 class="mt-4 font-semibold">История замеров</h3>';
-                    html += '<table class="table-auto w-full text-sm text-left"><tr><th class="px-2 py-1">Дата</th><th class="px-2 py-1">FCP (s)</th><th class="px-2 py-1">LCP (s)</th><th class="px-2 py-1">TTFB (s)</th><th class="px-2 py-1">TBT (s)</th><th class="px-2 py-1">Speed Index (s)</th></tr>';
-                    for (let i = 0; i < sortedDates.length; i++) {
-                        html += `<tr>
-                                    <td class="px-2 py-1">${sortedDates[i]}</td>
-                                    <td class="px-2 py-1">${sortedFCP[i] !== null ? sortedFCP[i] + 's' : 'N/A'}</td>
-                                    <td class="px-2 py-1">${sortedLCP[i] !== null ? sortedLCP[i] + 's' : 'N/A'}</td>
-                                    <td class="px-2 py-1">${sortedTTFB[i] !== null ? sortedTTFB[i] + 's' : 'N/A'}</td>
-                                    <td class="px-2 py-1">${sortedTBT[i] !== null ? sortedTBT[i] + 's' : 'N/A'}</td>
-                                    <td class="px-2 py-1">${sortedSI[i] !== null ? sortedSI[i] + 's' : 'N/A'}</td>
-                                 </tr>`;
-                    }
-                    html += '</table>';
-
+                    let html = buildStatsTable(data.stats);
+                    html += buildHistoryTable(sortedDates, sortedMetrics);
                     statsContent.innerHTML = html;
                 }
                 statsDomain.textContent = domain;
