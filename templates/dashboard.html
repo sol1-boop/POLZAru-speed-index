@@ -29,17 +29,17 @@
         <header class="flex items-start justify-between">
             <div>
                 <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ metric }}</p>
-                <p class="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-50" id="{{ metric|lower().replace(' ', '') }}Value">—</p>
+                <p class="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-50" id="{{ metric|lower|replace(' ', '') }}Value">—</p>
             </div>
-            <span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium" id="{{ metric|lower().replace(' ', '') }}Badge">Статус</span>
+            <span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium" id="{{ metric|lower|replace(' ', '') }}Badge">Статус</span>
         </header>
         <div class="mt-3 flex items-center justify-between text-sm">
-            <div class="flex items-center gap-1 text-gray-600 dark:text-gray-300" id="{{ metric|lower().replace(' ', '') }}TrendValue">
+            <div class="flex items-center gap-1 text-gray-600 dark:text-gray-300" id="{{ metric|lower|replace(' ', '') }}TrendValue">
                 —
             </div>
-            <span id="{{ metric|lower().replace(' ', '') }}TrendStatus" class="text-lg">—</span>
+            <span id="{{ metric|lower|replace(' ', '') }}TrendStatus" class="text-lg">—</span>
         </div>
-        <p class="mt-3 text-xs text-gray-500 dark:text-gray-400" id="{{ metric|lower().replace(' ', '') }}Budget">Бюджет: —</p>
+        <p class="mt-3 text-xs text-gray-500 dark:text-gray-400" id="{{ metric|lower|replace(' ', '') }}Budget">Бюджет: —</p>
     </article>
     {% endfor %}
 </section>
