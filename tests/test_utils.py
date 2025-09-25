@@ -5,7 +5,7 @@ from uuid import uuid4
 import pytest
 
 from modules.config import get_telegram_settings
-from modules.utils import get_storage_dir, load_domains
+from modules.utils import get_storage_dir, history_file_path, load_domains
 
 
 def test_get_telegram_settings_ok(tmp_path, monkeypatch):
@@ -45,3 +45,28 @@ def test_load_domains_discovers_parent_storage(tmp_path, monkeypatch):
 
     loaded = load_domains()
     assert loaded[0]["domain"] == "https://example.com"
+
+
+def test_history_file_path_sanitizes_special_characters(tmp_path, monkeypatch):
+    monkeypatch.setenv("POLZA_DATA_DIR", str(tmp_path))
+    domain = "https://polza.ru/catalog/?q=северная+звезда&spell=1"
+
+    path = Path(history_file_path(domain))
+
+    assert path.parent == tmp_path / "history_files"
+    assert path.name == "history_polza.ru_catalog_q_северная_звезда_spell_1.json"
+    assert all(char not in path.name for char in "?&=+")
+
+
+def test_history_file_path_legacy_fallback(tmp_path, monkeypatch):
+    monkeypatch.setenv("POLZA_DATA_DIR", str(tmp_path))
+
+    legacy_dir = tmp_path / "history_files"
+    legacy_dir.mkdir()
+    legacy_filename = "history_example.com_path?param=1.json"
+    legacy_path = legacy_dir / legacy_filename
+    legacy_path.write_text("[]", encoding="utf-8")
+
+    resolved = history_file_path("https://example.com/path?param=1")
+
+    assert resolved == str(legacy_path)

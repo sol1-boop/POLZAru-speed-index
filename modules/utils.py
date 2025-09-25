@@ -3,6 +3,7 @@
 import json
 import logging
 import os
+import re
 from pathlib import Path
 from typing import Union
 
@@ -78,14 +79,41 @@ def save_domains(domains):
     save_json("domain.json", domains)
 
 
+_INVALID_FILENAME_CHARS = re.compile(r"[^\w.-]+", re.UNICODE)
+_UNDERSCORE_RUNS = re.compile(r"_+")
+
+
+def _sanitize_history_name(domain: str) -> str:
+    """Return a filesystem-safe identifier derived from *domain*."""
+
+    normalized = domain.replace("http://", "").replace("https://", "")
+    normalized = _INVALID_FILENAME_CHARS.sub("_", normalized)
+    normalized = _UNDERSCORE_RUNS.sub("_", normalized).strip("._")
+    return normalized or "domain"
+
+
+def _legacy_history_filename(domain: str) -> str:
+    """Return the legacy filename used for *domain* history files."""
+
+    return (
+        f"history_{domain.replace('http://', '').replace('https://', '').replace('/', '_')}.json"
+    )
+
+
 def history_file_path(domain, history_dir="history_files"):
     """Return path to history file for *domain* within *history_dir*."""
 
-    filename = (
-        f"history_{domain.replace('http://', '').replace('https://', '').replace('/', '_')}.json"
-    )
-    full_path = resolve_data_path(Path(history_dir) / filename)
-    return str(full_path)
+    history_directory = Path(history_dir)
+    sanitized_name = _sanitize_history_name(domain)
+    sanitized_path = resolve_data_path(history_directory / f"history_{sanitized_name}.json")
+    if sanitized_path.exists():
+        return str(sanitized_path)
+
+    legacy_path = resolve_data_path(history_directory / _legacy_history_filename(domain))
+    if legacy_path.exists():
+        return str(legacy_path)
+
+    return str(sanitized_path)
 
 
 def delete_history_file(domain):
