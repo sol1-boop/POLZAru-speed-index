@@ -25,23 +25,67 @@
     const tbtValues = {{ tbt_values|tojson }};
     const siValues = {{ si_values|tojson }};
 
+    function smoothData(data, windowSize = 5) {
+        if (!Array.isArray(data) || data.length < 3) {
+            return Array.isArray(data) ? [...data] : data;
+        }
+
+        const halfWindow = Math.floor(windowSize / 2);
+        return data.map((value, index) => {
+            if (value === null) {
+                return value;
+            }
+
+            const numericValue = typeof value === 'number' ? value : Number(value);
+            if (Number.isNaN(numericValue)) {
+                return value;
+            }
+
+            let sum = 0;
+            let count = 0;
+            for (let i = Math.max(0, index - halfWindow); i <= Math.min(data.length - 1, index + halfWindow); i++) {
+                const current = data[i];
+                if (current === null) {
+                    continue;
+                }
+
+                const numericCurrent = typeof current === 'number' ? current : Number(current);
+                if (!Number.isNaN(numericCurrent)) {
+                    sum += numericCurrent;
+                    count += 1;
+                }
+            }
+
+            return count > 0 ? sum / count : numericValue;
+        });
+    }
+
     function createChart(ctx, label, data) {
+        const smoothedData = smoothData(data);
+
         new Chart(ctx, {
             type: 'line',
             data: {
                 labels: timestamps,
                 datasets: [{
                     label: label,
-                    data: data,
+                    data: smoothedData,
                     borderColor: 'rgba(75, 192, 192, 1)',
                     fill: false,
+                    borderWidth: 2,
                     tension: 0.4,
                     cubicInterpolationMode: 'monotone',
-                    pointRadius: 3,
-                    pointHoverRadius: 5
+                    pointRadius: 0,
+                    pointHoverRadius: 6,
+                    pointHitRadius: 10
+
                 }]
             },
             options: {
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                },
                 scales: {
                     x: {
                         display: true,
@@ -58,7 +102,30 @@
                         }
                     }
                 }
-            }
+            },
+            plugins: [{
+                id: 'rawTooltipFormatter',
+                beforeInit(chart) {
+                    chart.options.plugins = chart.options.plugins || {};
+                    chart.options.plugins.tooltip = chart.options.plugins.tooltip || {};
+                    const previousCallback = chart.options.plugins.tooltip.callbacks?.label;
+
+                    chart.options.plugins.tooltip.callbacks = chart.options.plugins.tooltip.callbacks || {};
+                    chart.options.plugins.tooltip.callbacks.label = (context) => {
+                        const rawValue = data[context.dataIndex];
+                        const smoothedValue = context.parsed.y;
+                        const formattedSmoothed = typeof smoothedValue === 'number' ? smoothedValue.toFixed(3) : smoothedValue;
+                        const formattedRaw = typeof rawValue === 'number' ? rawValue.toFixed(3) : rawValue;
+
+                        if (previousCallback) {
+                            const original = previousCallback(context);
+                            return `${original} (raw: ${formattedRaw})`;
+                        }
+
+                        return `${context.dataset.label}: ${formattedSmoothed} (raw: ${formattedRaw})`;
+                    };
+                }
+            }]
         });
     }
 
