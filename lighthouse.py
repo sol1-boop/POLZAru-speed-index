@@ -135,9 +135,9 @@ def sync_get_lighthouse_metrics(url: str, mobile: bool = False, headless: bool =
             )
             return {}
 
-        chrome_flags = '--no-sandbox --incognito'
+        chrome_flags = '--no-sandbox --incognito --disable-dev-shm-usage'
         if headless:
-            chrome_flags += ' --headless'
+            chrome_flags += ' --headless --disable-gpu'
         chrome_flags += f' --user-data-dir={profile_dir}'
         max_wait_for_load = '--max-wait-for-load=450000'
         if mobile:
