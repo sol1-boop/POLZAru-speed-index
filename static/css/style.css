@@ -32,10 +32,22 @@ ul {
     padding: 0;
 }
 
-li {
-    margin-top: 50px;
-    font-size: 30px;
+header nav ul {
+    display: flex;
+    gap: var(--spacing-medium);
+}
 
+.domain-list li {
+    margin-top: var(--spacing-small);
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-small);
+}
+
+.domain-list button {
+    width: auto;
+    max-width: var(--input-width);
 }
 
 /* Стили для ссылок */
@@ -70,7 +82,8 @@ input[type="number"] {
     background-color: var(--background-color);
     color: var(--primary-color);
     height: 40px;
-    width: var(--input-width);
+    width: 100%;
+    max-width: var(--input-width);
 }
 
 input[type="text"]:focus,
@@ -91,7 +104,8 @@ button {
     border-radius: 0;
     font-size: 14px;
     height: 40px;
-    width: var(--input-width);
+    width: 100%;
+    max-width: var(--input-width);
 }
 
 input[type="submit"][value="Удалить"] {
@@ -104,8 +118,8 @@ input[type="submit"][value="Удалить"] {
     border-radius: 0;
     font-size: 14px;
     height: 40px;
-    width: var(--input-width);
-    
+    width: 100%;
+    max-width: var(--input-width);
 }
 
 input[type="submit"]:hover,
@@ -135,7 +149,8 @@ button:hover {
     flex-shrink: 0;
     cursor: pointer;
     height: 40px;
-    width: var(--input-width);
+    width: 100%;
+    max-width: var(--input-width);
 
 }
 
@@ -161,7 +176,8 @@ button:hover {
     flex-shrink: 0;
     cursor: pointer;
     height: 40px;
-    width: var(--input-width);
+    width: 100%;
+    max-width: var(--input-width);
 }
 
 /* Стили для формы отображения очков */
@@ -185,7 +201,8 @@ button:hover {
     flex-shrink: 0;
     cursor: pointer;
     height: 40px;
-    width: var(--input-width);
+    width: 100%;
+    max-width: var(--input-width);
 }
 
 /* Стили для формы бюджета */
@@ -209,7 +226,8 @@ button:hover {
     flex-shrink: 0;
     cursor: pointer;
     height: 40px;
-    width: var(--input-width);
+    width: 100%;
+    max-width: var(--input-width);
 }
 
 label {
@@ -302,7 +320,8 @@ button,
     border: 1px solid #ccc;
     border-radius: 0;
     height: 40px;
-    width: var(--input-width);
+    width: 100%;
+    max-width: var(--input-width);
 
 }
 
@@ -322,11 +341,8 @@ button:hover,
 }
 
 /* Стили для списка с кнопками */
-li {
+.domain-list li {
     margin-bottom: var(--spacing-small);
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-small);
 }
 
 .button-class {
@@ -405,15 +421,16 @@ li {
 
 /* Canvas внутри модального окна */
 #metricsChart {
-    width: 100% !important; /* Занимает всю ширину */
-    height: auto; /* Автоматическая высота */
-    max-height: 500px; /* Ограничиваем максимальную высоту для избежания скролла */
+    width: 100% !important; /* Занимает всю доступную ширину */
+    height: 100% !important; /* Растягивается на высоту контейнера */
+    max-height: none;
     box-sizing: border-box; /* Учитываем отступы */
     background-color: var(--background-color);
 }
 
 #domainSelect {
-    width: 500px;
+    width: 100%;
+    max-width: 500px;
     padding: 10px;
     font-size: 16px;
     border-radius: 0px;
@@ -421,15 +438,14 @@ li {
     margin-bottom: 20px;
     margin-left: 10px;
     height: 40px;
-
 }
 
 #domainSelect:focus {
-    width: 500px;
+    width: 100%;
+    max-width: 500px;
     outline: none;
     border-color: var(--error-color);
     height: 40px;
-
 }
 
 .controls-container {

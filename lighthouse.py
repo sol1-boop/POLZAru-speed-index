@@ -1,12 +1,13 @@
 # lighthouse.py
 
 import asyncio
-import logging
-import subprocess
 import json
+import logging
 import os
-import signal
+import shlex
 import shutil
+import signal
+import subprocess
 import tempfile
 from pathlib import Path
 from uuid import uuid4
@@ -17,6 +18,71 @@ logger = logging.getLogger(__name__)
 HISTORY_DIR = 'history_files'
 if not os.path.exists(HISTORY_DIR):
     os.makedirs(HISTORY_DIR)
+
+try:
+    from modules.config import load_config
+except Exception:  # pragma: no cover - fallback for early bootstrap errors
+    load_config = lambda: {}
+
+
+def _normalize_command(candidate):
+    """Return a list representation of *candidate* or ``None``."""
+    if not candidate:
+        return None
+    if isinstance(candidate, (list, tuple)):
+        return [str(part) for part in candidate if part]
+    if isinstance(candidate, str):
+        parts = shlex.split(candidate)
+        return parts if parts else None
+    return None
+
+
+def _is_executable(command):
+    """Check that the first item of *command* is executable."""
+    if not command:
+        return False
+    executable = command[0]
+    located = shutil.which(executable)
+    if located:
+        command[0] = located
+        return True
+    return Path(executable).exists()
+
+
+def resolve_lighthouse_command():
+    """Return command list to execute Lighthouse CLI."""
+    env_candidate = _normalize_command(os.getenv('LIGHTHOUSE_PATH'))
+    if env_candidate and _is_executable(env_candidate):
+        return env_candidate
+
+    config = load_config() or {}
+    config_candidate = _normalize_command(
+        config.get('lighthouse_cmd') or config.get('lighthouse_path')
+    )
+    if config_candidate and _is_executable(config_candidate):
+        return config_candidate
+
+    if os.name == 'nt':
+        default = _normalize_command('lighthouse.cmd')
+    else:
+        default = _normalize_command('lighthouse')
+    if default and _is_executable(default):
+        return default
+
+    project_root = Path(__file__).resolve().parent
+    node_modules_cmd = project_root / 'node_modules' / '.bin'
+    node_binary = 'lighthouse.cmd' if os.name == 'nt' else 'lighthouse'
+    node_path = node_modules_cmd / node_binary
+    node_candidate = _normalize_command(str(node_path))
+    if node_candidate and _is_executable(node_candidate):
+        return node_candidate
+
+    npx_candidate = _normalize_command('npx lighthouse')
+    if npx_candidate and _is_executable(npx_candidate):
+        return npx_candidate
+
+    return None
+
 
 async def get_lighthouse_metrics(url: str, mobile: bool = False, headless: bool = True) -> dict:
     """Run lighthouse audit asynchronously."""
@@ -63,26 +129,24 @@ def sync_get_lighthouse_metrics(url: str, mobile: bool = False, headless: bool =
     cleanup_temp_chrome_data()
     profile_dir = create_temp_chrome_profile()
     try:
-        if os.name == 'nt':
-            default_lighthouse_path = 'lighthouse.cmd'
-        else:
-            default_lighthouse_path = 'lighthouse'
-
-        lighthouse_path = os.getenv('LIGHTHOUSE_PATH', default_lighthouse_path)
-
-        if not shutil.which(lighthouse_path):
-            logger.error(f"Lighthouse не найден по пути: {lighthouse_path}")
+        command = resolve_lighthouse_command()
+        if not command:
+            logger.error(
+                "Lighthouse CLI не найден. Установите lighthouse или укажите путь "
+                "в переменной окружения LIGHTHOUSE_PATH либо ключе "
+                "'lighthouse_path' файла config.json."
+            )
             return {}
 
-        chrome_flags = '--no-sandbox --incognito'
+        chrome_flags = '--no-sandbox --incognito --disable-dev-shm-usage'
         if headless:
-            chrome_flags += ' --headless'
+            chrome_flags += ' --headless --disable-gpu'
         chrome_flags += f' --user-data-dir={profile_dir}'
         max_wait_for_load = '--max-wait-for-load=450000'
         if mobile:
             chrome_flags += ' --window-size=412,823'
             lighthouse_flags = [
-                lighthouse_path,
+                *command,
                 url,
                 '--output=json',
                 '--quiet',
@@ -93,7 +157,7 @@ def sync_get_lighthouse_metrics(url: str, mobile: bool = False, headless: bool =
             ]
         else:
             lighthouse_flags = [
-                lighthouse_path,
+                *command,
                 url,
                 '--output=json',
                 '--quiet',

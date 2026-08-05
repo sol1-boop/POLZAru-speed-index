@@ -22,10 +22,10 @@ http://147.45.251.48/check_metrics (алерт для Uptime Kuma)
 Получение статистики в канал измерений из файлов типа %example.ru%.json
 
 Телеграм-канал для сообщений бота:
-https://t.me/+qbtXRYo72JNkNTUy
+- укажите свой
 
 Телеграм-бот:
-@POLZAru_SpeedBot
+- укажите свой
 
 Lighthouse измеряет показатель INP на основе реальных пользовательских
 действий: кликов, нажатий клавиш и взаимодействий с элементами страницы.
@@ -40,7 +40,20 @@ Lighthouse измеряет показатель INP на основе реал�
 - `modules/config.py` — загрузка и сохранение конфигурации.
 - `modules/utils.py` — общие утилиты и работа с файлами истории.
 
-**Установка зависимостей**
+**Системные зависимости**
+
+Для запуска Lighthouse требуется установленный браузер Chrome или Chromium и Node.js с глобально установленным CLI Lighthouse. На Ubuntu или Debian их можно установить командами:
+
+```bash
+sudo apt-get update && sudo apt-get install -y chromium
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt-get install -y nodejs
+sudo npm install -g lighthouse
+```
+
+> Вместо Chromium можно использовать пакет `google-chrome-stable`, если он доступен в вашей системе.
+
+**Установка Python-зависимостей**
 
 ```bash
 pip install -r requirements.txt
@@ -49,7 +62,10 @@ pip install -r requirements.txt
 Создайте `config.json` на основе `config.example.json` или задайте переменные
 окружения `TELEGRAM_TOKEN` и `CHANNEL_ID` для работы телеграм-бота.
 В `config.json` можно указать поле `headless` для управления запуском Chrome
-в фоновом режиме.
+в фоновом режиме. При необходимости переопределите путь к Lighthouse через
+переменную окружения `LIGHTHOUSE_PATH` или поля `lighthouse_path` /
+`lighthouse_cmd` в `config.json` (например, `/usr/local/bin/lighthouse` или
+`npx lighthouse`).
 
 **Запуск приложения**
 

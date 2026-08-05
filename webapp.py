@@ -5,7 +5,11 @@ from flask import Flask, render_template, request, jsonify
 from modules.utils import load_domains, delete_history_file
 from modules.config import load_config
 from modules.auth import login_required
-from modules.metrics import load_history, compute_domain_stats
+from modules.metrics import (
+    load_history,
+    compute_domain_stats,
+    build_domain_overview,
+)
 from blueprints.auth import auth_bp
 from blueprints.alerts import alerts_bp
 import logging
@@ -19,10 +23,23 @@ app.register_blueprint(alerts_bp)
 app.register_blueprint(auth_bp)
 app.secret_key = os.getenv('FLASK_SECRET_KEY', os.urandom(24).hex())
 
+def _index_context(error_message=None):
+    """Assemble data required for rendering the index page."""
+
+    domains = load_domains()
+    domain_overview = build_domain_overview(domains)
+    return {
+        'domains': domains,
+        'domain_overview': domain_overview,
+        'error': error_message,
+    }
+
+
 @app.route('/')
 def index():
-    domains = load_domains()
-    return render_template('index.html', domains=domains)
+    error_message = request.args.get('error')
+    context = _index_context(error_message)
+    return render_template('index.html', **context)
 
 
 @app.route('/get_stats', methods=['GET'])
@@ -56,6 +73,7 @@ def get_stats():
         'budget': budget,
         'stats': result['stats'],
         'previous_metrics': {key: [] for key in metrics.keys()},
+        'last_updated': result['dates'][-1] if result['dates'] else None,
     }
 
     return jsonify(data)

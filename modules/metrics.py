@@ -106,7 +106,15 @@ def summarize_history(history_data):
     }
 
 
-def calculate_stats_for_metrics(fcp_values, lcp_values, ttfb_values, tbt_values, speed_index_values=None):
+def calculate_stats_for_metrics(
+    fcp_values,
+    lcp_values,
+    ttfb_values,
+    tbt_values,
+    speed_index_values=None,
+):
+    """Return descriptive statistics for the supplied metric sequences."""
+
     import statistics
 
     if speed_index_values is None:
@@ -127,7 +135,7 @@ def calculate_stats_for_metrics(fcp_values, lcp_values, ttfb_values, tbt_values,
                 'median': round(statistics.median(values), 2),
                 'percentile_75': percentile_75,
                 'percentile_95': percentile_95,
-
+                'mean': round(statistics.mean(values), 2),
                 'max': round(max(values), 2)
             }
         else:
@@ -136,6 +144,7 @@ def calculate_stats_for_metrics(fcp_values, lcp_values, ttfb_values, tbt_values,
                 'median': None,
                 'percentile_75': None,
                 'percentile_95': None,
+                'mean': None,
                 'max': None
             }
 
@@ -185,3 +194,132 @@ def compute_domain_stats(history_data):
     }
 
     return {"dates": dates, "metrics": metrics, "stats": stats}
+
+
+def build_domain_overview(domains, history_limit=12):
+    """Return lightweight summary information for *domains*.
+
+    The helper analyses the most recent history entries for every domain in order
+    to determine the overall status, recent trend and sparkline data that can be
+    visualised in the UI.  The function keeps the logic close to the data layer
+    so templates do not need to open or parse history files directly.
+    """
+
+    from datetime import datetime
+
+    overview = []
+
+    def parse_timestamp(value):
+        if not value:
+            return None
+        for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S", "%d.%m.%Y %H:%M"):
+            try:
+                return datetime.strptime(value, fmt)
+            except ValueError:
+                continue
+        try:
+            return datetime.fromisoformat(value)
+        except ValueError:
+            return None
+
+    def normalise_metric(entry, name, unit="s"):
+        return parse_metric(entry.get("metrics", {}).get(name), unit=unit)
+
+    for domain in domains:
+        history = load_history(domain['domain'])
+        if history_limit:
+            history = history[-history_limit:]
+
+        simplified_history = []
+        for entry in history:
+            simplified_history.append(
+                {
+                    "timestamp": entry.get("timestamp"),
+                    "dt": parse_timestamp(entry.get("timestamp")),
+                    "metrics": {
+                        "FCP": normalise_metric(entry, "FCP"),
+                        "LCP": normalise_metric(entry, "LCP"),
+                        "TTFB": normalise_metric(entry, "TTFB", unit="s"),
+                        "TBT": normalise_metric(entry, "TBT", unit="s"),
+                        "Speed Index": normalise_metric(entry, "Speed Index"),
+                    },
+                }
+            )
+
+        latest = simplified_history[-1] if simplified_history else None
+        previous = simplified_history[-2] if len(simplified_history) > 1 else None
+
+        def compute_segment(latest_metrics, previous_metrics, budgets):
+            if not latest_metrics:
+                return "all", "neutral"
+
+            thresholds = {
+                "FCP": 2.5,
+                "LCP": 4.0,
+                "TTFB": 0.6,
+                "TBT": 0.3,
+                "Speed Index": 5.0,
+            }
+
+            issues = 0
+            for key, value in latest_metrics.items():
+                if value is None:
+                    continue
+                budget_value = budgets.get(key)
+                limit = budget_value if budget_value else thresholds.get(key)
+                if limit and value > limit * 1.05:
+                    issues += 1
+
+            if issues >= 2:
+                return "problem", "critical"
+
+            if previous_metrics:
+                improvements = 0
+                for key, value in latest_metrics.items():
+                    previous_value = previous_metrics.get(key)
+                    if value is None or previous_value in (None, 0):
+                        continue
+                    if value <= previous_value * 0.9:
+                        improvements += 1
+                if improvements >= 2:
+                    return "improved", "positive"
+
+            return "all", "neutral"
+
+        budgets = domain.get("budget", {}) or {}
+        latest_metrics = latest["metrics"] if latest else {}
+        previous_metrics = previous["metrics"] if previous else {}
+        segment, status_level = compute_segment(latest_metrics, previous_metrics, budgets)
+
+        speed_index_history = [
+            point["metrics"].get("Speed Index")
+            for point in simplified_history
+            if point["metrics"].get("Speed Index") is not None
+        ]
+
+        trend_value = None
+        trend_percent = None
+        if latest and previous:
+            latest_speed_index = latest_metrics.get("Speed Index")
+            previous_speed_index = previous_metrics.get("Speed Index")
+            if latest_speed_index is not None and previous_speed_index not in (None, 0):
+                trend_value = round(latest_speed_index - previous_speed_index, 2)
+                trend_percent = round(
+                    (trend_value / previous_speed_index) * 100, 2
+                )
+
+        last_updated = latest["dt"] if latest else None
+        overview.append(
+            {
+                "domain": domain["domain"],
+                "segment": segment,
+                "status_level": status_level,
+                "last_updated": last_updated.isoformat() if last_updated else None,
+                "metrics": latest_metrics,
+                "trend_value": trend_value,
+                "trend_percent": trend_percent,
+                "sparkline": speed_index_history,
+            }
+        )
+
+    return overview

@@ -4,70 +4,164 @@
 {% block title %}Домены{% endblock %}
 
 {% block content %}
-<h1>Список доменов</h1>
-<ul>
-    {% for domain in domains %}
-        <li>
-            <input type="checkbox" class="compare-checkbox" value="{{ domain.domain }}">
-            {{ domain.domain }}
-            <button class="stats-button" data-domain="{{ domain.domain }}">Статистика</button>
-            <button class="chart-button" data-domain="{{ domain.domain }}">График</button>
-        </li>
-    {% endfor %}
-</ul>
-<p>
-    <a href="#" id="settings-link">Настройки</a> |
-    {% if session.get('logged_in') %}
-        <a href="{{ url_for('auth_bp.logout') }}">Выйти</a>
-    {% else %}
-        <a href="#" id="login-link">Войти</a>
-    {% endif %}
-</p>
-<button id="compare-button">Сравнить домены</button>
-<button id="dashboard-button">Дашборд</button>
+<section class="rounded-lg bg-white p-6 shadow dark:bg-gray-900" id="domain-controls">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-50">Список доменов</h1>
+            <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">Выберите домен, чтобы посмотреть подробную статистику или сравнить несколько ресурсов.</p>
+        </div>
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div role="tablist" aria-label="Фильтр доменов" class="inline-flex rounded-full bg-gray-100 p-1 dark:bg-gray-800">
+                <button type="button" data-segment="all" class="segment-tab rounded-full px-4 py-2 text-sm font-medium text-gray-700 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 dark:text-gray-200">Все</button>
+                <button type="button" data-segment="problem" class="segment-tab rounded-full px-4 py-2 text-sm font-medium text-gray-600 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400 dark:text-gray-300">Проблемные</button>
+                <button type="button" data-segment="improved" class="segment-tab rounded-full px-4 py-2 text-sm font-medium text-gray-600 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 dark:text-gray-300">Улучшились</button>
+            </div>
+            <label class="relative block">
+                <span class="sr-only">Поиск по доменам</span>
+                <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1016.65 16.65z" />
+                    </svg>
+                </span>
+                <input id="domain-search" type="search" placeholder="Найти домен" class="w-full rounded-full border border-gray-200 py-2 pl-10 pr-4 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100" autocomplete="off">
+            </label>
+        </div>
+    </div>
+</section>
+
+<section class="mt-6 grid gap-4 lg:grid-cols-2 xl:grid-cols-3" id="domains-grid" aria-live="polite"></section>
+
+<section id="recent-comparisons-section" class="mt-10 rounded-lg bg-white p-6 shadow dark:bg-gray-900">
+    <div class="flex items-center justify-between">
+        <div>
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-50">Последние сравнения</h2>
+            <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">Сохранённые группы доменов помогают быстро повторить анализ.</p>
+        </div>
+        <button id="clear-recent" type="button" class="text-sm text-indigo-600 underline-offset-4 hover:underline dark:text-indigo-400">Очистить историю</button>
+    </div>
+    <ul id="recent-comparisons-list" class="mt-4 space-y-3 text-sm text-gray-700 dark:text-gray-200" aria-label="Сохранённые сравнения"></ul>
+    <p id="recent-comparisons-empty" class="mt-4 text-sm text-gray-500 dark:text-gray-400">Пока нет сохранённых сравнений — выберите несколько доменов и нажмите «Сравнить».</p>
+</section>
+
+<div id="selection-toolbar" class="pointer-events-none fixed inset-x-0 bottom-4 z-40 flex justify-center transition-opacity duration-200">
+    <div class="pointer-events-auto hidden w-full max-w-3xl items-center justify-between rounded-full bg-gray-900/95 px-6 py-3 text-sm text-white shadow-lg backdrop-blur dark:bg-gray-800/95" role="status" aria-live="polite">
+        <div class="flex items-center gap-3">
+            <span id="selection-count" class="font-medium">0 доменов выбрано</span>
+            <span id="selection-hint" class="text-xs text-gray-300">Отметьте домены, чтобы сравнить их между собой.</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <button id="compare-button" type="button" class="rounded-full bg-indigo-500 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-300">Сравнить</button>
+            <button id="clear-selection" type="button" class="rounded-full bg-gray-700 px-3 py-2 text-sm text-white hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400">Сбросить</button>
+            <button id="dashboard-button" type="button" class="rounded-full bg-white px-3 py-2 text-sm font-semibold text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-200 dark:bg-gray-100">Открыть дашборд</button>
+        </div>
+    </div>
+</div>
 
 <!-- Модальные окна -->
-<div id="loginModal" class="modal">
-    <div class="modal-content">
-        <span class="close login-close">&times;</span>
-        <h2>Вход в систему</h2>
-        <div id="login-error" class="error-message" style="display: none;"></div>
-        <form method="post" action="{{ url_for('auth_bp.login') }}">
-            <label for="username">Логин:</label>
-            <input type="text" id="username" name="username" required><br><br>
-            <label for="password">Пароль:</label>
-            <input type="password" id="password" name="password" required><br><br>
-            <input type="hidden" name="next" value="{{ request.path }}">
-            <input type="submit" value="Войти">
-        </form>
-    </div>
-</div>
-
-<!-- Модальное окно статистики -->
-<div id="statsModal" class="modal">
-    <h2>Статистика для <span id="stats-domain"></span></h2>
-    <span class="close stats-close">&times;</span>
-    <div class="modal-content">
-        <div id="stats-content"></div>
-    </div>
-</div>
-
-<!-- Модальное окно для графика -->
-<div id="chartModal" class="modal">
-    <span class="close chart-close">&times;</span>
-    <h2>График для <span id="chart-domain"></span></h2>
-    <div class="modal-content">
-
-        <!-- Настройки графика -->
-        <div>
-            <label for="chartType">Тип графика:</label>
-            <select id="chartType">
-                <option value="line">Линейный</option>
-                <option value="bar">Столбчатый</option>
-            </select>
+<div id="loginModal" tabindex="-1" aria-hidden="true" class="fixed top-0 left-0 right-0 z-50 hidden w-full p-4 overflow-x-hidden overflow-y-auto md:inset-0 h-[calc(100%-1rem)] max-h-full justify-center items-center">
+    <div class="relative w-full max-w-md max-h-full">
+        <div class="relative bg-white rounded-lg shadow dark:bg-gray-900">
+            <button type="button" data-modal-hide="loginModal" class="absolute top-3 right-2.5 text-gray-400 hover:text-gray-900 rounded-lg text-sm p-1.5 inline-flex items-center" aria-label="Закрыть модальное окно">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+            </button>
+            <div class="px-6 py-6 lg:px-8">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-50">Вход в систему</h2>
+                <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">Введите служебные учетные данные. Минимум 4 символа для логина и 6 символов для пароля.</p>
+                <div id="login-error" class="error-message hidden rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-700 dark:bg-red-900/40"></div>
+                <form method="post" action="{{ url_for('auth_bp.login') }}" class="mt-4 space-y-4" novalidate>
+                    <div>
+                        <label for="username" class="block text-sm font-medium text-gray-700 dark:text-gray-200">Логин</label>
+                        <input type="text" id="username" name="username" required minlength="4" autocomplete="username" class="mt-1 w-full rounded-md border border-gray-200 p-2.5 text-gray-900 focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100" placeholder="Например, analyst" aria-describedby="username-hint">
+                        <p id="username-hint" class="mt-1 text-xs text-gray-500 dark:text-gray-400">Допустимы латинские буквы, цифры и символы «_».</p>
+                    </div>
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-gray-700 dark:text-gray-200">Пароль</label>
+                        <input type="password" id="password" name="password" required minlength="6" autocomplete="current-password" class="mt-1 w-full rounded-md border border-gray-200 p-2.5 text-gray-900 focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100" placeholder="Минимум 6 символов" aria-describedby="password-hint">
+                        <p id="password-hint" class="mt-1 text-xs text-gray-500 dark:text-gray-400">Используйте строчные/прописные буквы и цифры для надёжности.</p>
+                    </div>
+                    <input type="hidden" name="next" value="{{ request.path }}">
+                    <button type="submit" class="w-full rounded-md bg-indigo-600 py-2 text-sm font-semibold text-white hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-400">Войти</button>
+                </form>
+            </div>
         </div>
+    </div>
+</div>
 
-        <canvas id="metricsChart"></canvas>
+<div id="statsModal" tabindex="-1" aria-hidden="true" class="fixed top-0 left-0 right-0 z-50 hidden w-full p-4 overflow-x-hidden overflow-y-auto md:inset-0 h-[calc(100%-1rem)] max-h-full justify-center items-center">
+    <div class="relative w-full max-w-2xl max-h-full">
+        <div class="relative bg-white rounded-lg shadow dark:bg-gray-900">
+            <div class="flex items-center justify-between p-4 border-b dark:border-gray-800">
+                <div>
+                    <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-50">Статистика для <span id="stats-domain"></span></h2>
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Показатели пересчитаны автоматически. Обновление: <span id="stats-updated">—</span></p>
+                </div>
+                <button type="button" data-modal-hide="statsModal" class="rounded-lg p-1.5 text-gray-400 hover:text-gray-900 dark:hover:text-gray-200" aria-label="Закрыть">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                </button>
+            </div>
+            <div class="p-4">
+                <div id="stats-loading" class="flex items-center justify-center gap-3 py-10">
+                    <svg class="h-6 w-6 animate-spin text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z"></path>
+                    </svg>
+                    <span class="text-sm text-gray-600 dark:text-gray-300">Загружаем статистику…</span>
+                </div>
+                <div id="stats-content" class="hidden"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="chartModal" tabindex="-1" aria-hidden="true" class="fixed top-0 left-0 right-0 z-50 hidden w-full p-4 overflow-x-hidden overflow-y-auto md:inset-0 h-[calc(100%-1rem)] max-h-full justify-center items-center">
+    <div class="relative w-full max-w-5xl max-h-full">
+        <div class="relative bg-white rounded-lg shadow dark:bg-gray-900">
+            <div class="flex flex-col gap-2 border-b p-4 dark:border-gray-800 md:flex-row md:items-center md:justify-between">
+                <div>
+                    <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-50">График для <span id="chart-domain"></span></h2>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">Выберите нужные метрики и период, чтобы сфокусироваться на интересующих данных.</p>
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Обновление: <span id="chart-updated">—</span></p>
+                </div>
+                <div class="flex flex-wrap gap-3 text-sm">
+                    <div>
+                        <span class="block text-xs font-medium text-gray-500 dark:text-gray-300">Метрики</span>
+                        <div id="metrics-filter" class="mt-1 flex flex-wrap gap-2"></div>
+                    </div>
+                    <div>
+                        <label for="aggregation-mode" class="block text-xs font-medium text-gray-500 dark:text-gray-300">Тип значения</label>
+                        <select id="aggregation-mode" class="mt-1 rounded-md border border-gray-200 bg-white p-2 text-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100">
+                            <option value="raw">Фактические</option>
+                            <option value="median">Медиана</option>
+                            <option value="mean">Среднее</option>
+                        </select>
+                    </div>
+                    <div>
+                        <span class="block text-xs font-medium text-gray-500 dark:text-gray-300">Период</span>
+                        <div class="mt-1 inline-flex rounded-full bg-gray-100 p-1 dark:bg-gray-800">
+                            <button type="button" data-range="7" class="time-range rounded-full px-3 py-1 text-xs font-medium text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 dark:text-gray-300">1 неделя</button>
+                            <button type="button" data-range="30" class="time-range rounded-full px-3 py-1 text-xs font-medium text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 dark:text-gray-300">1 месяц</button>
+                            <button type="button" data-range="90" class="time-range rounded-full px-3 py-1 text-xs font-medium text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 dark:text-gray-300">3 месяца</button>
+                            <button type="button" data-range="all" class="time-range rounded-full px-3 py-1 text-xs font-medium text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 dark:text-gray-300">Весь период</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="p-4">
+                <div id="chart-loading" class="flex items-center justify-center gap-3 py-10">
+                    <svg class="h-6 w-6 animate-spin text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z"></path>
+                    </svg>
+                    <span class="text-sm text-gray-600 dark:text-gray-300">Строим график…</span>
+                </div>
+                <div class="hidden" id="chart-wrapper">
+                    <div class="relative w-full">
+                        <canvas id="metricsChart" class="h-96 w-full"></canvas>
+                    </div>
+                    <div id="comparison-table" class="mt-6 overflow-x-auto"></div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -75,313 +169,816 @@
 
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+<script>
+const DOMAIN_DATA = {{ domain_overview|tojson|safe }};
+</script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     let metricsChart;
-    const chartModal = document.getElementById('chartModal');
-    const statsModal = document.getElementById('statsModal');
-    const ctx = document.getElementById('metricsChart').getContext('2d');
-    const chartClose = document.querySelector('.chart-close');
-    const statsClose = document.querySelector('.stats-close');
+    const chartModalEl = document.getElementById('chartModal');
+    const statsModalEl = document.getElementById('statsModal');
+    const loginModalEl = document.getElementById('loginModal');
+
+    const chartModal = new Modal(chartModalEl);
+    const statsModal = new Modal(statsModalEl);
+    const loginModal = new Modal(loginModalEl);
+
     const statsDomain = document.getElementById('stats-domain');
     const statsContent = document.getElementById('stats-content');
+    const statsUpdated = document.getElementById('stats-updated');
     const chartDomain = document.getElementById('chart-domain');
+    const chartUpdated = document.getElementById('chart-updated');
+    const chartWrapper = document.getElementById('chart-wrapper');
+    const chartLoading = document.getElementById('chart-loading');
+    const statsLoading = document.getElementById('stats-loading');
+    const comparisonTable = document.getElementById('comparison-table');
+    const metricsFilterContainer = document.getElementById('metrics-filter');
+    const aggregationSelect = document.getElementById('aggregation-mode');
+    const timeRangeButtons = document.querySelectorAll('.time-range');
+    const selectionToolbar = document.querySelector('#selection-toolbar > div');
+    const selectionCount = document.getElementById('selection-count');
+    const selectionHint = document.getElementById('selection-hint');
+    const compareButton = document.getElementById('compare-button');
+    const clearSelectionButton = document.getElementById('clear-selection');
+    const dashboardButton = document.getElementById('dashboard-button');
+    const domainGrid = document.getElementById('domains-grid');
+    const searchInput = document.getElementById('domain-search');
+    const segmentTabs = document.querySelectorAll('.segment-tab');
+    const recentList = document.getElementById('recent-comparisons-list');
+    const recentEmpty = document.getElementById('recent-comparisons-empty');
+    const clearRecentButton = document.getElementById('clear-recent');
+    const toastContainer = document.getElementById('toast-container');
+    const quickActionButtons = document.querySelectorAll('button[data-action]');
+    const quickActionsMobile = document.getElementById('quick-actions-mobile');
+    const selectionBar = document.getElementById('selection-toolbar');
 
-    // Настройки для отображения графиков
+    const METRIC_LABELS = ['FCP', 'LCP', 'TTFB', 'TBT', 'Speed Index'];
+    let selectedMetrics = new Set(METRIC_LABELS);
+    let selectedRange = 'all';
+    const selectedDomains = new Set();
+    let lastChartMode = 'single';
+    let lastChartData = null;
+    let lastChartLabel = '';
+    let lastComparisonResults = null;
+    let lastComparisonDomains = [];
+
+    const loggedIn = {{ 'true' if session.get('logged_in') else 'false' }};
+
+    function showToast(message, type = 'info') {
+        const colors = {
+            info: 'bg-gray-900 text-white',
+            success: 'bg-emerald-600 text-white',
+            error: 'bg-red-600 text-white',
+            warning: 'bg-amber-500 text-gray-900'
+        };
+        const toast = document.createElement('div');
+        toast.className = `flex items-start gap-3 rounded-lg px-4 py-3 shadow-lg ${colors[type] || colors.info}`;
+        toast.setAttribute('role', 'status');
+        toast.innerHTML = `
+            <span class="mt-0.5 text-lg">${type === 'success' ? '✅' : type === 'error' ? '⚠️' : 'ℹ️'}</span>
+            <div class="text-sm leading-5">${message}</div>
+            <button class="ml-auto text-sm underline" type="button">Закрыть</button>
+        `;
+        const closeBtn = toast.querySelector('button');
+        closeBtn.addEventListener('click', () => toast.remove());
+        toastContainer.appendChild(toast);
+        setTimeout(() => toast.remove(), 6000);
+    }
+
+    function formatTimestamp(value) {
+        if (!value) return '—';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return value;
+        return date.toLocaleString('ru-RU', { dateStyle: 'medium', timeStyle: 'short' });
+    }
+
+    function formatMetric(name, value) {
+        if (value === null || value === undefined || Number.isNaN(value)) return '—';
+        const suffix = name === 'TTFB' || name === 'TBT' ? 'с' : 'с';
+        return `${value.toFixed(2)} ${suffix}`;
+    }
+
+    function getStatusBadge(level) {
+        const mapping = {
+            positive: { text: 'Улучшение', classes: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' },
+            critical: { text: 'Требует внимания', classes: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' },
+            neutral: { text: 'Стабильно', classes: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200' }
+        };
+        return mapping[level] || mapping.neutral;
+    }
+
+    function getMetricState(metric, value) {
+        if (value === null || value === undefined) {
+            return { label: 'Нет данных', classes: 'text-gray-400 dark:text-gray-500' };
+        }
+        const thresholds = {
+            FCP: [2, 4],
+            LCP: [2.5, 4],
+            TTFB: [0.2, 0.6],
+            TBT: [0.1, 0.3],
+            'Speed Index': [3, 5],
+        };
+        const [good, warning] = thresholds[metric] || [1, 2];
+        if (value <= good) {
+            return { label: 'Хорошо', classes: 'text-emerald-600 dark:text-emerald-400' };
+        }
+        if (value <= warning) {
+            return { label: 'Допустимо', classes: 'text-amber-600 dark:text-amber-400' };
+        }
+        return { label: 'Нужно внимание', classes: 'text-red-600 dark:text-red-400' };
+    }
+
+    function renderSparkline(canvas, data) {
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (!data.length) {
+            ctx.fillStyle = getComputedStyle(canvas).color || '#9ca3af';
+            ctx.fillText('Нет данных', 4, canvas.height / 2);
+            return;
+        }
+        const padding = 4;
+        const width = canvas.width - padding * 2;
+        const height = canvas.height - padding * 2;
+        const min = Math.min(...data);
+        const max = Math.max(...data);
+        const range = max - min || 1;
+        ctx.strokeStyle = '#6366f1';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        data.forEach((value, index) => {
+            const x = padding + (width / (data.length - 1 || 1)) * index;
+            const y = padding + height - ((value - min) / range) * height;
+            if (index === 0) {
+                ctx.moveTo(x, y);
+            } else {
+                ctx.lineTo(x, y);
+            }
+        });
+        ctx.stroke();
+    }
+
+    function createMetricChip(metric) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = metric;
+        button.className = 'metric-toggle rounded-full border border-gray-300 px-3 py-1 text-xs text-gray-700 transition hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-300 dark:border-gray-700 dark:text-gray-200';
+        button.dataset.metric = metric;
+        button.setAttribute('aria-pressed', 'true');
+        button.classList.add('bg-indigo-500', 'text-white', 'border-indigo-500');
+        return button;
+    }
+
+    function updateMetricButtons() {
+        metricsFilterContainer.innerHTML = '';
+        METRIC_LABELS.forEach(metric => {
+            const chip = createMetricChip(metric);
+            if (!selectedMetrics.has(metric)) {
+                chip.classList.remove('bg-indigo-500', 'text-white', 'border-indigo-500');
+                chip.classList.add('bg-transparent');
+                chip.setAttribute('aria-pressed', 'false');
+            }
+            metricsFilterContainer.appendChild(chip);
+        });
+    }
+
+    function renderDomains() {
+        const query = searchInput.value.trim().toLowerCase();
+        const activeSegment = document.querySelector('.segment-tab.active')?.dataset.segment || 'all';
+        domainGrid.innerHTML = '';
+        const filtered = DOMAIN_DATA.filter(item => {
+            const matchesQuery = item.domain.toLowerCase().includes(query);
+            const matchesSegment = activeSegment === 'all' ? true : item.segment === activeSegment;
+            return matchesQuery && matchesSegment;
+        });
+        if (!filtered.length) {
+            const empty = document.createElement('div');
+            empty.className = 'col-span-full rounded-lg border border-dashed border-gray-300 p-8 text-center text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400';
+            empty.textContent = 'Нет доменов по выбранным условиям. Измените фильтры или попробуйте другой поисковый запрос.';
+            domainGrid.appendChild(empty);
+            return;
+        }
+        filtered.forEach((item, index) => {
+            const badge = getStatusBadge(item.status_level);
+            const card = document.createElement('article');
+            card.className = 'group relative flex flex-col gap-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg dark:border-gray-700 dark:bg-gray-800';
+            card.innerHTML = `
+                <div class="flex items-start justify-between gap-3">
+                    <div class="flex flex-col gap-2">
+                        <label class="flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                            <input type="checkbox" class="compare-checkbox h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" value="${item.domain}" ${selectedDomains.has(item.domain) ? 'checked' : ''}>
+                            <span>${item.domain}</span>
+                        </label>
+                        <span class="inline-flex w-fit items-center gap-2 rounded-full px-3 py-1 text-xs font-medium ${badge.classes}">
+                            <span aria-hidden="true">${item.status_level === 'critical' ? '🛑' : item.status_level === 'positive' ? '📈' : 'ℹ️'}</span>
+                            ${badge.text}
+                        </span>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Обновлено: ${formatTimestamp(item.last_updated)}</p>
+                        ${item.trend_value !== null ? `<p class="text-xs font-medium text-gray-600 dark:text-gray-300">Изменение Speed Index: <span class="${item.trend_value <= 0 ? 'text-emerald-500' : 'text-red-500'}">${item.trend_value > 0 ? '+' : ''}${item.trend_value.toFixed(2)} с (${item.trend_percent > 0 ? '+' : ''}${item.trend_percent}%)</span></p>` : ''}
+                    </div>
+                    <details class="relative domain-actions">
+                        <summary class="flex cursor-pointer items-center gap-2 rounded-md border border-gray-200 px-3 py-1 text-xs font-medium text-gray-600 transition hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700">Действия</summary>
+                        <div class="absolute right-0 mt-2 w-48 rounded-lg border border-gray-200 bg-white py-2 text-sm text-gray-700 shadow-lg dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100">
+                            <button type="button" class="block w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-800" data-action="stats" data-domain="${item.domain}">Показать статистику</button>
+                            <button type="button" class="block w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-800" data-action="chart" data-domain="${item.domain}">Построить график</button>
+                            <button type="button" class="block w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-800" data-action="remove" data-domain="${item.domain}">Снять выделение</button>
+                        </div>
+                    </details>
+                </div>
+                <div class="grid grid-cols-2 gap-3 text-xs text-gray-600 dark:text-gray-300">
+                    ${METRIC_LABELS.map(metric => {
+                        const value = item.metrics?.[metric];
+                        const state = getMetricState(metric, value);
+                        return `
+                            <div class="rounded-lg border border-gray-100 p-3 dark:border-gray-700">
+                                <p class="text-[11px] uppercase tracking-wide text-gray-400 dark:text-gray-500">${metric}</p>
+                                <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-gray-100">${formatMetric(metric, value)}</p>
+                                <p class="mt-0.5 ${state.classes}">${state.label}</p>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+                <div>
+                    <canvas id="spark-${index}" width="220" height="60" class="w-full text-xs text-gray-400 dark:text-gray-500"></canvas>
+                    <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Speed Index за последние измерения</p>
+                </div>
+            `;
+            domainGrid.appendChild(card);
+            const canvas = card.querySelector('canvas');
+            requestAnimationFrame(() => renderSparkline(canvas, item.sparkline));
+        });
+        attachActionHandlers();
+        updateSelectionBar();
+    }
+
+    function attachActionHandlers() {
+        document.querySelectorAll('.domain-actions').forEach(details => {
+            const menu = details.querySelector('div');
+            details.addEventListener('toggle', () => {
+                if (!details.open) return;
+                const handler = (event) => {
+                    if (!details.contains(event.target)) {
+                        details.removeAttribute('open');
+                        document.removeEventListener('click', handler);
+                    }
+                };
+                document.addEventListener('click', handler);
+            });
+            menu.querySelectorAll('button').forEach(button => {
+                button.addEventListener('click', () => {
+                    const domain = button.dataset.domain;
+                    if (button.dataset.action === 'stats') {
+                        fetchStats(domain);
+                    } else if (button.dataset.action === 'chart') {
+                        fetchData(domain);
+                    } else if (button.dataset.action === 'remove') {
+                        selectedDomains.delete(domain);
+                        renderDomains();
+                    }
+                    details.removeAttribute('open');
+                });
+            });
+        });
+        document.querySelectorAll('.compare-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', () => {
+                if (checkbox.checked) {
+                    selectedDomains.add(checkbox.value);
+                } else {
+                    selectedDomains.delete(checkbox.value);
+                }
+                updateSelectionBar();
+            });
+        });
+    }
+
+    function updateSelectionBar() {
+        const count = selectedDomains.size;
+        selectionCount.textContent = count === 0 ? 'Нет выбранных доменов' : `${count} ${count === 1 ? 'домен' : count < 5 ? 'домена' : 'доменов'} выбрано`;
+        selectionHint.textContent = count < 2 ? 'Выберите минимум два домена для сравнения.' : 'Нажмите «Сравнить», чтобы открыть график с выбранными доменами.';
+        if (count > 0) {
+            selectionToolbar.classList.remove('hidden');
+            selectionBar.classList.remove('pointer-events-none');
+            selectionToolbar.parentElement.classList.remove('pointer-events-none');
+            selectionToolbar.parentElement.classList.remove('opacity-0');
+        } else {
+            selectionToolbar.classList.add('hidden');
+            selectionBar.classList.add('pointer-events-none');
+        }
+    }
+
+    function buildStatsTable(stats) {
+        let html = '<h3 class="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-50">Статистика</h3>';
+        html += '<div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-600 dark:text-gray-200"><thead class="text-xs uppercase text-gray-500 dark:text-gray-400"><tr><th class="px-3 py-2">Метрика</th><th class="px-3 py-2">Мин.</th><th class="px-3 py-2">Медиана</th><th class="px-3 py-2">75%</th><th class="px-3 py-2">95%</th><th class="px-3 py-2">Среднее</th><th class="px-3 py-2">Макс.</th></tr></thead><tbody class="divide-y divide-gray-100 dark:divide-gray-800">';
+        for (const metric in stats) {
+            const row = stats[metric];
+            html += `<tr><th class="whitespace-nowrap px-3 py-2 text-gray-900 dark:text-gray-100">${metric}</th>` +
+                    `<td class="px-3 py-2">${row.min !== null ? row.min + 'с' : '—'}</td>` +
+                    `<td class="px-3 py-2">${row.median !== null ? row.median + 'с' : '—'}</td>` +
+                    `<td class="px-3 py-2">${row.percentile_75 !== null ? row.percentile_75 + 'с' : '—'}</td>` +
+                    `<td class="px-3 py-2">${row.percentile_95 !== null ? row.percentile_95 + 'с' : '—'}</td>` +
+                    `<td class="px-3 py-2">${row.mean !== null ? row.mean + 'с' : '—'}</td>` +
+                    `<td class="px-3 py-2">${row.max !== null ? row.max + 'с' : '—'}</td></tr>`;
+        }
+        html += '</tbody></table></div>';
+        return html;
+    }
+
+    function formatHistoryDate(dateString) {
+        if (typeof dateString !== 'string') {
+            return dateString;
+        }
+        const match = dateString.match(/^(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2})(?::\d{2}(?:[.,]\d+)?)?/);
+        if (!match) {
+            const parsed = new Date(dateString);
+            if (Number.isNaN(parsed.getTime())) {
+                return dateString;
+            }
+            const pad = value => String(value).padStart(2, '0');
+            const hours = pad(parsed.getHours());
+            const minutes = pad(parsed.getMinutes());
+            const day = pad(parsed.getDate());
+            const month = pad(parsed.getMonth() + 1);
+            const year = parsed.getFullYear();
+            return `${hours}:${minutes} ${day}.${month}.${year}`;
+        }
+        const [, year, month, day, hours, minutes] = match;
+        return `${hours}:${minutes} ${day}.${month}.${year}`;
+    }
+
+    function buildHistoryTable(dates, metrics) {
+        let html = '<h3 class="mt-4 mb-3 text-lg font-semibold text-gray-900 dark:text-gray-50">История замеров</h3>';
+        html += '<div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-600 dark:text-gray-200"><thead class="text-xs uppercase text-gray-500 dark:text-gray-400"><tr><th class="px-3 py-2">Дата</th><th class="px-3 py-2">FCP</th><th class="px-3 py-2">LCP</th><th class="px-3 py-2">TTFB</th><th class="px-3 py-2">TBT</th><th class="px-3 py-2">Speed Index</th></tr></thead><tbody class="divide-y divide-gray-100 dark:divide-gray-800">';
+        for (let i = 0; i < dates.length; i++) {
+            const formattedDate = formatHistoryDate(dates[i]);
+            html += `<tr><th class="whitespace-nowrap px-3 py-2 text-gray-900 dark:text-gray-100">${formattedDate}</th>` +
+                    `<td class="px-3 py-2">${metrics.FCP[i] !== null ? metrics.FCP[i] + 'с' : '—'}</td>` +
+                    `<td class="px-3 py-2">${metrics.LCP[i] !== null ? metrics.LCP[i] + 'с' : '—'}</td>` +
+                    `<td class="px-3 py-2">${metrics.TTFB[i] !== null ? metrics.TTFB[i] + 'с' : '—'}</td>` +
+                    `<td class="px-3 py-2">${metrics.TBT[i] !== null ? metrics.TBT[i] + 'с' : '—'}</td>` +
+                    `<td class="px-3 py-2">${metrics["Speed Index"][i] !== null ? metrics["Speed Index"][i] + 'с' : '—'}</td></tr>`;
+        }
+        html += '</tbody></table></div>';
+        return html;
+    }
+
+    function applyTimeRange(dates, metrics) {
+        if (selectedRange === 'all') {
+            return { dates, metrics };
+        }
+        const days = Number(selectedRange);
+        const now = new Date();
+        const filteredDates = [];
+        const filteredMetrics = {
+            FCP: [],
+            LCP: [],
+            TTFB: [],
+            TBT: [],
+            'Speed Index': [],
+        };
+        dates.forEach((date, index) => {
+            const parsed = new Date(date);
+            if (Number.isNaN(parsed.getTime())) {
+                filteredDates.push(date);
+                METRIC_LABELS.forEach(metric => filteredMetrics[metric].push(metrics[metric][index]));
+                return;
+            }
+            const diff = (now - parsed) / (1000 * 60 * 60 * 24);
+            if (diff <= days) {
+                filteredDates.push(date);
+                METRIC_LABELS.forEach(metric => filteredMetrics[metric].push(metrics[metric][index]));
+            }
+        });
+        return { dates: filteredDates, metrics: filteredMetrics };
+    }
+
+    function buildDatasets(data, domainLabel) {
+        const colors = {
+            FCP: 'rgba(99, 102, 241, 1)',
+            LCP: 'rgba(14, 165, 233, 1)',
+            TTFB: 'rgba(249, 115, 22, 1)',
+            TBT: 'rgba(239, 68, 68, 1)',
+            'Speed Index': 'rgba(34, 197, 94, 1)'
+        };
+        const datasets = [];
+        selectedMetrics.forEach(metric => {
+            const baseColor = colors[metric] || 'rgba(99,102,241,1)';
+            const metricValues = data.metrics[metric] || [];
+            let values = metricValues;
+            const length = metricValues.length || data.dates.length;
+            if (aggregationSelect.value === 'median') {
+                const median = data.stats[metric]?.median;
+                values = Array(length).fill(median !== null && median !== undefined ? median : null);
+            } else if (aggregationSelect.value === 'mean') {
+                const mean = data.stats[metric]?.mean;
+                values = Array(length).fill(mean !== null && mean !== undefined ? mean : null);
+            }
+            datasets.push({
+                label: `${metric} — ${domainLabel}`,
+                data: values,
+                borderColor: baseColor,
+                backgroundColor: baseColor.replace('1)', '0.12)'),
+                fill: aggregationSelect.value === 'raw',
+                tension: 0.25,
+                spanGaps: true,
+            });
+        });
+        return datasets;
+    }
+
+    function renderChart(chartData, label, customDatasets = null, customLabels = null) {
+        const filtered = applyTimeRange(chartData.dates, chartData.metrics);
+        const baseLabels = customLabels || filtered.dates;
+        const formattedLabels = Array.isArray(baseLabels)
+            ? baseLabels.map(formatHistoryDate)
+            : [];
+        chartConfig.data.labels = formattedLabels;
+        chartConfig.data.datasets = customDatasets || buildDatasets({
+            dates: filtered.dates,
+            metrics: filtered.metrics,
+            stats: chartData.stats,
+        }, label);
+        if (!chartConfig.options.plugins.tooltip.callbacks) {
+            chartConfig.options.plugins.tooltip.callbacks = {};
+        }
+        chartConfig.options.plugins.tooltip.callbacks.title = items => {
+            if (!items || !items.length) return '';
+            const index = items[0].dataIndex;
+            return formattedLabels[index] ?? '';
+        };
+        chartConfig.options.plugins.tooltip.callbacks.label = function(context) {
+            const datasetLabel = context.dataset.label || '';
+            const value = context.parsed.y;
+            return `${datasetLabel}: ${value !== null ? value.toFixed(2) + ' с' : '—'}`;
+        };
+        if (metricsChart) metricsChart.destroy();
+        metricsChart = new Chart(document.getElementById('metricsChart').getContext('2d'), chartConfig);
+    }
+
+    function renderComparisonChartFromState() {
+        if (!lastComparisonResults || !lastComparisonResults.length) return;
+        const processed = lastComparisonResults.map(entry => {
+            const filtered = applyTimeRange(entry.data.dates, entry.data.metrics);
+            return {
+                domain: entry.domain,
+                dates: filtered.dates,
+                metrics: filtered.metrics,
+                stats: entry.data.stats,
+                last_updated: entry.data.last_updated,
+            };
+        });
+        const labels = processed[0].dates;
+        const datasets = [];
+        let newestUpdate = null;
+        processed.forEach(item => {
+            datasets.push(...buildDatasets(item, item.domain));
+            if (item.last_updated) {
+                const current = new Date(item.last_updated);
+                if (!newestUpdate || current > newestUpdate) {
+                    newestUpdate = current;
+                }
+            }
+        });
+        renderChart(lastComparisonResults[0].data, lastComparisonDomains.join(', '), datasets, labels);
+        chartDomain.textContent = lastComparisonDomains.join(', ');
+        chartUpdated.textContent = newestUpdate ? formatTimestamp(newestUpdate.toISOString()) : '—';
+    }
+
+    function storeComparison(domains) {
+        const key = 'psi-recent-comparisons';
+        const existing = JSON.parse(localStorage.getItem(key) || '[]');
+        const entry = { domains, date: new Date().toISOString() };
+        const updated = [entry, ...existing.filter(item => item.domains.join(',') !== domains.join(','))].slice(0, 5);
+        localStorage.setItem(key, JSON.stringify(updated));
+        renderRecentComparisons();
+    }
+
+    function renderRecentComparisons() {
+        const key = 'psi-recent-comparisons';
+        const entries = JSON.parse(localStorage.getItem(key) || '[]');
+        recentList.innerHTML = '';
+        if (!entries.length) {
+            recentEmpty.classList.remove('hidden');
+            return;
+        }
+        recentEmpty.classList.add('hidden');
+        entries.forEach(item => {
+            const li = document.createElement('li');
+            li.className = 'flex items-center justify-between gap-3 rounded-lg border border-gray-200 px-4 py-2 dark:border-gray-700';
+            li.innerHTML = `
+                <div>
+                    <p class="font-medium text-gray-900 dark:text-gray-100">${item.domains.join(', ')}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">${formatTimestamp(item.date)}</p>
+                </div>
+                <div class="flex gap-2">
+                    <button type="button" class="rounded-md bg-indigo-500 px-3 py-1 text-xs text-white hover:bg-indigo-400" data-domains='${JSON.stringify(item.domains)}'>Сравнить</button>
+                    <button type="button" class="rounded-md border border-gray-300 px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700" data-remove='${item.domains.join(',')}'>Удалить</button>
+                </div>
+            `;
+            li.querySelector('button[data-domains]').addEventListener('click', () => {
+                fetchComparisonData(item.domains);
+            });
+            li.querySelector('button[data-remove]').addEventListener('click', () => {
+                const filtered = entries.filter(entry => entry.domains.join(',') !== item.domains.join(','));
+                localStorage.setItem(key, JSON.stringify(filtered));
+                renderRecentComparisons();
+            });
+            recentList.appendChild(li);
+        });
+    }
+
+    clearRecentButton.addEventListener('click', () => {
+        localStorage.removeItem('psi-recent-comparisons');
+        renderRecentComparisons();
+        showToast('История сравнений очищена.', 'info');
+    });
+
+    function fetchStats(domain) {
+        statsLoading.classList.remove('hidden');
+        statsContent.classList.add('hidden');
+        fetch(`/get_stats?domain=${encodeURIComponent(domain)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showToast(data.error, 'error');
+                    return;
+                }
+                const sortedIndices = [...data.dates.keys()].sort((a, b) => new Date(data.dates[b]) - new Date(data.dates[a]));
+                const sortedDates = sortedIndices.map(i => data.dates[i]);
+                const sortedMetrics = {
+                    FCP: sortedIndices.map(i => data.metrics.FCP[i]),
+                    LCP: sortedIndices.map(i => data.metrics.LCP[i]),
+                    TTFB: sortedIndices.map(i => data.metrics.TTFB[i]),
+                    TBT: sortedIndices.map(i => data.metrics.TBT[i]),
+                    'Speed Index': sortedIndices.map(i => data.metrics['Speed Index'][i])
+                };
+                statsContent.innerHTML = buildStatsTable(data.stats) + buildHistoryTable(sortedDates, sortedMetrics);
+                statsDomain.textContent = domain;
+                statsUpdated.textContent = formatTimestamp(data.last_updated);
+                statsContent.classList.remove('hidden');
+            })
+            .catch(() => showToast('Не удалось загрузить статистику. Попробуйте позже.', 'error'))
+            .finally(() => {
+                statsLoading.classList.add('hidden');
+                statsModal.show();
+            });
+    }
+
+    function fetchData(domain) {
+        chartLoading.classList.remove('hidden');
+        chartWrapper.classList.add('hidden');
+        fetch(`/get_stats?domain=${encodeURIComponent(domain)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showToast(data.error, 'error');
+                    return;
+                }
+                renderChart(data, domain);
+                chartUpdated.textContent = formatTimestamp(data.last_updated);
+                comparisonTable.innerHTML = '';
+                chartDomain.textContent = domain;
+                chartWrapper.classList.remove('hidden');
+                chartModal.show();
+                lastChartMode = 'single';
+                lastChartData = data;
+                lastChartLabel = domain;
+            })
+            .catch(() => showToast('Не удалось построить график. Попробуйте позже.', 'error'))
+            .finally(() => chartLoading.classList.add('hidden'));
+    }
+
+    function fetchComparisonData(domains) {
+        chartLoading.classList.remove('hidden');
+        chartWrapper.classList.add('hidden');
+        const requests = domains.map(domain => fetch(`/get_stats?domain=${encodeURIComponent(domain)}`).then(response => response.json()));
+        Promise.all(requests)
+            .then(results => {
+                const valid = results.filter(result => !result.error);
+                if (!valid.length) {
+                    showToast('Нет данных для сравнения выбранных доменов.', 'warning');
+                    return;
+                }
+                const processed = valid.map((data, index) => {
+                    const filtered = applyTimeRange(data.dates, data.metrics);
+                    return {
+                        domain: domains[index],
+                        dates: filtered.dates,
+                        metrics: filtered.metrics,
+                        stats: data.stats,
+                        last_updated: data.last_updated,
+                    };
+                });
+                const labels = processed[0].dates;
+                const datasets = [];
+                let newestUpdate = null;
+                processed.forEach(item => {
+                    datasets.push(...buildDatasets(item, item.domain));
+                    if (item.last_updated) {
+                        const current = new Date(item.last_updated);
+                        if (!newestUpdate || current > newestUpdate) {
+                            newestUpdate = current;
+                        }
+                    }
+                });
+                renderChart(valid[0], domains.join(', '), datasets, labels);
+                chartUpdated.textContent = newestUpdate ? formatTimestamp(newestUpdate.toISOString()) : '—';
+                comparisonTable.innerHTML = '<div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-600 dark:text-gray-200"><thead class="text-xs uppercase text-gray-500 dark:text-gray-400"><tr><th class="px-3 py-2">Домен</th>' +
+                    METRIC_LABELS.map(metric => `<th class="px-3 py-2">${metric} медиана</th>`).join('') + '</tr></thead><tbody class="divide-y divide-gray-100 dark:divide-gray-800"></tbody></table></div>';
+                const tbody = comparisonTable.querySelector('tbody');
+                processed.forEach(item => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `<th class="px-3 py-2 text-gray-900 dark:text-gray-100">${item.domain}</th>` +
+                        METRIC_LABELS.map(metric => `<td class="px-3 py-2">${item.stats[metric].median !== null ? item.stats[metric].median + 'с' : '—'}</td>`).join('');
+                    tbody.appendChild(row);
+                });
+                chartDomain.textContent = domains.join(', ');
+                chartWrapper.classList.remove('hidden');
+                chartModal.show();
+                storeComparison(domains);
+                lastChartMode = 'comparison';
+                lastComparisonResults = valid.map((data, index) => ({ data, domain: domains[index] }));
+                lastComparisonDomains = domains.slice();
+            })
+            .catch(() => showToast('Ошибка при загрузке данных для сравнения.', 'error'))
+            .finally(() => chartLoading.classList.add('hidden'));
+    }
+
     const chartConfig = {
         type: 'line',
-        data: {
-            labels: [],
-            datasets: []
-        },
+        data: { labels: [], datasets: [] },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: {
-                    display: true,
-                    position: 'top'
+                legend: { display: true, position: 'top' },
+                tooltip: {
+                    mode: 'nearest',
+                    intersect: false,
+                    backgroundColor: 'rgba(17, 24, 39, 0.9)',
+                    titleFont: { size: 14, weight: '600' },
+                    bodyFont: { size: 13 },
+                    padding: 12,
+                    callbacks: {},
                 }
             },
-            layout: {
-                padding: {
-                    left: 20,
-                    right: 20,
-                    top: 20,
-                    bottom: 20
+            scales: {
+                x: {
+                    ticks: {
+                        maxRotation: 45,
+                        autoSkipPadding: 12,
+                    }
+                },
+                y: {
+                    beginAtZero: false,
+                    ticks: {
+                        callback: function(value) {
+                            return value.toFixed ? value.toFixed(2) + ' с' : value + ' с';
+                        }
+                    }
                 }
             }
         }
     };
 
-    // Функция для отображения статистики одного домена
-    function fetchStats(domain) {
-        fetch(`/get_stats?domain=${encodeURIComponent(domain)}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    statsContent.innerHTML = `<p>${data.error}</p>`;
-                } else {
-                    let html = ''; // Сброс истории замеров перед каждым новым запросом
-                    html += '<h3>Статистика</h3>';
-                    html += '<table><tr><th>Метрика</th><th>Мин.</th><th>50%</th><th>75%</th><th>95%</th><th>Макс.</th></tr>';
-                    for (let metric in data.stats) {
-                        html += `<tr>
-                                    <td>${metric}</td>
-                                    <td>${data.stats[metric].min !== null ? data.stats[metric].min + 's' : 'N/A'}</td>
-                                    <td>${data.stats[metric].median !== null ? data.stats[metric].median + 's' : 'N/A'}</td>
-                                    <td>${data.stats[metric].percentile_75 !== null ? data.stats[metric].percentile_75 + 's' : 'N/A'}</td>
-                                    <td>${data.stats[metric].percentile_95 !== null ? data.stats[metric].percentile_95 + 's' : 'N/A'}</td>
-                                    <td>${data.stats[metric].max !== null ? data.stats[metric].max + 's' : 'N/A'}</td>
-                                 </tr>`;
-                    }
-                    html += '</table>';
-
-                    // История замеров
-                    // Сортируем данные по дате в порядке убывания
-                    const sortedIndices = [...data.dates.keys()].sort((a, b) => new Date(data.dates[b]) - new Date(data.dates[a]));
-
-                    // Создаем отсортированные массивы для дат и метрик
-                    const sortedDates = sortedIndices.map(index => data.dates[index]);
-                    const sortedFCP = sortedIndices.map(index => data.metrics.FCP[index]);
-                    const sortedLCP = sortedIndices.map(index => data.metrics.LCP[index]);
-                    const sortedTTFB = sortedIndices.map(index => data.metrics.TTFB[index]);
-                    const sortedTBT = sortedIndices.map(index => data.metrics.TBT[index]);
-                    const sortedSI = sortedIndices.map(index => data.metrics["Speed Index"][index]);
-
-
-                    // Генерация HTML с использованием отсортированных данных
-                    html += '<h3>История замеров</h3>';
-                    html += '<table><tr><th>Дата</th><th>FCP (s)</th><th>LCP (s)</th><th>TTFB (s)</th><th>TBT (s)</th><th>Speed Index (s)</th></tr>';
-                    for (let i = 0; i < sortedDates.length; i++) {
-                        html += `<tr>
-                                    <td>${sortedDates[i]}</td>
-                                    <td>${sortedFCP[i] !== null ? sortedFCP[i] + 's' : 'N/A'}</td>
-                                    <td>${sortedLCP[i] !== null ? sortedLCP[i] + 's' : 'N/A'}</td>
-                                    <td>${sortedTTFB[i] !== null ? sortedTTFB[i] + 's' : 'N/A'}</td>
-                                    <td>${sortedTBT[i] !== null ? sortedTBT[i] + 's' : 'N/A'}</td>
-                                    <td>${sortedSI[i] !== null ? sortedSI[i] + 's' : 'N/A'}</td>
-                                 </tr>`;
-                    }
-                    html += '</table>';
-
-                    statsContent.innerHTML = html;
-                }
-                statsDomain.textContent = domain;
-                statsModal.style.display = 'block';
-            });
-    }
-
-    // Функция для отображения графика одного домена
-    function fetchData(domain) {
-        fetch(`/get_stats?domain=${encodeURIComponent(domain)}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    alert(data.error);
-                    return;
-                }
-
-                chartConfig.data.labels = data.dates;
-                chartConfig.data.datasets = [
-                    {
-                        label: `FCP - ${domain}`,
-                        data: data.metrics.FCP,
-                        borderColor: 'rgba(75, 192, 192, 1)',
-                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                        fill: true
-                    },
-                    {
-                        label: `LCP - ${domain}`,
-                        data: data.metrics.LCP,
-                        borderColor: 'rgba(153, 102, 255, 1)',
-                        backgroundColor: 'rgba(153, 102, 255, 0.2)',
-                        fill: true
-                    },
-                    {
-                        label: `TTFB - ${domain}`,
-                        data: data.metrics.TTFB,
-                        borderColor: 'rgba(255, 159, 64, 1)',
-                        backgroundColor: 'rgba(255, 159, 64, 0.2)',
-                        fill: true
-                    },
-                    {
-                        label: `TBT - ${domain}`,
-                        data: data.metrics.TBT,
-                        borderColor: 'rgba(255, 99, 132, 1)',
-                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                        fill: true
-                    },
-                    {
-                        label: `Speed Index - ${domain}`,
-                        data: data.metrics["Speed Index"],
-                        borderColor: 'rgba(201, 203, 207, 1)',
-                        backgroundColor: 'rgba(201, 203, 207, 0.2)',
-                        fill: true
-                    }
-                ];
-
-                if (metricsChart) metricsChart.destroy();
-                metricsChart = new Chart(ctx, chartConfig);
-                chartDomain.textContent = domain;
-                chartModal.style.display = 'block';
-            });
-    }
-
-        // Функция для сравнения графиков выбранных доменов
-    function fetchComparisonData(domains) {
-        const requests = domains.map(domain =>
-            fetch(`/get_stats?domain=${encodeURIComponent(domain)}`).then(response => response.json())
-        );
-
-        Promise.all(requests)
-            .then(results => {
-                chartConfig.data.labels = results[0].dates;
-                chartConfig.data.datasets = [];
-                const colors = [
-                    'rgba(75, 192, 192, 1)',
-                    'rgba(153, 102, 255, 1)',
-                    'rgba(255, 159, 64, 1)',
-                    'rgba(255, 99, 132, 1)',
-                    'rgba(201, 203, 207, 1)'
-                ];
-
-                results.forEach((data, index) => {
-                    if (data.error) {
-                        alert(`Ошибка для домена ${domains[index]}: ${data.error}`);
-                        return;
-                    }
-
-                    chartConfig.data.datasets.push(
-                        {
-                            label: `FCP - ${domains[index]}`,
-                            data: data.metrics.FCP,
-                            borderColor: colors[index % colors.length],
-                            backgroundColor: colors[index % colors.length].replace('1)', '0.2)'),
-                            fill: true
-                        },
-                        {
-                            label: `LCP - ${domains[index]}`,
-                            data: data.metrics.LCP,
-                            borderColor: colors[(index + 1) % colors.length],
-                            backgroundColor: colors[(index + 1) % colors.length].replace('1)', '0.2)'),
-                            fill: true
-                        },
-                        {
-                            label: `TTFB - ${domains[index]}`,
-                            data: data.metrics.TTFB,
-                            borderColor: colors[(index + 2) % colors.length],
-                            backgroundColor: colors[(index + 2) % colors.length].replace('1)', '0.2)'),
-                            fill: true
-                        },
-                        {
-                            label: `TBT - ${domains[index]}`,
-                            data: data.metrics.TBT,
-                            borderColor: colors[(index + 3) % colors.length],
-                            backgroundColor: colors[(index + 3) % colors.length].replace('1)', '0.2)'),
-                            fill: true
-                        },
-                        {
-                            label: `Speed Index - ${domains[index]}`,
-                            data: data.metrics["Speed Index"],
-                            borderColor: colors[(index + 4) % colors.length],
-                            backgroundColor: colors[(index + 4) % colors.length].replace('1)', '0.2)'),
-                            fill: true
-                        }
-                    );
-                });
-
-                if (metricsChart) metricsChart.destroy();
-                metricsChart = new Chart(ctx, chartConfig);
-                chartDomain.textContent = domains.join(', ');
-                chartModal.style.display = 'block';
-            })
-            .catch(error => {
-                alert('Ошибка при загрузке данных для сравнения.');
-            });
-    }
-
-    // Обработчик кнопки "Сравнить выбранные домены"
-    document.getElementById('compare-button').addEventListener('click', function() {
-        const selectedDomains = Array.from(document.querySelectorAll('.compare-checkbox:checked'))
-            .map(checkbox => checkbox.value);
-
-        if (selectedDomains.length < 2) {
-            alert('Выберите минимум два домена для сравнения.');
+    compareButton.addEventListener('click', () => {
+        if (selectedDomains.size < 2) {
+            showToast('Выберите минимум два домена для сравнения.', 'warning');
             return;
         }
-
-        fetchComparisonData(selectedDomains);
+        fetchComparisonData(Array.from(selectedDomains));
     });
 
-    // Переход к дашборду
-    document.getElementById('dashboard-button').addEventListener('click', function() {
+    clearSelectionButton.addEventListener('click', () => {
+        selectedDomains.clear();
+        renderDomains();
+    });
+
+    dashboardButton.addEventListener('click', () => {
         window.location.href = '/dashboard';
     });
 
-    // Закрытие модального окна для графика
-    chartClose.onclick = function() {
-        chartModal.style.display = 'none';
-    };
-
-    // Обработчики для кнопок "Статистика" и "График"
-    document.querySelectorAll('.stats-button').forEach(button => {
-        button.addEventListener('click', function() {
-            const domain = button.getAttribute('data-domain');
-            statsDomain.textContent = domain;
-            fetchStats(domain);
-        });
-    });
-
-    document.querySelectorAll('.chart-button').forEach(button => {
-        button.addEventListener('click', function() {
-            const domain = button.getAttribute('data-domain');
-            chartDomain.textContent = domain;
-            fetchData(domain);
-        });
-    });
-
-    // Закрытие модального окна статистики
-    statsClose.onclick = function() {
-        statsModal.style.display = 'none';
-    };
-
-    // Обработчики для модальных окон авторизации и настроек
-    const loggedIn = {{ 'true' if session.get('logged_in') else 'false' }};
-    const settingsLink = document.getElementById('settings-link');
-    const loginLink = document.getElementById('login-link');
-    const loginModal = document.getElementById('loginModal');
-    const loginClose = document.querySelector('.login-close');
-
-    settingsLink.addEventListener('click', function(event) {
-        if (!loggedIn) {
-            event.preventDefault();
-            loginModal.style.display = 'block';
+    metricsFilterContainer.addEventListener('click', (event) => {
+        const button = event.target.closest('.metric-toggle');
+        if (!button) return;
+        const metric = button.dataset.metric;
+        if (selectedMetrics.has(metric) && selectedMetrics.size === 1) {
+            showToast('Должна быть активна хотя бы одна метрика.', 'warning');
+            return;
+        }
+        if (selectedMetrics.has(metric)) {
+            selectedMetrics.delete(metric);
+            button.setAttribute('aria-pressed', 'false');
+            button.classList.remove('bg-indigo-500', 'text-white', 'border-indigo-500');
         } else {
-            window.location.href = "{{ url_for('auth_bp.settings') }}";
+            selectedMetrics.add(metric);
+            button.setAttribute('aria-pressed', 'true');
+            button.classList.add('bg-indigo-500', 'text-white', 'border-indigo-500');
+        }
+        if (lastChartMode === 'single' && lastChartData) {
+            renderChart(lastChartData, lastChartLabel);
+        } else if (lastChartMode === 'comparison') {
+            renderComparisonChartFromState();
         }
     });
 
-    if (loginLink) {
-        loginLink.addEventListener('click', function(event) {
-            event.preventDefault();
-            loginModal.style.display = 'block';
+    aggregationSelect.addEventListener('change', () => {
+        if (lastChartMode === 'single' && lastChartData) {
+            renderChart(lastChartData, lastChartLabel);
+        } else if (lastChartMode === 'comparison') {
+            renderComparisonChartFromState();
+        }
+    });
+
+    timeRangeButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            timeRangeButtons.forEach(btn => btn.classList.remove('bg-indigo-500', 'text-white'));
+            button.classList.add('bg-indigo-500', 'text-white');
+            selectedRange = button.dataset.range;
+            if (lastChartMode === 'single' && lastChartData) {
+                renderChart(lastChartData, lastChartLabel);
+            } else if (lastChartMode === 'comparison') {
+                renderComparisonChartFromState();
+            }
+        });
+    });
+    const defaultRangeButton = document.querySelector('.time-range[data-range="all"]');
+    if (defaultRangeButton) {
+        defaultRangeButton.classList.add('bg-indigo-500', 'text-white');
+    }
+
+    searchInput.addEventListener('input', renderDomains);
+    segmentTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            segmentTabs.forEach(btn => btn.classList.remove('active', 'bg-white', 'text-gray-900', 'dark:bg-gray-700'));
+            tab.classList.add('active', 'bg-white', 'text-gray-900', 'dark:bg-gray-700');
+            renderDomains();
+        });
+    });
+    segmentTabs[0].classList.add('active', 'bg-white', 'text-gray-900', 'dark:bg-gray-700');
+
+    quickActionButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const action = button.dataset.action;
+            if (action === 'add-domain') {
+                if (loggedIn) {
+                    window.location.href = '{{ url_for('auth_bp.settings') }}#add-domain';
+                } else {
+                    loginModal.show();
+                }
+            }
+            if (action === 'recent-comparisons') {
+                document.getElementById('recent-comparisons-section').scrollIntoView({ behavior: 'smooth' });
+            }
+        });
+    });
+
+    if (quickActionsMobile) {
+        quickActionsMobile.addEventListener('click', () => {
+            document.getElementById('domain-controls').scrollIntoView({ behavior: 'smooth' });
         });
     }
 
-    loginClose.onclick = function() {
-        loginModal.style.display = 'none';
-    };
+    const headerLogin = document.getElementById('header-login');
+    const mobileLogin = document.getElementById('mobile-login');
+    if (headerLogin) headerLogin.addEventListener('click', () => loginModal.show());
+    if (mobileLogin) mobileLogin.addEventListener('click', () => loginModal.show());
 
-    // Закрытие модальных окон при клике вне их
+    const loginError = {{ error|tojson|safe }};
+    if (loginError) {
+        loginModal.show();
+        const errorContainer = document.getElementById('login-error');
+        errorContainer.textContent = loginError;
+        errorContainer.classList.remove('hidden');
+    }
+
+    document.querySelector('form[action="{{ url_for('auth_bp.login') }}"]').addEventListener('submit', (event) => {
+        const username = document.getElementById('username');
+        const password = document.getElementById('password');
+        const errors = [];
+        if (username.value.length < 4) {
+            errors.push('Логин должен содержать минимум 4 символа.');
+        }
+        if (password.value.length < 6) {
+            errors.push('Пароль должен содержать минимум 6 символов.');
+        }
+        if (errors.length) {
+            event.preventDefault();
+            const errorContainer = document.getElementById('login-error');
+            errorContainer.innerHTML = errors.map(msg => `<p>${msg}</p>`).join('');
+            errorContainer.classList.remove('hidden');
+        }
+    });
+
+    renderRecentComparisons();
+    updateMetricButtons();
+    renderDomains();
+
     window.onclick = function(event) {
-        if (event.target == loginModal) {
-            loginModal.style.display = 'none';
-        } else if (event.target == statsModal) {
-            statsModal.style.display = 'none';
-        } else if (event.target == chartModal) {
-            chartModal.style.display = 'none';
+        if (event.target === loginModalEl) {
+            loginModal.hide();
+        } else if (event.target === statsModalEl) {
+            statsModal.hide();
+        } else if (event.target === chartModalEl) {
+            chartModal.hide();
         }
     };
 });

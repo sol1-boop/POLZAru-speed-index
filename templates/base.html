@@ -3,13 +3,143 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Моё приложение{% endblock %}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.4.1/flowbite.min.css" rel="stylesheet">
     {% block head %}{% endblock %}
 </head>
-<body>
-    {% block content %}{% endblock %}
-    <!-- Подключение основных скриптов в конце body -->
+<body class="bg-gray-100 text-gray-900 transition-colors duration-200 dark:bg-gray-950 dark:text-gray-100">
+    <header class="bg-gray-800 dark:bg-gray-900 shadow">
+        <nav class="container mx-auto px-4">
+            <div class="flex items-center justify-between py-4">
+                <a href="{{ url_for('index') }}" class="text-lg font-semibold text-white">POLZA Speed Index</a>
+                <div class="flex items-center space-x-3 md:hidden">
+                    <button id="quick-actions-mobile" class="rounded-full bg-indigo-500 px-3 py-2 text-sm text-white" aria-label="Быстрые действия">
+                        Действия
+                    </button>
+                    <button id="mobile-menu-toggle" class="inline-flex items-center justify-center rounded-md p-2 text-gray-200 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-white" aria-controls="primary-navigation" aria-expanded="false">
+                        <span class="sr-only">Открыть меню</span>
+                        <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="hidden md:flex md:items-center md:space-x-6" id="primary-navigation" role="menubar">
+                    {% set current = request.endpoint %}
+                    <a href="{{ url_for('index') }}"
+                       class="rounded px-3 py-2 text-sm font-medium transition-colors duration-150 {% if current == 'index' %}bg-white/20 text-white{% else %}text-gray-200 hover:bg-white/10{% endif %}"
+                       role="menuitem">Главная</a>
+                    <a href="{{ url_for('dashboard') }}"
+                       class="rounded px-3 py-2 text-sm font-medium transition-colors duration-150 {% if current == 'dashboard' %}bg-white/20 text-white{% else %}text-gray-200 hover:bg-white/10{% endif %}"
+                       role="menuitem">Дашборд</a>
+                    <a href="{{ url_for('auth_bp.settings') }}"
+                       class="rounded px-3 py-2 text-sm font-medium transition-colors duration-150 {% if current == 'auth_bp.settings' %}bg-white/20 text-white{% else %}text-gray-200 hover:bg-white/10{% endif %}"
+                       role="menuitem">Настройки</a>
+                    <div class="flex items-center space-x-2" aria-label="Быстрые действия">
+                        <button data-action="add-domain"
+                                class="rounded-full bg-indigo-500 px-3 py-2 text-sm font-medium text-white transition hover:bg-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                                type="button">
+                            Добавить домен
+                        </button>
+                        <button data-action="recent-comparisons"
+                                class="rounded-full bg-slate-700 px-3 py-2 text-sm font-medium text-white transition hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                                type="button">
+                            Последние сравнения
+                        </button>
+                    </div>
+                </div>
+                <div class="hidden md:flex md:items-center md:space-x-3">
+                    <button id="theme-toggle" class="flex items-center rounded-full bg-gray-700 px-3 py-2 text-sm text-white hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-300 focus:ring-offset-gray-800" type="button">
+                        <span class="mr-2" aria-hidden="true">🌙</span>
+                        <span class="text-sm">Тема</span>
+                    </button>
+                    {% if session.get('logged_in') %}
+                        <div class="relative" id="profile-menu">
+                            <button class="flex items-center space-x-2 rounded-full bg-white/10 px-3 py-2 text-sm text-white hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-indigo-200" type="button" aria-haspopup="true" aria-expanded="false">
+                                <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-indigo-500 text-sm font-semibold text-white" aria-hidden="true">
+                                    {{ session.get('username', 'U')[0]|upper }}
+                                </span>
+                                <span class="hidden xl:inline">{{ session.get('username', 'Пользователь') }}</span>
+                                <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 011.08 1.04l-4.24 4.5a.75.75 0 01-1.08 0l-4.24-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                            <div class="absolute right-0 mt-2 hidden w-48 rounded-lg bg-white py-2 text-sm text-gray-700 shadow-lg ring-1 ring-black/5 dark:bg-gray-800 dark:text-gray-100" role="menu" aria-label="Меню профиля">
+                                <a href="{{ url_for('auth_bp.settings') }}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700" role="menuitem">Настройки</a>
+                                <a href="{{ url_for('auth_bp.logout') }}" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700" role="menuitem">Выйти</a>
+                            </div>
+                        </div>
+                    {% else %}
+                        <button id="header-login" class="rounded-full bg-indigo-500 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200" type="button">Войти</button>
+                    {% endif %}
+                </div>
+            </div>
+            <div id="mobile-menu" class="hidden flex-col space-y-4 pb-4 text-sm text-gray-100 md:hidden" aria-label="Мобильное меню">
+                <a href="{{ url_for('index') }}" class="rounded px-3 py-2 transition-colors {% if current == 'index' %}bg-white/20{% else %}hover:bg-white/10{% endif %}">Главная</a>
+                <a href="{{ url_for('dashboard') }}" class="rounded px-3 py-2 transition-colors {% if current == 'dashboard' %}bg-white/20{% else %}hover:bg-white/10{% endif %}">Дашборд</a>
+                <a href="{{ url_for('auth_bp.settings') }}" class="rounded px-3 py-2 transition-colors {% if current == 'auth_bp.settings' %}bg-white/20{% else %}hover:bg-white/10{% endif %}">Настройки</a>
+                <div class="flex flex-col gap-2">
+                    <button data-action="add-domain" class="rounded bg-indigo-500 px-3 py-2 text-left text-white">Добавить домен</button>
+                    <button data-action="recent-comparisons" class="rounded bg-slate-700 px-3 py-2 text-left text-white">Последние сравнения</button>
+                </div>
+                <button id="theme-toggle-mobile" class="flex items-center justify-center rounded bg-gray-700 px-3 py-2 text-white">Переключить тему</button>
+                {% if session.get('logged_in') %}
+                    <a href="{{ url_for('auth_bp.logout') }}" class="rounded bg-red-600 px-3 py-2 text-center text-white">Выйти</a>
+                {% else %}
+                    <button id="mobile-login" class="rounded bg-indigo-500 px-3 py-2 text-center text-white" type="button">Войти</button>
+                {% endif %}
+            </div>
+        </nav>
+    </header>
+    <main class="container mx-auto p-4">
+        {% block content %}{% endblock %}
+    </main>
+    <div id="toast-container" class="fixed right-4 bottom-4 z-50 flex w-full max-w-sm flex-col gap-3" aria-live="polite" aria-atomic="true"></div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.4.1/flowbite.min.js"></script>
     {% block scripts %}{% endblock %}
+    <script>
+        (function() {
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const storedTheme = localStorage.getItem('psi-theme');
+            const isDark = storedTheme ? storedTheme === 'dark' : prefersDark;
+            document.documentElement.classList.toggle('dark', isDark);
+            function toggleTheme() {
+                const next = document.documentElement.classList.toggle('dark');
+                localStorage.setItem('psi-theme', next ? 'dark' : 'light');
+            }
+            const themeButtons = [
+                document.getElementById('theme-toggle'),
+                document.getElementById('theme-toggle-mobile')
+            ].filter(Boolean);
+            themeButtons.forEach(btn => btn.addEventListener('click', toggleTheme));
+
+            const menuToggle = document.getElementById('mobile-menu-toggle');
+            const mobileMenu = document.getElementById('mobile-menu');
+            if (menuToggle && mobileMenu) {
+                menuToggle.addEventListener('click', () => {
+                    const expanded = menuToggle.getAttribute('aria-expanded') === 'true';
+                    menuToggle.setAttribute('aria-expanded', String(!expanded));
+                    mobileMenu.classList.toggle('hidden');
+                });
+            }
+
+            const profileMenu = document.getElementById('profile-menu');
+            if (profileMenu) {
+                const trigger = profileMenu.querySelector('button');
+                const dropdown = profileMenu.querySelector('div[role="menu"]');
+                trigger.addEventListener('click', () => {
+                    const isOpen = dropdown.classList.toggle('hidden');
+                    trigger.setAttribute('aria-expanded', String(!isOpen));
+                });
+                document.addEventListener('click', (event) => {
+                    if (!profileMenu.contains(event.target)) {
+                        dropdown.classList.add('hidden');
+                        trigger.setAttribute('aria-expanded', 'false');
+                    }
+                });
+            }
+        })();
+    </script>
 </body>
 </html>
