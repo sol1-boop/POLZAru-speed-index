@@ -13,8 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 
-from app.models.domain import Domain
-from app.models.metric import Metric
+from app.models.domain import Domain, LighthouseMetric, Alert
 
 logger = logging.getLogger(__name__)
 
