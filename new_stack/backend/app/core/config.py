@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
 
     # Database
-    DATABASE_URL: str = "postgresql://monitor:password@localhost:5432/monitor_db"
+    DATABASE_URL: str = "postgresql+asyncpg://monitor:password@localhost:5432/monitor_db"
 
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"

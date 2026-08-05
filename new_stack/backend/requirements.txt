@@ -24,8 +24,7 @@ pydantic-settings==2.1.0
 # HTTP Client
 httpx==0.26.0
 
-# Lighthouse Integration (same as before)
-pylighthouse==0.0.10
+# Lighthouse Integration
 selenium==4.17.2
 webdriver-manager==4.0.1
 

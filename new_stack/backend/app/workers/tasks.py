@@ -7,8 +7,7 @@ from app.services.budget_service import BudgetService
 from app.services.telegram_service import get_telegram_service
 from app.services.metrics_parser import MetricsParser
 from app.core.database import async_session_maker
-from app.models.domain import Domain
-from app.models.metric import Metric
+from app.models.domain import Domain, LighthouseMetric
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime

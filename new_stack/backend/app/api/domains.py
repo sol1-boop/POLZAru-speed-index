@@ -7,7 +7,7 @@ from app.core.database import get_db
 from app.models import Domain, LighthouseMetric
 from app.schemas import DomainCreate, DomainUpdate, DomainResponse, LighthouseMetricResponse, DashboardSummary
 from app.services.auth import get_current_user
-from app.workers.tasks import run_lighthouse_check
+from app.workers.tasks import run_lighthouse_audit_task
 
 router = APIRouter(prefix="/domains", tags=["Domains"])
 
@@ -65,7 +65,7 @@ async def create_domain(
     await db.refresh(new_domain)
     
     # Queue initial lighthouse check
-    run_lighthouse_check.delay(new_domain.id, new_domain.url)
+    run_lighthouse_audit_task.delay(new_domain.id, new_domain.url)
     
     return new_domain
 
@@ -211,6 +211,6 @@ async def trigger_domain_check(
         )
     
     # Queue check
-    run_lighthouse_check.delay(domain.id, domain.url)
+    run_lighthouse_audit_task.delay(domain.id, domain.url)
     
     return {"status": "queued", "domain_id": domain.id}
