@@ -1,0 +1,118 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: monitor_db
+    environment:
+      POSTGRES_USER: ${DB_USER:-monitor}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-secure_password_change_me}
+      POSTGRES_DB: ${DB_NAME:-monitor_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - monitor_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-monitor}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for Celery Broker & Cache
+  redis:
+    image: redis:7-alpine
+    container_name: monitor_redis
+    networks:
+      - monitor_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API (FastAPI)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: monitor_backend
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./backend:/app
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://${DB_USER:-monitor}:${DB_PASSWORD:-secure_password_change_me}@db:5432/${DB_NAME:-monitor_db}
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - monitor_net
+    ports:
+      - "8000:8000"
+
+  # Celery Worker (for Lighthouse tasks)
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: monitor_worker
+    command: celery -A app.workers.celery_app worker --loglevel=info --concurrency=2
+    volumes:
+      - ./backend:/app
+      - chrome_data:/tmp/chrome-data  # Persist chrome data if needed, or mount /dev/shm
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://${DB_USER:-monitor}:${DB_PASSWORD:-secure_password_change_me}@db:5432/${DB_NAME:-monitor_db}
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - backend
+      - redis
+    networks:
+      - monitor_net
+    shm_size: 2gb  # Important for Chrome headless
+
+  # Celery Beat (for scheduled tasks like periodic checks)
+  beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: monitor_beat
+    command: celery -A app.workers.celery_app beat --loglevel=info
+    volumes:
+      - ./backend:/app
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://${DB_USER:-monitor}:${DB_PASSWORD:-secure_password_change_me}@db:5432/${DB_NAME:-monitor_db}
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+    networks:
+      - monitor_net
+
+  # Frontend (React + Vite + Nginx)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: monitor_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - monitor_net
+
+networks:
+  monitor_net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  chrome_data:

@@ -1,0 +1,43 @@
+# Core FastAPI & Utilities
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+python-multipart==0.0.6
+
+# Database & ORM
+sqlalchemy[asyncio]==2.0.25
+asyncpg==0.29.0
+alembic==1.13.1
+
+# Security & Auth
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.1.2
+
+# Celery & Task Queue
+celery[redis]==5.3.6
+flower==2.0.1
+
+# Validation & Settings
+pydantic==2.5.3
+pydantic-settings==2.1.0
+
+# HTTP Client
+httpx==0.26.0
+
+# Lighthouse Integration (same as before)
+pylighthouse==0.0.10
+selenium==4.17.2
+webdriver-manager==4.0.1
+
+# Utilities
+python-dotenv==1.0.0
+loguru==0.7.2
+tenacity==8.2.3  # For retries
+
+# Dev & Testing
+pytest==7.4.4
+pytest-asyncio==0.23.3
+pytest-cov==4.1.0
+black==23.12.1
+flake8==7.0.0
+isort==5.13.2
