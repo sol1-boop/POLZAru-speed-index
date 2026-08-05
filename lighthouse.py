@@ -31,22 +31,25 @@ async def get_lighthouse_metrics(url: str, mobile: bool = False, headless: bool 
 
 def cleanup_temp_chrome_data() -> None:
     """Remove stale Chrome temporary directories and caches."""
-    temp_path = Path(tempfile.gettempdir())
-    patterns = ("chrome-*", "chrome_profile_*")
-    for pattern in patterns:
-        for item in temp_path.glob(pattern):
-            if item.is_dir():
-                shutil.rmtree(item, ignore_errors=True)
-            else:
-                try:
-                    item.unlink()
-                except FileNotFoundError:
-                    pass
+    try:
+        temp_path = Path(tempfile.gettempdir())
+        patterns = ("chrome-*", "chrome_profile_*")
+        for pattern in patterns:
+            for item in temp_path.glob(pattern):
+                if item.is_dir():
+                    shutil.rmtree(item, ignore_errors=True)
+                else:
+                    try:
+                        item.unlink()
+                    except FileNotFoundError:
+                        pass
 
-    home = Path.home()
-    for profile in (home / ".config" / "Google" / "Chrome", home / ".config" / "chromium"):
-        if profile.exists():
-            shutil.rmtree(profile, ignore_errors=True)
+        home = Path.home()
+        for profile in (home / ".config" / "Google" / "Chrome", home / ".config" / "chromium"):
+            if profile.exists():
+                shutil.rmtree(profile, ignore_errors=True)
+    except Exception as e:
+        logger.warning(f"Ошибка при очистке временных данных Chrome: {e}")
 
 
 def create_temp_chrome_profile() -> str:

@@ -2,3 +2,10 @@ Flask
 python-telegram-bot
 requests
 pytest
+python-dotenv
+bcrypt
+Flask-Login
+gunicorn
+pytest-cov
+black
+flake8
