@@ -1,4 +1,6 @@
 # app.py
+import os
+from dotenv import load_dotenv
 from flask import Flask, render_template, request, jsonify
 from modules.utils import load_domains, delete_history_file
 from modules.config import load_config
@@ -10,10 +12,12 @@ import logging
 
 logging.basicConfig(level=logging.DEBUG)
 
+load_dotenv()
+
 app = Flask(__name__)
 app.register_blueprint(alerts_bp)
 app.register_blueprint(auth_bp)
-app.secret_key = 'your_secret_key'  # Замените на ваш секретный ключ
+app.secret_key = os.getenv('FLASK_SECRET_KEY', os.urandom(24).hex())
 
 @app.route('/')
 def index():
@@ -89,6 +93,11 @@ def compare_domains():
         "comparison": f"Сравнение для {len(domains)} доменов успешно выполнено."
     }
     return jsonify(comparison_result)
+
+@app.route('/health')
+def health_check():
+    """Health check endpoint for monitoring and CI/CD."""
+    return jsonify({'status': 'healthy', 'timestamp': __import__('datetime').datetime.now().isoformat()})
 
 if __name__ == '__main__':
     app.run(debug=True)

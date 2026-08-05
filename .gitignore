@@ -1,4 +1,54 @@
-# Игнорировать папку history_files и всё её содержимое
-history_files/
-domain.json
-config.json
+```
+# Environment variables
+.env
+.env.local
+.env.*
+
+# Dependencies
+venv/
+.venv/
+__pycache__/
+*.pyc
+*$py.class
+*.so
+.Python
+env/
+ENV/
+
+# Build and distribution artifacts
+build/
+dist/
+*.egg
+*.egg-info/
+*.eggs/
+.installed.cfg
+*.egg-link
+
+# Testing
+.coverage
+coverage/
+htmlcov/
+.noseids
+.pytest_cache/
+.tox/
+.coverage.*
+
+# Logs
+*.log
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Editor specific
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+```
