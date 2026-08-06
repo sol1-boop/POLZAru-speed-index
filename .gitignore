@@ -1,51 +1,67 @@
 ```
-# Dependencies
-node_modules/
+# Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 .Python
-venv/
 env/
-ENV/
+venv/
 .venv/
+.ENV
+.ENV.local
 .env
 .env.local
 .env.*
-.envrc
-
-# Build artifacts
-dist/
-build/
-*.egg-info/
+requirements.txt.bak
+pip-log.txt
+pip-delete-this-directory.txt
 .tox/
 .coverage
-htmlcov/
 .coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.git/modules/
+.pytest_cache/
+.hypothesis/
 
-# IDE files
+# Build and distribution artifacts
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# IDE specific
 .vscode/
 .idea/
 *.swp
 *.swo
-*.tmp
-
-# OS files
+*~
 .DS_Store
 Thumbs.db
 
-# Logs
-*.log
-
 # Testing
-.pytest_cache/
-.mypy_cache/
-.hypothesis/
+.coverage
+htmlcov/
+.tox/
+.nox/
+coverage.lcov
 
-# Environment specific
-.env
-.env.local
-.env.*
-.envrc
+# Security
+secret.key
+secrets.json
 ```

@@ -29,6 +29,13 @@ class Settings(BaseSettings):
     TELEGRAM_BOT_TOKEN: Optional[str] = None
     TELEGRAM_CHAT_ID: Optional[str] = None
 
+    # CI/CD Integration
+    GITHUB_TOKEN: Optional[str] = None
+    GITLAB_TOKEN: Optional[str] = None
+
+    # AI Assistant
+    OPENAI_API_KEY: Optional[str] = None
+
     # Chrome / Lighthouse
     CHROME_HEADLESS: bool = True
     CHROME_NO_SANDBOX: bool = True
