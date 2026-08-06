@@ -1,274 +1,158 @@
 """
-AI Optimization Assistant
-Анализ метрик Lighthouse и генерация рекомендаций по оптимизации
+AI Optimization Assistant Service
+Provides AI-powered recommendations for performance improvements.
 """
-from typing import Dict, List, Optional
-from loguru import logger
+import httpx
+from typing import List, Dict, Any, Optional
+from datetime import datetime
+
+from app.core.config import settings
 
 
 class AIOptimizationAssistant:
-    """AI-ассистент для анализа производительности и генерации рекомендаций"""
-    
-    # База знаний проблем и решений
-    KNOWLEDGE_BASE = {
-        "lcp": {
-            "threshold": 2.5,
-            "unit": "s",
-            "issues": [
-                {
-                    "condition": lambda m: m.get("lcp", 0) > 4.0,
-                    "severity": "critical",
-                    "title": "Критически медленный LCP",
-                    "description": "Largest Contentful Paint превышает 4 секунды",
-                    "recommendations": [
-                        "Оптимизируйте загрузку главного изображения (используйте WebP/AVIF)",
-                        "Настройте preload для критических ресурсов",
-                        "Уменьшите размер CSS/JS блокирующих рендеринг",
-                        "Используйте CDN для статических ресурсов",
-                        "Проверьте время ответа сервера (TTFB)"
-                    ]
-                },
-                {
-                    "condition": lambda m: 2.5 < m.get("lcp", 0) <= 4.0,
-                    "severity": "warning",
-                    "title": "LCP требует улучшения",
-                    "description": "Largest Contentful Paint между 2.5 и 4 секундами",
-                    "recommendations": [
-                        "Добавьте lazy loading для изображений ниже fold",
-                        "Оптимизируйте шрифты (font-display: swap)",
-                        "Минимизируйте главный поток"
-                    ]
-                }
-            ]
-        },
-        "fid": {
-            "threshold": 100,
-            "unit": "ms",
-            "issues": [
-                {
-                    "condition": lambda m: m.get("fid", 0) > 300,
-                    "severity": "critical",
-                    "title": "Критическая задержка ввода",
-                    "description": "First Input Delay превышает 300ms",
-                    "recommendations": [
-                        "Разбейте длинные задачи JavaScript (>50ms)",
-                        "Используйте Web Workers для тяжелых вычислений",
-                        "Отложите загрузку не критического JS",
-                        "Минимизируйте работу главного потока при загрузке"
-                    ]
-                },
-                {
-                    "condition": lambda m: 100 < m.get("fid", 0) <= 300,
-                    "severity": "warning",
-                    "title": "Задержка ввода выше нормы",
-                    "description": "First Input Delay между 100 и 300ms",
-                    "recommendations": [
-                        "Оптимизируйте обработчики событий",
-                        "Используйте debounce/throttle для частых событий",
-                        "Проверьте сторонние скрипты"
-                    ]
-                }
-            ]
-        },
-        "cls": {
-            "threshold": 0.1,
-            "unit": "",
-            "issues": [
-                {
-                    "condition": lambda m: m.get("cls", 0) > 0.25,
-                    "severity": "critical",
-                    "title": "Критические сдвиги макета",
-                    "description": "Cumulative Layout Shift превышает 0.25",
-                    "recommendations": [
-                        "Добавьте явные размеры для изображений и видео",
-                        "Зарезервируйте место для динамического контента",
-                        "Избегайте вставки контента над существующим",
-                        "Используйте aspect-ratio в CSS",
-                        "Оптимизируйте загрузку веб-шрифтов"
-                    ]
-                },
-                {
-                    "condition": lambda m: 0.1 < m.get("cls", 0) <= 0.25,
-                    "severity": "warning",
-                    "title": "Сдвиги макета заметны",
-                    "description": "Cumulative Layout Shift между 0.1 и 0.25",
-                    "recommendations": [
-                        "Проверьте рекламу и виджеты",
-                        "Добавьте skeleton loaders",
-                        "Используйте transform вместо position изменений"
-                    ]
-                }
-            ]
-        },
-        "fcp": {
-            "threshold": 1.8,
-            "unit": "s",
-            "issues": [
-                {
-                    "condition": lambda m: m.get("fcp", 0) > 3.0,
-                    "severity": "critical",
-                    "title": "Очень медленная первая отрисовка",
-                    "description": "First Contentful Paint превышает 3 секунды",
-                    "recommendations": [
-                        "Оптимизируйте критический путь рендеринга",
-                        "Минимизируйте CSS и JS",
-                        "Используйте inline critical CSS",
-                        "Настройте кэширование браузера"
-                    ]
-                },
-                {
-                    "condition": lambda m: 1.8 < m.get("fcp", 0) <= 3.0,
-                    "severity": "warning",
-                    "title": "Первая отрисовка медленная",
-                    "description": "First Contentful Paint между 1.8 и 3 секундами",
-                    "recommendations": [
-                        "Уменьшите размер HTML",
-                        "Оптимизируйте загрузку шрифтов",
-                        "Проверьте блокирующие ресурсы"
-                    ]
-                }
-            ]
-        },
-        "performance_score": {
-            "threshold": 90,
-            "unit": "points",
-            "issues": [
-                {
-                    "condition": lambda m: m.get("performance_score", 0) < 50,
-                    "severity": "critical",
-                    "title": "Критически низкая производительность",
-                    "description": "Общий балл производительности ниже 50",
-                    "recommendations": [
-                        "Проведите полный аудит производительности",
-                        "Рассмотрите переход на современный фреймворк",
-                        "Оптимизируйте изображения и видео",
-                        "Настройте серверную оптимизацию (gzip, brotli)",
-                        "Используйте HTTP/2 или HTTP/3"
-                    ]
-                },
-                {
-                    "condition": lambda m: 50 <= m.get("performance_score", 0) < 75,
-                    "severity": "warning",
-                    "title": "Производительность требует работы",
-                    "description": "Общий балл между 50 и 75",
-                    "recommendations": [
-                        "Сфокусируйтесь на Core Web Vitals",
-                        "Оптимизируйте JavaScript bundle",
-                        "Настройте code splitting"
-                    ]
-                }
-            ]
-        }
-    }
-    
-    async def analyze(self, metrics: Dict) -> Dict:
-        """Проанализировать метрики и вернуть рекомендации"""
-        logger.info("Analyzing metrics with AI assistant")
+    """Service for generating AI-powered optimization recommendations."""
+
+    def __init__(self):
+        self.openai_api_key = settings.OPENAI_API_KEY
+        self.openai_url = "https://api.openai.com/v1/chat/completions"
+        self.model = "gpt-4o-mini"
+
+    async def analyze_lighthouse_results(
+        self,
+        url: str,
+        lighthouse_result: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        performance_score = lighthouse_result.get("performance_score", 0)
+        audits = lighthouse_result.get("audits", {})
         
-        issues_found = []
-        recommendations = set()
-        
-        for metric_name, config in self.KNOWLEDGE_BASE.items():
-            for issue in config["issues"]:
-                if issue["condition"](metrics):
-                    issues_found.append({
-                        "metric": metric_name,
-                        "severity": issue["severity"],
-                        "title": issue["title"],
-                        "description": issue["description"],
-                        "threshold": f"{config['threshold']}{config['unit']}",
-                        "current_value": metrics.get(metric_name, 0)
+        critical_audits = []
+        for audit_id, audit_data in audits.items():
+            if isinstance(audit_data, dict):
+                score = audit_data.get("score", 1)
+                if score is not None and score < 0.5:
+                    critical_audits.append({
+                        "id": audit_id,
+                        "title": audit_data.get("title", audit_id),
+                        "description": audit_data.get("description", ""),
+                        "score": score
                     })
-                    recommendations.update(issue["recommendations"])
         
-        # Сортировать проблемы по серьезности
-        severity_order = {"critical": 0, "warning": 1, "info": 2}
-        issues_found.sort(key=lambda x: severity_order.get(x["severity"], 3))
+        prompt = self._build_analysis_prompt(url, performance_score, critical_audits)
         
-        # Добавить общие рекомендации
-        general_recommendations = self._get_general_recommendations(metrics)
-        all_recommendations = list(recommendations) + general_recommendations
-        
-        # Удалить дубликаты
-        all_recommendations = list(dict.fromkeys(all_recommendations))
+        if self.openai_api_key:
+            try:
+                ai_response = await self._call_openai(prompt)
+                recommendations = self._parse_ai_response(ai_response)
+            except Exception as e:
+                recommendations = self._generate_rule_based_recommendations(critical_audits)
+                recommendations["ai_error"] = str(e)
+        else:
+            recommendations = self._generate_rule_based_recommendations(critical_audits)
+            recommendations["note"] = "AI not configured. Using rule-based analysis."
         
         return {
-            "summary": {
-                "total_issues": len(issues_found),
-                "critical": sum(1 for i in issues_found if i["severity"] == "critical"),
-                "warnings": sum(1 for i in issues_found if i["severity"] == "warning"),
-                "performance_score": metrics.get("performance_score", 0)
-            },
-            "issues": issues_found,
-            "recommendations": all_recommendations,
-            "priority_actions": all_recommendations[:5]  # Топ-5 приоритетных действий
+            "url": url,
+            "performance_score": performance_score,
+            "analyzed_at": datetime.utcnow().isoformat(),
+            "critical_issues_count": len(critical_audits),
+            "recommendations": recommendations,
+            "estimated_impact": self._calculate_estimated_impact(recommendations)
         }
-    
-    def _get_general_recommendations(self, metrics: Dict) -> List[str]:
-        """Получить общие рекомендации на основе всех метрик"""
+
+    def _build_analysis_prompt(self, url: str, score: float, critical_audits: List[Dict[str, Any]]) -> str:
+        audits_text = "\n".join([
+            f"- {audit['title']}: Score {audit['score']:.2f} ({audit['description']})"
+            for audit in critical_audits[:10]
+        ])
+        
+        return f"""You are a web performance expert. Analyze this Lighthouse report:
+URL: {url}, Score: {score}/100
+Critical Issues: {audits_text}
+Provide top 3-5 optimizations with code examples. Return JSON with recommendations array."""
+
+    async def _call_openai(self, prompt: str) -> Dict[str, Any]:
+        headers = {"Authorization": f"Bearer {self.openai_api_key}", "Content-Type": "application/json"}
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": "You are a web performance expert. Respond with valid JSON."},
+                {"role": "user", "content": prompt}
+            ],
+            "temperature": 0.3,
+            "max_tokens": 1500
+        }
+        
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(self.openai_url, headers=headers, json=payload)
+            response.raise_for_status()
+            data = response.json()
+            import json
+            return json.loads(data["choices"][0]["message"]["content"])
+
+    def _parse_ai_response(self, ai_response: Dict[str, Any]) -> Dict[str, Any]:
+        return {
+            "source": "ai",
+            "summary": ai_response.get("summary", ""),
+            "items": ai_response.get("recommendations", []),
+            "total_count": len(ai_response.get("recommendations", []))
+        }
+
+    def _generate_rule_based_recommendations(self, critical_audits: List[Dict[str, Any]]) -> Dict[str, Any]:
         recommendations = []
+        audit_rules = {
+            "largest-contentful-paint": {
+                "title": "Optimize LCP", "priority": "high", "category": "images",
+                "description": "LCP is slow. Optimize your largest visible element.",
+                "tips": ["Compress images", "Use CDN", "Preload resources"],
+                "estimated_improvement_ms": 500, "effort": "medium"
+            },
+            "cumulative-layout-shift": {
+                "title": "Fix CLS", "priority": "high", "category": "css",
+                "description": "Page elements are shifting.",
+                "tips": ["Add size attributes", "Reserve space for ads"],
+                "estimated_improvement_ms": 200, "effort": "low"
+            },
+            "total-blocking-time": {
+                "title": "Reduce TBT", "priority": "high", "category": "javascript",
+                "description": "Long tasks blocking main thread.",
+                "tips": ["Code splitting", "Defer non-critical JS"],
+                "estimated_improvement_ms": 400, "effort": "high"
+            }
+        }
         
-        score = metrics.get("performance_score", 0)
+        for audit in critical_audits:
+            audit_id = audit.get("id", "")
+            if audit_id in audit_rules:
+                rule = audit_rules[audit_id].copy()
+                rule["related_audit"] = audit_id
+                recommendations.append(rule)
         
-        if score < 90:
-            recommendations.append("Настройте автоматический мониторинг производительности в CI/CD")
+        if not recommendations:
+            recommendations.append({
+                "title": "General Optimization", "priority": "medium", "category": "other",
+                "description": "Continue monitoring.",
+                "tips": ["Enable compression", "Use caching"],
+                "estimated_improvement_ms": 150, "effort": "low"
+            })
         
-        if metrics.get("lcp", 0) > 2.5 and metrics.get("fcp", 0) > 1.8:
-            recommendations.append("Рассмотрите использование SSR или SSG для ускорения первой отрисовки")
-        
-        if metrics.get("cls", 0) > 0.1:
-            recommendations.append("Внедрите визуальные тесты для обнаружения сдвигов макета")
-        
-        # Проверка на наличие возможностей для PWA
-        if score >= 75:
-            recommendations.append("Рассмотрите внедрение Service Worker для офлайн-режима")
-        
-        return recommendations
-    
-    async def generate_report(self, metrics: Dict, domain: str) -> str:
-        """Сгенерировать текстовый отчет с рекомендациями"""
-        analysis = await self.analyze(metrics)
-        
-        lines = [
-            f"# 📊 Performance Audit Report",
-            f"**Domain:** {domain}",
-            f"**Date:** {self._get_current_date()}",
-            "",
-            f"## Summary",
-            f"- Performance Score: **{metrics.get('performance_score', 0):.1f}/100**",
-            f"- Issues Found: **{analysis['summary']['total_issues']}**",
-            f"  - 🔴 Critical: {analysis['summary']['critical']}",
-            f"  - 🟡 Warnings: {analysis['summary']['warnings']}",
-            ""
-        ]
-        
-        if analysis["issues"]:
-            lines.append("## Issues Detected")
-            for issue in analysis["issues"]:
-                emoji = "🔴" if issue["severity"] == "critical" else "🟡"
-                lines.append(f"{emoji} **{issue['title']}**")
-                lines.append(f"   - Metric: {issue['metric']}")
-                lines.append(f"   - Current: {issue['current_value']} (Threshold: {issue['threshold']})")
-                lines.append(f"   - {issue['description']}")
-                lines.append("")
-        
-        if analysis["recommendations"]:
-            lines.append("## Recommendations")
-            for i, rec in enumerate(analysis["recommendations"], 1):
-                lines.append(f"{i}. {rec}")
-            lines.append("")
-        
-        if analysis["priority_actions"]:
-            lines.append("## 🎯 Priority Actions (Top 5)")
-            for i, action in enumerate(analysis["priority_actions"], 1):
-                lines.append(f"{i}. {action}")
-        
-        lines.append("")
-        lines.append("---")
-        lines.append("_Generated by Monitor App AI Assistant v2.0_")
-        
-        return "\n".join(lines)
-    
-    def _get_current_date(self) -> str:
-        from datetime import datetime
-        return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        total_improvement = sum(r.get("estimated_improvement_ms", 0) for r in recommendations)
+        return {
+            "source": "rule-based",
+            "summary": f"Found {len(recommendations)} opportunities ({total_improvement}ms improvement).",
+            "items": recommendations,
+            "total_count": len(recommendations)
+        }
+
+    def _calculate_estimated_impact(self, recommendations: Dict[str, Any]) -> Dict[str, Any]:
+        items = recommendations.get("items", [])
+        total_improvement_ms = sum(item.get("estimated_improvement_ms", 0) for item in items)
+        high_priority_count = sum(1 for item in items if item.get("priority") == "high")
+        return {
+            "total_potential_improvement_ms": total_improvement_ms,
+            "high_priority_items": high_priority_count,
+            "total_items": len(items),
+            "estimated_score_increase": min(20, total_improvement_ms // 100)
+        }
+
+
+ai_assistant = AIOptimizationAssistant()
